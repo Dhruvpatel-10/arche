@@ -6,6 +6,10 @@ set -euo pipefail
 
 ARCHE="${ARCHE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
+# ─── Secrets ───
+
+[[ -f "$ARCHE/secrets.sh" ]] && source "$ARCHE/secrets.sh"
+
 # ─── Logging ───
 
 # File logging — call log_init to start capturing all output to a file.

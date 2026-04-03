@@ -123,7 +123,14 @@ fi
 
 log_section "Encrypted DNS (NextDNS + Cloudflare fallback)"
 
-link_system_file "$ARCHE/system/etc/systemd/resolved.conf" "/etc/systemd/resolved.conf"
+if [[ -z "${NEXTDNS_ID:-}" ]]; then
+    log_err "NEXTDNS_ID not set — add it to secrets.sh (see secrets.sh.example)"
+else
+    # Render resolved.conf with actual NextDNS ID
+    sed "s/NEXTDNS_ID/${NEXTDNS_ID}/g" "$ARCHE/system/etc/systemd/resolved.conf" \
+        | sudo tee /etc/systemd/resolved.conf > /dev/null
+    log_ok "Rendered resolved.conf with NextDNS ID"
+fi
 
 # Point /etc/resolv.conf to systemd-resolved stub
 if [[ "$(readlink -f /etc/resolv.conf)" != "/run/systemd/resolve/stub-resolv.conf" ]]; then

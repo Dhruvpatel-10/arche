@@ -2,6 +2,7 @@
 
 The following files contain API keys and secrets. Never read, display, log, or include their contents in any output:
 
+- `secrets.sh` — all secrets (NextDNS ID, etc.) — gitignored
 - `stow/fish/.config/fish/local.fish` — live secrets (gitignored)
 - `stow/fish/.config/fish/local.fish.template` — template with placeholder values only
 - `~/.config/fish/local.fish` — rendered secrets on live system
