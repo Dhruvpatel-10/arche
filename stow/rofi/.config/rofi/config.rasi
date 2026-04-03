@@ -1,0 +1,63 @@
+/* rofi config — behavior only, colors come from theme.rasi */
+
+configuration {
+    /* Combi mode: one search bar for everything (Spotlight-style) */
+    modi: "combi,drun,run,filebrowser,window,ssh";
+    combi-modi: "drun,run,window";
+
+    /* Display names */
+    display-combi: " ";
+    display-drun: "Apps";
+    display-run: "Run";
+    display-filebrowser: "Files";
+    display-window: "Windows";
+    display-ssh: "SSH";
+
+    /* Hide mode prefix in combi results (removes "Apps Brave" → "Brave") */
+    combi-display-format: "{text}";
+
+    /* Search behavior */
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+    case-sensitive: false;
+    tokenize: true;
+
+    /* Icons */
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    drun-display-format: "{name}";
+
+    /* Input */
+    steal-focus: true;
+    click-to-exit: true;
+    terminal: "kitty";
+
+    /* File browser */
+    filebrowser {
+        directory: "/home";
+        sorting-method: "name";
+        directories-first: true;
+    }
+
+    /*
+     * Key bindings — each key can only appear in ONE binding.
+     * Defaults: Tab=kb-element-next, ISO_Left_Tab=kb-element-prev,
+     *           Up/Control+k=kb-row-up AND kb-element-prev,
+     *           Down/Control+j=kb-row-down AND kb-element-next.
+     * We reassign Tab/Shift+Tab to mode switching, and let
+     * row-up/row-down handle all navigation.
+     */
+    kb-element-next: "";
+    kb-element-prev: "";
+    kb-mode-next: "Tab";
+    kb-mode-previous: "ISO_Left_Tab";
+    kb-remove-to-eol: "";
+    kb-row-up: "Up,Control+k";
+    kb-row-down: "Down,Control+j";
+    kb-accept-entry: "Return,KP_Enter";
+    kb-cancel: "Escape,Control+bracketleft";
+}
+
+/* Theme — rendered from ember by theme.sh */
+@theme "~/.config/rofi/theme.rasi"

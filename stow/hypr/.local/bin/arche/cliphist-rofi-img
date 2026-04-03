@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# cliphist-rofi-img — rofi custom mode for clipboard history with image previews
+# Based on: https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img
+
+tmp_dir="/tmp/cliphist"
+
+if [[ -n "$1" ]]; then
+    cliphist decode <<<"$1" | wl-copy
+    exit
+fi
+
+rm -rf "$tmp_dir" 2>/dev/null
+mkdir -p "$tmp_dir"
+
+cliphist list | while IFS= read -r line; do
+    id="${line%%	*}"
+
+    if [[ "$line" =~ binary.*(jpg|jpeg|png|bmp) ]]; then
+        ext="${BASH_REMATCH[1]}"
+        thumb="$tmp_dir/$id.$ext"
+        printf '%s\t' "$id" | cliphist decode > "$thumb" 2>/dev/null
+        if [[ -s "$thumb" ]]; then
+            printf '%s\0icon\x1f%s\n' "$line" "$thumb"
+        else
+            printf '%s\n' "$line"
+        fi
+    else
+        printf '%s\n' "$line"
+    fi
+done

@@ -1,0 +1,75 @@
+[Default Applications]
+# Documents — zathura (PDF, EPUB, XPS, CBZ, FB2)
+application/pdf=org.pwmt.zathura.desktop
+application/epub+zip=org.pwmt.zathura.desktop
+application/x-fictionbook+xml=org.pwmt.zathura.desktop
+application/oxps=org.pwmt.zathura.desktop
+application/vnd.ms-xpsdocument=org.pwmt.zathura.desktop
+application/x-cbz=org.pwmt.zathura.desktop
+application/vnd.comicbook+zip=org.pwmt.zathura.desktop
+
+# Images — imv
+image/png=imv.desktop
+image/jpeg=imv.desktop
+image/gif=imv.desktop
+image/webp=imv.desktop
+image/bmp=imv.desktop
+image/tiff=imv.desktop
+image/svg+xml=imv.desktop
+
+# Video — mpv
+video/mp4=mpv.desktop
+video/x-matroska=mpv.desktop
+video/x-msvideo=mpv.desktop
+video/x-flv=mpv.desktop
+video/x-ms-wmv=mpv.desktop
+video/mpeg=mpv.desktop
+video/ogg=mpv.desktop
+video/webm=mpv.desktop
+video/quicktime=mpv.desktop
+video/3gpp=mpv.desktop
+video/3gpp2=mpv.desktop
+video/x-ogm+ogg=mpv.desktop
+video/x-theora+ogg=mpv.desktop
+application/ogg=mpv.desktop
+
+# Audio — mpv
+audio/mpeg=mpv.desktop
+audio/ogg=mpv.desktop
+audio/flac=mpv.desktop
+audio/x-wav=mpv.desktop
+audio/opus=mpv.desktop
+audio/aac=mpv.desktop
+
+# Web — vivaldi
+text/html=vivaldi-stable.desktop
+x-scheme-handler/http=vivaldi-stable.desktop
+x-scheme-handler/https=vivaldi-stable.desktop
+x-scheme-handler/about=vivaldi-stable.desktop
+x-scheme-handler/unknown=vivaldi-stable.desktop
+x-scheme-handler/mailto=vivaldi-stable.desktop
+
+# Text/code — nvim
+text/plain=nvim.desktop
+text/x-makefile=nvim.desktop
+text/x-c++hdr=nvim.desktop
+text/x-c++src=nvim.desktop
+text/x-chdr=nvim.desktop
+text/x-csrc=nvim.desktop
+text/x-java=nvim.desktop
+text/x-pascal=nvim.desktop
+text/x-tex=nvim.desktop
+text/x-c=nvim.desktop
+text/x-c++=nvim.desktop
+application/x-shellscript=nvim.desktop
+application/xml=nvim.desktop
+text/xml=nvim.desktop
+application/json=nvim.desktop
+application/toml=nvim.desktop
+application/x-yaml=nvim.desktop
+text/markdown=glow.desktop
+text/x-markdown=glow.desktop
+
+# File manager — yazi
+inode/directory=yazi.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Cycle the default PipeWire audio output sink.
+# Moves all running streams to the new default sink.
+
+set -euo pipefail
+
+mapfile -t sinks < <(pactl list short sinks | awk '{print $2}')
+
+[[ ${#sinks[@]} -lt 2 ]] && exit 0
+
+current=$(pactl get-default-sink)
+
+# Find current index, pick next (wrapping around)
+for i in "${!sinks[@]}"; do
+    if [[ "${sinks[$i]}" == "$current" ]]; then
+        next=$(( (i + 1) % ${#sinks[@]} ))
+        break
+    fi
+done
+
+pactl set-default-sink "${sinks[$next]}"
+
+# Move all running streams to the new sink
+while IFS=$'\t' read -r id _; do
+    pactl move-sink-input "$id" "${sinks[$next]}" 2>/dev/null || true
+done < <(pactl list short sink-inputs)
+
+# Show OSD notification with the new sink's description
+desc=$(pactl list sinks | awk -v name="${sinks[$next]}" '
+    $0 ~ "Name: " name { found=1 }
+    found && /Description:/ { sub(/.*Description: /, ""); print; exit }
+')
+notify-send -t 2000 -h string:x-canonical-private-synchronous:audio-switch \
+    "Audio Output" "${desc:-${sinks[$next]}}"

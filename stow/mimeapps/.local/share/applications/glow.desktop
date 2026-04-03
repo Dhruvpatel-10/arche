@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Glow
+Comment=Markdown viewer
+Exec=kitty --class popup -e glow-view %f
+Icon=text-markdown
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/markdown;text/x-markdown;

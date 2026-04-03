@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Toggle hypridle — kill it to stop auto-lock, restart to re-enable.
+
+if pgrep -x hypridle >/dev/null; then
+    pkill -x hypridle
+    notify-send "󱫖  Idle lock disabled"
+else
+    uwsm-app -- hypridle >/dev/null 2>&1 &
+    notify-send "󱫖  Idle lock enabled"
+fi
+
+pkill -RTMIN+9 waybar

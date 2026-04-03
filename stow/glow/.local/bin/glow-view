@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# glow-view — open markdown in glow with arche theme style
+exec glow -p -s "$HOME/.config/glow/style.json" "$@"

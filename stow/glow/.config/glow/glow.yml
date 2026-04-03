@@ -1,0 +1,6 @@
+# glow — markdown viewer config
+style: "auto"
+mouse: false
+pager: false
+width: 100
+all: false
