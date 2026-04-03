@@ -42,6 +42,21 @@ test_lint() {
         fi
     fi
 
+    # ── Strict mode ──
+
+    section "Lint: Scripts use strict mode"
+
+    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
+        [[ -f "$f" ]] || continue
+        local rel="${f#$ARCHE/}"
+        # lib.sh has set -euo pipefail, so sourcing it counts
+        if grep -q 'set -euo pipefail' "$f" || grep -q 'source.*lib.sh' "$f"; then
+            pass "$rel has strict mode or sources lib.sh"
+        else
+            fail "$rel missing set -euo pipefail"
+        fi
+    done
+
     # ── Shellcheck ──
 
     section "Lint: Shellcheck"

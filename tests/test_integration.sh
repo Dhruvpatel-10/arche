@@ -80,9 +80,10 @@ test_integration() {
         fi
     done
 
-    # ── Theme ──
+    # ── Theme value spot-checks ──
+    # Source the active theme and verify key values actually landed in rendered files.
 
-    section "Integration: Theme"
+    section "Integration: Theme values in rendered output"
 
     if [[ -f "$ARCHE/themes/active" ]]; then
         if (source "$ARCHE/themes/active" 2>/dev/null); then
@@ -90,8 +91,48 @@ test_integration() {
         else
             fail "active theme fails to source"
         fi
+
+        # Read expected values from active theme
+        local accent bg fg font_mono
+        eval "$(source "$ARCHE/themes/active" && echo "accent=$COLOR_ACCENT bg=$COLOR_BG fg=$COLOR_FG font_mono=\"$FONT_MONO\"")"
+
+        # Spot-check: accent color in hypr/colors.conf
+        if [[ -f "$HOME/.config/hypr/colors.conf" ]]; then
+            if grep -qi "${accent#\#}" "$HOME/.config/hypr/colors.conf" 2>/dev/null; then
+                pass "colors.conf contains accent (${accent})"
+            else
+                fail "colors.conf missing accent color"
+            fi
+        fi
+
+        # Spot-check: bg color in kitty/theme.conf
+        if [[ -f "$HOME/.config/kitty/theme.conf" ]]; then
+            if grep -qi "${bg}" "$HOME/.config/kitty/theme.conf" 2>/dev/null; then
+                pass "kitty theme.conf contains bg (${bg})"
+            else
+                fail "kitty theme.conf missing bg color"
+            fi
+        fi
+
+        # Spot-check: font in rofi/theme.rasi
+        if [[ -f "$HOME/.config/rofi/theme.rasi" ]]; then
+            if grep -q "$font_mono" "$HOME/.config/rofi/theme.rasi" 2>/dev/null; then
+                pass "rofi theme.rasi contains font ($font_mono)"
+            else
+                fail "rofi theme.rasi missing mono font"
+            fi
+        fi
+
+        # Spot-check: fg color in waybar/style.css
+        if [[ -f "$HOME/.config/waybar/style.css" ]]; then
+            if grep -qi "${fg}" "$HOME/.config/waybar/style.css" 2>/dev/null; then
+                pass "waybar style.css contains fg (${fg})"
+            else
+                fail "waybar style.css missing fg color"
+            fi
+        fi
     else
-        skip "no active theme"
+        skip "no active theme — skipping value checks"
     fi
 
     # ── Services ──
@@ -124,6 +165,9 @@ test_integration() {
         ["net.ipv4.tcp_syncookies"]="1"
         ["kernel.yama.ptrace_scope"]="1"
         ["net.ipv4.conf.all.rp_filter"]="1"
+        ["kernel.unprivileged_bpf_disabled"]="1"
+        ["kernel.kptr_restrict"]="2"
+        ["fs.protected_symlinks"]="1"
     )
     for key in "${!sysctl_checks[@]}"; do
         local expected="${sysctl_checks[$key]}"
@@ -135,6 +179,21 @@ test_integration() {
             skip "sysctl $key = ${actual:-unset} (expected $expected)"
         fi
     done
+
+    # ── DNS ──
+
+    section "Integration: Encrypted DNS"
+
+    if grep -q 'DNSOverTLS=yes' /etc/systemd/resolved.conf 2>/dev/null; then
+        pass "DNS-over-TLS enabled"
+        if grep -q 'dns.nextdns.io' /etc/systemd/resolved.conf 2>/dev/null; then
+            pass "NextDNS configured"
+        else
+            skip "NextDNS not rendered yet (run 02-security.sh)"
+        fi
+    else
+        skip "DNS-over-TLS not deployed yet (run 02-security.sh)"
+    fi
 
     # ── Secrets ──
 
