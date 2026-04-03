@@ -1,0 +1,216 @@
+/* Waybar Ember — macOS-inspired translucent bar.                     */
+/* Rendered by theme.sh, do not edit manually.                         */
+/* Source: templates/waybar/style.css.tmpl                             */
+
+/* ─── Reset ─── */
+
+* {
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    font-family: '${FONT_MONO}';
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+}
+
+/* ─── Bar: translucent glass, edge-to-edge ─── */
+/*                                                                     */
+/* macOS menu bar: semi-transparent dark layer + compositor blur.       */
+/* Hyprland blurls handles the gaussian blur behind this surface.      */
+/* The background alpha must be > 0.3 (layerrule ignorealpha cutoff). */
+
+window#waybar {
+    background: transparent;
+}
+
+window#waybar > box {
+    background: alpha(${COLOR_BG}, 0.62);
+    padding: 0 8px;
+}
+
+/* ─── Shared module styling ─── */
+/*                                                                     */
+/* macOS menu bar: all items same muted white, no color per-icon.     */
+/* Hover: rounded-rect highlight pill, 4px radius (Apple standard).   */
+/* Vertical center within bar, generous horizontal breathing room.    */
+
+#workspaces,
+#clock,
+#battery,
+#network,
+#bluetooth,
+#pulseaudio,
+#custom-idle,
+#tray {
+    padding: 4px 12px;
+    margin: 4px 1px;
+    color: alpha(${COLOR_FG}, 0.82);
+    border-radius: 4px;
+    transition: all 150ms ease;
+}
+
+/* ─── Hover: macOS rounded-rect highlight ─── */
+/*                                                                     */
+/* Semi-transparent lighter surface behind text/icon on hover.        */
+/* Subtle — not flashy. Just enough to say "this is interactive".     */
+
+#network:hover,
+#bluetooth:hover,
+#pulseaudio:hover,
+#custom-idle:hover,
+#battery:hover,
+#clock:hover {
+    background: alpha(${COLOR_FG}, 0.08);
+    color: ${COLOR_FG};
+}
+
+/* ─── Workspaces: minimal dot indicators ─── */
+/*                                                                     */
+/* macOS doesn't have workspaces in the bar — these are our Linux     */
+/* addition. Keep them tiny, subtle, left-anchored. Unicode dots.     */
+
+#workspaces {
+    padding: 2px 6px;
+    margin: 4px 4px 4px 4px;
+}
+
+#workspaces button {
+    all: initial;
+    font-family: '${FONT_MONO}';
+    font-size: 8px;
+    padding: 4px 4px;
+    margin: 0 1px;
+    min-width: 0;
+    color: alpha(${COLOR_FG}, 0.16);
+    border-radius: 50%;
+    transition: all 200ms ease;
+}
+
+#workspaces button:hover {
+    color: alpha(${COLOR_FG}, 0.45);
+}
+
+#workspaces button.empty {
+    color: alpha(${COLOR_FG}, 0.07);
+}
+
+#workspaces button.active,
+#workspaces button.active.empty {
+    color: ${COLOR_ACCENT};
+    text-shadow: 0 0 8px alpha(${COLOR_ACCENT}, 0.3);
+}
+
+/* ─── Clock: center anchor ─── */
+/*                                                                     */
+/* macOS: date+time is the rightmost item and opens Notification      */
+/* Center. We keep it centered (Linux convention) but match the       */
+/* weight and letterspacing of SF Pro at menu bar size.               */
+
+#clock {
+    color: alpha(${COLOR_FG}, 0.92);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 4px 14px;
+}
+
+/* ─── Status icons: monochrome, unified ─── */
+/*                                                                     */
+/* macOS: every status icon is a template image tinted to one color.  */
+/* No individual icon colors. All match. This is the #1 thing that    */
+/* makes it feel premium. The only color exceptions are semantic:     */
+/* battery warning/critical, charging green.                          */
+
+#network,
+#bluetooth,
+#pulseaudio,
+#custom-idle {
+    font-size: 15px;
+    padding: 4px 10px;
+}
+
+/* Idle indicator: only visible when idle lock is disabled */
+
+#custom-idle.enabled {
+    /* Hidden when hypridle is running (empty text) */
+    padding: 0;
+    margin: 0;
+}
+
+#custom-idle.disabled {
+    color: ${COLOR_WARN};
+}
+
+/* Dimmed when off/disconnected — macOS hides them, we dim instead */
+
+#network.disconnected {
+    color: alpha(${COLOR_FG}, 0.15);
+}
+
+#bluetooth.off,
+#bluetooth.disabled {
+    color: alpha(${COLOR_FG}, 0.15);
+}
+
+#pulseaudio.muted {
+    color: alpha(${COLOR_FG}, 0.15);
+}
+
+/* ─── Battery: icon + percentage, semantic color only ─── */
+
+#battery {
+    font-size: 13px;
+    padding: 4px 12px;
+    margin-right: 2px;
+}
+
+#battery.charging {
+    color: ${COLOR_SUCCESS};
+}
+
+#battery.warning {
+    color: ${COLOR_WARN};
+}
+
+#battery.critical {
+    color: ${COLOR_CRITICAL};
+}
+
+/* ─── Tray: tight, dimmed passives ─── */
+
+#tray {
+    padding: 4px 8px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+/* ─── Tooltip: frosted dark card ─── */
+
+tooltip {
+    background: alpha(${COLOR_BG_ALT}, 0.95);
+    border: 1px solid alpha(${COLOR_SURFACE1}, 0.3);
+    border-radius: 12px;
+    padding: 6px 10px;
+}
+
+tooltip label {
+    color: ${COLOR_FG};
+    font-size: 12px;
+}
+
+/* ─── Calendar tooltip: refined spacing ─── */
+
+#clock tooltip {
+    padding: 12px 18px;
+}
+
+#clock tooltip label {
+    font-family: '${FONT_MONO}';
+    font-size: 11px;
+    letter-spacing: 0.4px;
+}

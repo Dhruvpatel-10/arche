@@ -1,0 +1,230 @@
+# Yazi Ember theme — rendered by theme.sh, do not edit manually.
+# Source: templates/yazi/theme.toml.tmpl
+
+# : Manager {{{
+
+[mgr]
+cwd = { fg = "${COLOR_ACCENT}" }
+
+# Find
+find_keyword  = { fg = "${COLOR_WARN}", bold = true, italic = true, underline = true }
+find_position = { fg = "${COLOR_TEAL}", bg = "reset", bold = true, italic = true }
+
+# Symlink
+symlink_target = { italic = true }
+
+# Marker
+marker_copied   = { fg = "${COLOR_SUCCESS}", bg = "${COLOR_SUCCESS}" }
+marker_cut      = { fg = "${COLOR_CRITICAL}", bg = "${COLOR_CRITICAL}" }
+marker_marked   = { fg = "${COLOR_TEAL}", bg = "${COLOR_TEAL}" }
+marker_selected = { fg = "${COLOR_ACCENT}", bg = "${COLOR_ACCENT}" }
+marker_symbol   = "│"
+
+# Count
+count_copied   = { fg = "${COLOR_BG}", bg = "${COLOR_SUCCESS}" }
+count_cut      = { fg = "${COLOR_BG}", bg = "${COLOR_CRITICAL}" }
+count_selected = { fg = "${COLOR_BG}", bg = "${COLOR_ACCENT}" }
+
+# Border
+border_symbol = "│"
+border_style  = { fg = "${COLOR_BORDER}" }
+
+# : }}}
+
+
+# : Tabs {{{
+
+[tabs]
+active   = { fg = "${COLOR_BG}", bg = "${COLOR_ACCENT}", bold = true }
+inactive = { fg = "${COLOR_FG_MUTED}", bg = "${COLOR_BG_SURFACE}" }
+
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "", close = "" }
+
+# : }}}
+
+
+# : Mode {{{
+
+[mode]
+normal_main = { fg = "${COLOR_BG}", bg = "${COLOR_ACCENT}", bold = true }
+normal_alt  = { fg = "${COLOR_ACCENT}", bg = "${COLOR_BG_SURFACE}" }
+
+select_main = { fg = "${COLOR_BG}", bg = "${COLOR_TEAL}", bold = true }
+select_alt  = { fg = "${COLOR_TEAL}", bg = "${COLOR_BG_SURFACE}" }
+
+unset_main = { fg = "${COLOR_BG}", bg = "${COLOR_CRITICAL}", bold = true }
+unset_alt  = { fg = "${COLOR_CRITICAL}", bg = "${COLOR_BG_SURFACE}" }
+
+# : }}}
+
+
+# : Indicator {{{
+
+[indicator]
+parent  = { reversed = true }
+current = { reversed = true }
+preview = { underline = true }
+padding = { open = "", close = "" }
+
+# : }}}
+
+
+# : Status bar {{{
+
+[status]
+overall   = {}
+sep_left  = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+
+# Permissions
+perm_sep   = { fg = "${COLOR_OVERLAY0}" }
+perm_type  = { fg = "${COLOR_ACCENT}" }
+perm_read  = { fg = "${COLOR_WARN}" }
+perm_write = { fg = "${COLOR_CRITICAL}" }
+perm_exec  = { fg = "${COLOR_SUCCESS}" }
+
+# Progress
+progress_label  = { fg = "${COLOR_FG}", bold = true }
+progress_normal = { fg = "${COLOR_ACCENT}", bg = "${COLOR_BG_SURFACE}" }
+progress_error  = { fg = "${COLOR_CRITICAL}", bg = "${COLOR_BG_SURFACE}" }
+
+# : }}}
+
+
+# : Which {{{
+
+[which]
+cols            = 3
+mask            = { bg = "${COLOR_BG_SURFACE}" }
+cand            = { fg = "${COLOR_TEAL}" }
+rest            = { fg = "${COLOR_FG_MUTED}" }
+desc            = { fg = "${COLOR_ACCENT}" }
+separator       = "  "
+separator_style = { fg = "${COLOR_BORDER}" }
+
+# : }}}
+
+
+# : Confirmation {{{
+
+[confirm]
+border     = { fg = "${COLOR_ACCENT}" }
+title      = { fg = "${COLOR_ACCENT}" }
+body       = {}
+list       = {}
+btn_yes    = { reversed = true }
+btn_no     = {}
+btn_labels = [ "  [Y]es  ", "  (N)o  " ]
+
+# : }}}
+
+
+# : Spotter {{{
+
+[spot]
+border = { fg = "${COLOR_ACCENT}" }
+title  = { fg = "${COLOR_ACCENT}" }
+
+tbl_col  = { fg = "${COLOR_ACCENT}" }
+tbl_cell = { fg = "${COLOR_WARN}", reversed = true }
+
+# : }}}
+
+
+# : Notification {{{
+
+[notify]
+title_info  = { fg = "${COLOR_ACCENT_ALT}" }
+title_warn  = { fg = "${COLOR_WARN}" }
+title_error = { fg = "${COLOR_CRITICAL}" }
+
+icon_info  = ""
+icon_warn  = ""
+icon_error = ""
+
+# : }}}
+
+
+# : Picker {{{
+
+[pick]
+border   = { fg = "${COLOR_ACCENT}" }
+active   = { fg = "${COLOR_ACCENT}", bold = true }
+inactive = {}
+
+# : }}}
+
+
+# : Input {{{
+
+[input]
+border   = { fg = "${COLOR_ACCENT}" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+# : }}}
+
+
+# : Completion {{{
+
+[cmp]
+border   = { fg = "${COLOR_ACCENT}" }
+active   = { reversed = true }
+inactive = {}
+
+icon_file    = ""
+icon_folder  = ""
+icon_command = ""
+
+# : }}}
+
+
+# : Tasks {{{
+
+[tasks]
+border  = { fg = "${COLOR_ACCENT}" }
+title   = {}
+hovered = { fg = "${COLOR_ACCENT}", bold = true }
+
+# : }}}
+
+
+# : Help {{{
+
+[help]
+on      = { fg = "${COLOR_TEAL}" }
+run     = { fg = "${COLOR_ACCENT}" }
+desc    = { fg = "${COLOR_FG_MUTED}" }
+hovered = { reversed = true, bold = true }
+footer  = { fg = "${COLOR_FG_MUTED}", bg = "${COLOR_BG_SURFACE}" }
+
+# : }}}
+
+
+# : Filetype {{{
+
+[filetype]
+rules = [
+    # Image
+    { mime = "image/*", fg = "${COLOR_TEAL}" },
+    # Media
+    { mime = "{audio,video}/*", fg = "${COLOR_PEACH}" },
+    # Archive
+    { mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "${COLOR_MAUVE}" },
+    # Document
+    { mime = "application/{pdf,doc,rtf}", fg = "${COLOR_ACCENT_ALT}" },
+    # Virtual file system
+    { mime = "vfs/{absent,stale}", fg = "${COLOR_OVERLAY0}" },
+    # Special
+    { url = "*", is = "orphan", bg = "${COLOR_CRITICAL}" },
+    { url = "*", is = "exec", fg = "${COLOR_SUCCESS}" },
+    # Dummy
+    { url = "*", is = "dummy", bg = "${COLOR_CRITICAL}" },
+    { url = "*/", is = "dummy", bg = "${COLOR_CRITICAL}" },
+    # Fallback
+    { url = "*/", fg = "${COLOR_ACCENT}" },
+]
+
+# : }}}

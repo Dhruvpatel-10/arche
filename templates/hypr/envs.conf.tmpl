@@ -1,0 +1,12 @@
+# Generated — do not edit. Edit templates/hypr/envs.conf.tmpl and run: just theme
+
+# ─── Cursor ───
+
+env = XCURSOR_THEME,${CURSOR_THEME}
+env = XCURSOR_SIZE,${CURSOR_SIZE}
+exec-once = hyprctl setcursor ${CURSOR_THEME} ${CURSOR_SIZE}
+
+# ─── Toolkit ───
+
+env = GDK_SCALE,2
+env = QT_QPA_PLATFORMTHEME,qt6ct

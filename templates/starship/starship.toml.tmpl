@@ -1,0 +1,114 @@
+# Starship prompt — rendered by theme.sh, do not edit manually.
+# Source: templates/starship/starship.toml.tmpl
+#
+# Design: prose-style — "folder on  branch via  version took 3s"
+# Colored nouns, muted connectors, clean second line
+
+add_newline = true
+command_timeout = 500
+
+# ─── Layout ───
+#   󰣇 arche on  main ●? via  v24.14.0 took 3s
+#   ❯ _
+
+format = """
+[󰣇](bold ${COLOR_ACCENT_ALT}) \
+$directory\
+$git_branch\
+$git_status\
+$nodejs\
+$python\
+$rust\
+$golang\
+$docker_context\
+$cmd_duration
+$character"""
+
+# ─── Prompt Character ───
+
+[character]
+success_symbol = "[❯](bold ${COLOR_ACCENT})"
+error_symbol = "[❯](bold ${COLOR_CRITICAL})"
+vimcmd_symbol = "[❮](bold ${COLOR_ACCENT_ALT})"
+
+# ─── Directory ───
+
+[directory]
+truncation_length = 1
+style = "bold ${COLOR_ACCENT}"
+read_only = " 󰌾"
+read_only_style = "${COLOR_CRITICAL}"
+format = "[$path]($style)[$read_only]($read_only_style)"
+
+# ─── Git ───
+
+[git_branch]
+symbol = ""
+format = "[ on](${COLOR_FG_MUTED}) [$symbol $branch](bold ${COLOR_PINK})"
+truncation_length = 24
+truncation_symbol = "…"
+
+[git_status]
+format = '([ $all_status$ahead_behind](${COLOR_WARN}))'
+modified = "●"
+staged = "+"
+untracked = "?"
+deleted = "✘"
+renamed = "»"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇡${ahead_count}⇣${behind_count}"
+conflicted = "!"
+stashed = "≡"
+
+# ─── Command Duration ───
+
+[cmd_duration]
+min_time = 3_000
+format = "[ took](${COLOR_FG_MUTED}) [$duration](bold ${COLOR_WARN})"
+show_milliseconds = false
+
+# ─── Languages (inline, colored per-language) ───
+
+[nodejs]
+format = "[ via](${COLOR_FG_MUTED}) [󰎙 $version](bold ${COLOR_SUCCESS})"
+detect_files = ["package.json", ".nvmrc"]
+detect_folders = ["node_modules"]
+detect_extensions = []
+
+[python]
+format = "[ via](${COLOR_FG_MUTED}) [ $version](bold ${COLOR_SKY})"
+detect_files = ["requirements.txt", "pyproject.toml", ".python-version", "Pipfile"]
+detect_folders = [".venv", "venv"]
+detect_extensions = []
+
+[rust]
+format = "[ via](${COLOR_FG_MUTED}) [🦀 $version](bold ${COLOR_CRITICAL})"
+detect_files = ["Cargo.toml", "Cargo.lock"]
+detect_folders = []
+detect_extensions = []
+
+[golang]
+format = "[ via](${COLOR_FG_MUTED}) [󰟓 $version](bold ${COLOR_ACCENT_ALT})"
+detect_files = ["go.mod", "go.sum"]
+detect_folders = []
+detect_extensions = []
+
+[docker_context]
+format = "[ via](${COLOR_FG_MUTED}) [󰡨 $context](bold ${COLOR_TEAL})"
+only_with_files = true
+detect_files = ["docker-compose.yml", "docker-compose.yaml", "Dockerfile"]
+
+# ─── Disabled ───
+
+[package]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[username]
+disabled = true
+
+[hostname]
+disabled = true

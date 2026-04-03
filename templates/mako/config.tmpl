@@ -1,0 +1,63 @@
+# Generated — do not edit. Edit templates/mako/config.tmpl and run: just theme
+
+# ─── Layout ───
+
+anchor=top-right
+layer=overlay
+default-timeout=${NOTIF_TIMEOUT}
+width=${NOTIF_WIDTH}
+height=180
+outer-margin=${NOTIF_MARGIN}
+margin=6
+padding=12,16,12,16
+border-radius=14
+border-size=1
+icons=1
+max-icon-size=28
+icon-location=left
+markup=1
+actions=1
+
+# ─── Typography ───
+
+font=${FONT_SANS} 11
+text-alignment=left
+format=<span size="8000" weight="medium" color="${COLOR_FG_MUTED}">%a</span>\n<span size="10500">%s</span>\n<span size="9000" color="${COLOR_SUBTEXT1}">%b</span>
+
+# ─── Surface ───
+
+background-color=${COLOR_SURFACE2}F2
+text-color=${COLOR_FG}
+border-color=${COLOR_OVERLAY0}30
+progress-color=source ${COLOR_ACCENT}60
+
+# ─── Behavior ───
+
+max-visible=3
+
+# ─── App Overrides ───
+
+[app-name=Spotify]
+invisible=1
+
+[mode=do-not-disturb]
+invisible=1
+
+[mode=do-not-disturb app-name=notify-send]
+invisible=0
+
+# ─── Urgency ───
+
+[urgency=low]
+default-timeout=3000
+
+[urgency=critical]
+default-timeout=0
+border-color=${COLOR_CRITICAL}50
+
+# ─── Screenshots ───
+
+[summary~="Screenshot copied & saved"]
+default-timeout=5000
+max-icon-size=64
+format=<span size="10500">%s</span>\n<span size="9000" color="${COLOR_SUBTEXT1}">%b</span>
