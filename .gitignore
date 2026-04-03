@@ -1,0 +1,25 @@
+# Secrets — never commit credentials
+local.fish
+*.env
+.env.*
+*.key
+*.pem
+*.secret
+credentials.*
+
+# MPV
+watch-later/
+
+# Bootstrap logs
+logs/
+
+# Rust build artifacts
+tools/*/target/
+
+# Backups
+*.bak
+*.bak.*
+*.pre-stow
+
+# Generated output (rendered by theme.sh — never committed)
+# These live in ~/.config/<component>/ and are recreated by `just theme`

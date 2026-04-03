@@ -1,0 +1,9 @@
+# .markdownlint.yaml — markdown lint rules for arche docs
+# Disables noisy rules that don't add value for dotfiles documentation.
+
+# MD040: fenced code blocks must have a language — too strict for docs
+# with directory trees, config snippets, and plain text blocks.
+MD040: false
+
+# MD013: line length — docs wrap naturally, enforcing 80 chars is noise.
+MD013: false

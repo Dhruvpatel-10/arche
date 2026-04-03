@@ -1,0 +1,395 @@
+# Claude Code — Global Standing Instructions
+
+## Who I Am
+- User: stark
+- Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
+- Primary interface: Claude Code (terminal, TUI-first)
+- Shell: Fish + fisher | Prompt: Starship | Terminal: Kitty
+- Dotfiles: ~/arche managed with GNU Stow 2.4.1
+
+## Goal
+Clone this repo on a fresh Arch install, run `bootstrap.sh`, get a fully configured system.
+Every decision is minimal, idempotent, declarative, and auditable.
+
+Full architecture and decision records live in `docs/`.
+
+---
+
+## Repository Structure
+
+```
+~/arche/
+├── bootstrap.sh              # orchestrator — runs all scripts in order
+├── Justfile                  # day-to-day interface: just <target>
+├── CLAUDE.md                 # this file
+│
+├── docs/                     # architecture, decisions, component status
+│   ├── architecture.md
+│   ├── decisions.md
+│   └── status.md
+│
+├── tests/                    # validation scripts
+│   └── run.sh                # test runner: just test
+│
+├── themes/                   # source of truth for all visual values
+│   ├── schema.sh             # variable registry — names, types, defaults
+│   ├── ember.sh              # active theme (warm amber on deep charcoal)
+│   └── active -> ember.sh    # symlink to current theme
+│
+├── templates/                # .tmpl files rendered by theme engine (envsubst)
+│
+├── packages/                 # package registry — data only, no logic
+│   └── *.sh                  # each file: PACMAN_PKGS=() and AUR_PKGS=()
+│
+├── scripts/
+│   ├── lib.sh                # shared primitives — all scripts source this
+│   ├── theme.sh              # theme engine: apply / switch / list
+│   └── 00-preflight.sh ... 11-stow.sh
+│
+├── system/                   # system configs (/etc/) — symlinked by scripts, not stow
+│   ├── etc/
+│   │   ├── pacman.conf       # pacman config (parallel downloads, repos)
+│   │   └── pacman.d/hooks/   # pacman hooks (snapper snapshots, boot cleanup)
+│   └── usr/local/bin/
+│       ├── boot-cleanup      # remove old UKI/kernels from /boot after upgrade
+│       └── snapper-pacman    # create pre/post btrfs snapshot pairs
+│
+├── tools/                    # custom binaries
+│   └── bin/                  # pre-built binaries from external repos (symlinked to system)
+│       ├── arche-greeter     # TUI greeter for greetd (built externally)
+│       └── arche-legion      # Lenovo Vantage replacement (built externally)
+│
+└── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
+    ├── fish/                 # shell config
+    ├── kitty/                # terminal config
+    ├── starship/             # prompt config
+    ├── mpv/                  # media player
+    ├── hypr/                 # hyprland + hyprlock + hypridle
+    ├── waybar/               # status bar
+    ├── nvim/                 # LazyVim + catppuccin
+    ├── rofi/                 # app launcher (Spotlight-style combi mode)
+    ├── syshud/               # OSD overlay
+    ├── zathura/              # PDF viewer
+    ├── btop/                 # system monitor
+    ├── tmux/                 # terminal multiplexer
+    ├── yazi/                 # file browser
+    ├── kvantum/              # Qt style engine
+    ├── qt6ct/                # Qt6 config
+    ├── pipewire/             # audio daemon
+    ├── wireplumber/          # audio session manager
+    ├── vivaldi/              # browser config
+    └── hyprland-preview-share-picker/
+```
+
+---
+
+## The Three-Layer Config Split
+
+Every config file belongs to exactly one layer. Never mix them.
+
+**TEMPLATES** — configs that contain colors, fonts, sizes, cursors, icons, or spacing.
+Rendered by theme.sh using envsubst. Output is gitignored.
+
+**STOW PACKAGES** — configs that contain behavior: keybinds, module lists, rules, logic.
+Symlinked directly via GNU Stow from `stow/`. Committed as-is.
+
+**GENERATED OUTPUT** — files produced by rendering templates.
+Live in ~/.config/. Never committed.
+
+Decision rule: does this config contain colors/fonts/sizes?
+- No → stow only. Yes → behavior in stow, visual in templates. All visual → template only.
+
+See `docs/decisions.md` D005 for the per-component mapping.
+
+---
+
+## Theme System
+
+`themes/schema.sh` is the single source of truth for all variable names, types, and defaults.
+Theme files (e.g. `themes/ember.sh`) assign values. `lib.sh` reads the schema to validate,
+export, and derive `_NOHASH` variants automatically. See `docs/theme-standard.md` for full spec.
+
+Active theme: `themes/ember.sh` (warm amber on deep charcoal).
+
+Variable groups defined in schema.sh:
+- `SCHEMA_COLORS_REQUIRED` — core palette (11 vars, must be #hex6)
+- `SCHEMA_COLORS_OPTIONAL` — extended palette (12 vars, defaults from required)
+- `SCHEMA_FONTS_REQUIRED` — font families (2 vars)
+- `SCHEMA_INTEGERS_REQUIRED` — layout values (7 vars, must be numeric)
+- `SCHEMA_INTEGERS_OPTIONAL` — notification/component sizes (11 vars, defaults from required)
+- `SCHEMA_ALPHA_OPTIONAL` — alpha hex suffix (1 var)
+- `SCHEMA_APPEARANCE_REQUIRED` — cursor/icon/GTK theme names (3 vars)
+- `SCHEMA_APPEARANCE_INTEGERS` — cursor size (1 var)
+
+scripts/theme.sh renders templates via envsubst and reloads affected services.
+nvim handles its own theming via catppuccin/nvim plugin — excluded from templates.
+
+---
+
+## Package Registry
+
+Each file in packages/ declares two arrays only — no logic:
+```bash
+PACMAN_PKGS=()
+AUR_PKGS=()
+```
+
+lib.sh provides `install_group <file>` which iterates both arrays idempotently.
+Scripts call install_group, never call pacman/paru directly.
+Removal is always manual (`paru -Rns`).
+
+---
+
+## lib.sh Primitives
+
+All scripts source lib.sh and use only these functions:
+
+```
+log_info <msg>          — [INFO] message
+log_ok <msg>            — [✓] message
+log_warn <msg>          — [~] message (skipped / already done)
+log_err <msg>           — [✗] message
+
+pkg_install <pkg...>    — pacman -S --needed, skip if installed
+aur_install <pkg...>    — paru -S --needed, print PKGBUILD URL first
+stow_pkg <name>         — stow -d stow/ -t $HOME, dry-run conflict check first
+svc_enable [--user] <name>  — systemctl enable + start, skip if active
+theme_render <component...> — render templates, reload services
+install_group <file>    — source packages file, run pkg_install + aur_install
+```
+
+---
+
+## scripts/ Conventions
+
+- Every script starts with: `source "$(dirname "$0")/lib.sh"`
+- Every script is independently runnable: `bash scripts/05-hyprland.sh`
+- bootstrap.sh runs them in numeric order, captures exit codes, prints summary
+- Scripts do exactly four things: install packages, stow config, enable services, verify
+- Bash only. No fish, no Python in scripts.
+- No --noconfirm anywhere.
+- Use $HOME not hardcoded paths.
+- Guards before every action — check before act, never assume.
+
+---
+
+## Testing
+
+Tests live in `tests/` and run via `just test`. Three levels:
+
+**Lint** — static analysis, runs everywhere (CI-safe, no root needed):
+- `bash -n` on all scripts and package files
+- `fish --no-execute` on all fish configs
+- `shellcheck` on all bash scripts
+- Package files declare only arrays (no side effects)
+- Theme files export all required variables
+- Templates reference only defined theme variables
+
+**Stow** — verify symlink integrity (no root needed):
+- `stow -d stow -t $HOME -n <pkg>` dry-run passes for all packages
+- No stow conflicts between packages
+- Stow targets match expected paths
+
+**Integration** — verify installed state (needs live system):
+- Commands from packages/ are available in PATH
+- Services from scripts are active
+- Rendered templates match expected output
+- Fish config loads without errors: `fish -c 'echo ok'`
+
+Run: `just test` (lint only), `just test-stow`, `just test-all` (includes integration).
+
+Every new script or config must have at least lint coverage. Add a test when adding a component.
+
+---
+
+## Popup Convention (Floating TUI Windows)
+
+Any TUI app that should open as a centered floating window uses kitty's `--class popup`.
+Three windowrules in `windows.conf` handle all popups — no per-app rules needed.
+
+```
+windowrule = float on, match:class ^popup$
+windowrule = size $popup_w $popup_h, match:class ^popup$
+windowrule = center on, match:class ^popup$
+```
+
+**To launch a popup TUI from a keybinding:**
+```
+bindd = SUPER CTRL, B, Bluetooth, exec, uwsm-app -- kitty --class popup -e bluetui
+```
+
+**To add a new popup:** just use `--class popup` in the keybinding. No window rule changes.
+
+**Why `--class` not `--title`:** Hyprland's static effects (float, size, center) match against
+`initialClass`/`initialTitle`. The `match:title` regex was unreliable for static rules in
+testing on v0.54. `match:class` with an exact match (`^popup$`) works reliably.
+
+**Hyprland windowrule syntax (v0.54+):**
+- Use `float on`, `center on` — not `float 1` or `center 1`
+- Named block rules require `name = <name>` as the first key
+- `match:class` and `match:title` take RE2 regex
+- Static effects (float, size, center, move) are evaluated once at window open
+
+---
+
+## Tools
+
+Pre-built binaries live in `tools/bin/`. Source code stays in external repos (`~/stuff/personal/arche-bin/`).
+
+- `arche-greeter` — Ember-themed TUI greeter for greetd
+  - **Deploy:** `05-hyprland.sh` symlinks to `/usr/local/bin/` via `link_system_file`
+- `arche-legion` — Lenovo Vantage replacement (battery, fan, profile, camera, USB, Fn lock)
+  - **Deploy:** `05-hyprland.sh` symlinks to `~/.local/bin/arche/`
+
+**Update workflow:** build in the external repo, copy the new binary into `tools/bin/` — symlinks pick it up immediately.
+
+---
+
+## Stow Convention
+
+All stow packages live under `stow/`. Each mirrors the home directory structure:
+```
+stow/fish/.config/fish/config.fish  →  ~/.config/fish/config.fish
+```
+
+The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
+
+---
+
+## bootstrap.sh Behaviour
+
+Assumes: repo is already cloned, user has sudo, running on Arch Linux.
+Does not: clone the repo, configure SSH keys, set up secrets.
+Runs: 00 through 12 in order. Each section prompts y/N/a(ll). Each script is independently idempotent.
+Ends with: `theme apply`, then a summary table.
+
+---
+
+## Justfile Targets (minimum required)
+
+```
+install          → bash bootstrap.sh
+theme target     → bash scripts/theme.sh {{target}}
+switch theme     → bash scripts/theme.sh switch {{theme}}
+themes           → bash scripts/theme.sh list
+test             → bash tests/run.sh lint
+test-stow        → bash tests/run.sh stow
+test-all         → bash tests/run.sh all
+```
+
+One target per component matching its script:
+preflight, base, security, gpu, audio, hyprland, shell, bar, notifications, runtimes, apps, stow
+
+---
+
+## System State — Ground Truth
+
+### Package Management
+- pacman + paru (AUR helper)
+- Always use --needed flag for idempotency
+- Remove with -Rns never bare -R
+
+### Active Runtimes
+- Node.js v24.13.0 via fnm (NOT nvm)
+- Python 3.14.3 system
+- Go 1.26.0 local ~/go/bin
+- Rust 1.94.0 via rustup
+- Bun 1.3.5 via ~/.bun
+- Docker 29.3.0 system
+
+### Key CLI Tools
+fzf, eza, bat, ripgrep, fd, zoxide, yazi, lazygit, lazydocker,
+glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
+
+### Compositor Stack
+- Hyprland 0.54.2 via uwsm, greetd + arche-greeter (TUI login)
+- Waybar 0.15.0, Mako 1.10.0 (notifications), Rofi (app launcher, combi mode)
+- swaybg wallpaper, grim+slurp+satty screenshots
+- xdg-desktop-portal-hyprland, hyprlock, hypridle
+
+### Lenovo Legion Pro 5 (16ARX8)
+- ideapad_laptop + lenovo_wmi_gamezone kernel modules (loaded)
+- Battery conservation mode via sysfs (cap ~80%)
+- Platform profiles: low-power, balanced, performance, max-power
+- Fan mode control (auto / full speed)
+- Camera kill switch, USB charging toggle, Fn lock
+- arche-legion TUI manages all of the above (Super+Ctrl+G)
+
+### NVIDIA
+- nvidia-open-dkms 590.48.01 (open kernel module)
+- CUDA 13.1 at /opt/cuda
+- Modules in initramfs: nvidia nvidia_modeset nvidia_uvm nvidia_drm btrfs
+- Bootloader: Limine (NOT GRUB, NOT systemd-boot)
+- Filesystem: btrfs with snapper snapshots
+
+### Audio
+- Full pipewire stack: pipewire + alsa + jack + pulse + wireplumber
+
+### Theming
+- Ember theme (#13151c base, #cdc8bc text, #c9943e amber)
+- Primary mono font: MesloLGS Nerd Font Mono (Menlo lineage)
+- UI sans font: IBM Plex Sans
+
+### Security
+- Firewall: ufw active, nftables disabled (UFW sole manager)
+- SSH: key-only auth (ed25519), no password auth, no root login
+- DNS: NextDNS (DoT) primary, Cloudflare (DoT) fallback, DNSSEC allow-downgrade
+- Tailscale: active — Syncthing/KDE Connect routed through tailscale0
+- Kernel: sysctl hardening (SYN cookies, rp_filter, ptrace, BPF, kptr_restrict)
+- Lid close: explicit logind suspend (battery + AC), ignore docked
+- WiFi: MAC address randomization (NetworkManager or iwd)
+- CPU: amd-ucode for microcode vulnerability patches
+- USB: USBGuard blocks unknown devices; usb-inspect for sandboxed inspection
+- Sandboxing: firejail for untrusted apps and AppImages
+- Secrets: API keys in local.fish (not tracked in git)
+
+---
+
+## Current State — All Components Built
+
+Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
+Scripts: all 12 numbered scripts (00-preflight through 11-stow)
+Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, bar, notifications, runtimes, apps, appearance)
+Themes: ember.sh (active), schema.sh (variable registry)
+Templates: 13 sets (fish, kitty, hypr, waybar, syshud, rofi, yazi, gtk-4.0, btop, mako, tmux, hyprland-preview-share-picker)
+Stow: 23 packages (see Repository Structure above)
+System: pacman.conf, 3 pacman hooks, 2 system binaries
+
+See `docs/status.md` for full tracking.
+
+---
+
+## Active Known Issues
+
+See `docs/status.md` for the full table.
+
+---
+
+## Rules Claude Code Must Follow
+
+1. Never write colors, fonts, or sizes into stow package configs — use templates or themes/.
+2. Never add package installs inside scripts directly — use install_group and packages/.
+3. Never use --noconfirm.
+4. Never hardcode /home/stark — always $HOME.
+5. Never commit generated files (style.css, colors.conf, rendered configs).
+6. Every new script must be independently runnable.
+7. Conventional commits: feat/fix/chore/docs/refactor. Scope = component name.
+8. If a config file's layer is ambiguous, ask before creating it.
+9. Before installing any AUR package, flag it and show the PKGBUILD source URL.
+10. When adding a new component, touch all required places: packages/, templates/ (if visual), stow/, scripts/.
+11. Every new script or config must have at least lint-level test coverage.
+12. Keep docs/ updated when making structural changes or decisions.
+13. When adding a new floating TUI popup, use `kitty --class popup -e <cmd>` — never add per-app window rules.
+14. Hyprland windowrules: use `float on` / `center on` (not `float 1`). Named blocks need `name =` first.
+
+---
+
+## What NOT to Do
+- Do not suggest Oh My Zsh or zinit — fish + fisher is the shell stack
+- Do not use GRUB syntax — bootloader is Limine
+- Do not reference nvm — fnm is the active Node manager
+- Do not reference pyenv — not installed
+- Do not reference zsh — fish is the shell
+- Do not hardcode /home/stark — use $HOME
+- Do not suggest storing secrets in dotfiles — local.fish is the pattern
+- Do not reference any external config repos — arche is self-contained
