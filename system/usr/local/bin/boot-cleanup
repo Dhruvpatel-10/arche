@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# boot-cleanup — remove old kernel/UKI files from /boot after upgrade
+# Called by pacman hook 95-boot-cleanup.hook
+# Keeps: current kernel + 1 previous (for rollback safety)
+
+set -euo pipefail
+
+BOOT_DIR="/boot"
+HISTORY_DIR="$BOOT_DIR"/*/limine_history
+MAX_KEEP=1  # number of old UKI copies to keep (besides current)
+
+log() { printf '[boot-cleanup] %s\n' "$*"; }
+
+# ─── Clean limine_history (old UKI snapshots) ───
+
+for hist_dir in $HISTORY_DIR; do
+    [[ -d "$hist_dir" ]] || continue
+
+    # List UKI files sorted by modification time (newest first), skip json
+    mapfile -t ukis < <(find "$hist_dir" -name '*.efi*' -type f -printf '%T@ %p\n' | sort -rn | awk '{print $2}')
+
+    total=${#ukis[@]}
+    if (( total <= MAX_KEEP )); then
+        log "Only $total UKI(s) in history — nothing to clean"
+        continue
+    fi
+
+    # Remove all but the newest MAX_KEEP
+    removed=0
+    for (( i=MAX_KEEP; i<total; i++ )); do
+        file="${ukis[$i]}"
+        size=$(du -h "$file" | cut -f1)
+        log "Removing old UKI: $(basename "$file") ($size)"
+        rm -f "$file"
+        removed=$((removed + 1))
+    done
+
+    log "Cleaned $removed old UKI(s) from $(basename "$(dirname "$hist_dir")")"
+done
+
+# ─── Clean old initramfs fallbacks if present ───
+
+for fallback in "$BOOT_DIR"/initramfs-*-fallback.img; do
+    [[ -f "$fallback" ]] || continue
+    # Check if the corresponding kernel still exists
+    kernel_name=$(basename "$fallback" | sed 's/initramfs-\(.*\)-fallback.img/\1/')
+    if [[ ! -f "$BOOT_DIR/vmlinuz-$kernel_name" ]] && [[ ! -f "$BOOT_DIR/EFI/Linux/"*"$kernel_name"* ]]; then
+        log "Removing orphaned fallback: $(basename "$fallback")"
+        rm -f "$fallback"
+    fi
+done
+
+# ─── Report ───
+
+used=$(du -sh "$BOOT_DIR" | cut -f1)
+avail=$(df -h "$BOOT_DIR" | awk 'NR==2{print $4}')
+log "/boot usage: $used used, $avail available"

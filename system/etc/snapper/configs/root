@@ -1,0 +1,70 @@
+# /etc/snapper/configs/root — managed by arche (symlinked by scripts/00-preflight.sh)
+# Snapper config for btrfs root subvolume.
+#
+# Snapshot strategy:
+#   - Pacman hooks create pre/post pairs on every transaction (cleanup-algorithm: number)
+#   - NUMBER_LIMIT controls how many pairs are kept (auto-pruned by snapper-cleanup)
+#   - Timeline snapshots are OFF — pacman hooks are the only snapshot source
+#   - Empty pre/post pairs (no changes) are auto-cleaned after 1 hour
+
+# subvolume to snapshot
+SUBVOLUME="/"
+
+# filesystem type
+FSTYPE="btrfs"
+
+# btrfs qgroup for space aware cleanup algorithms
+QGROUP=""
+
+# fraction of filesystem space snapshots may use (30%)
+SPACE_LIMIT="0.3"
+
+# fraction of filesystem space that should remain free (30%)
+FREE_LIMIT="0.3"
+
+# users and groups allowed to work with config
+ALLOW_USERS=""
+ALLOW_GROUPS=""
+
+# sync users and groups from ALLOW_USERS and ALLOW_GROUPS to .snapshots directory
+SYNC_ACL="no"
+
+# compare pre/post snapshots in background after creating post-snapshot
+BACKGROUND_COMPARISON="yes"
+
+# ─── Number Cleanup (pacman transaction snapshots) ───
+
+# Enable automatic cleanup of number-type snapshots
+NUMBER_CLEANUP="yes"
+
+# Minimum age before a snapshot can be cleaned (seconds). 1800 = 30 min.
+# Prevents cleanup from deleting a snapshot you just created.
+NUMBER_MIN_AGE="1800"
+
+# Keep last 25 pre/post pairs (~2 months of weekly updates, or 25 individual installs).
+# Each pair is cheap (copy-on-write diff only). 25 gives good rollback depth
+# without wasting disk on ancient transactions.
+NUMBER_LIMIT="25"
+
+# Important snapshots (manually marked) — keep more
+NUMBER_LIMIT_IMPORTANT="10"
+
+# ─── Timeline Snapshots (disabled) ───
+# Pacman hooks are the only snapshot source. No hourly/daily snapshots.
+# On a workstation, the filesystem only changes meaningfully during package operations.
+
+TIMELINE_CREATE="no"
+TIMELINE_CLEANUP="yes"
+TIMELINE_MIN_AGE="3600"
+TIMELINE_LIMIT_HOURLY="0"
+TIMELINE_LIMIT_DAILY="0"
+TIMELINE_LIMIT_WEEKLY="0"
+TIMELINE_LIMIT_MONTHLY="0"
+TIMELINE_LIMIT_QUARTERLY="0"
+TIMELINE_LIMIT_YEARLY="0"
+
+# ─── Empty Pre/Post Cleanup ───
+# If a pacman transaction results in no actual file changes, clean the pair.
+
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="3600"

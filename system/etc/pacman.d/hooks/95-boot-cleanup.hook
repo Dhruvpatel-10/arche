@@ -1,0 +1,12 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = linux
+Target = linux-lts
+Target = linux-zen
+
+[Action]
+Description = Cleaning old boot entries to free /boot space...
+When = PostTransaction
+Exec = /usr/local/bin/boot-cleanup
+NeedsTargets

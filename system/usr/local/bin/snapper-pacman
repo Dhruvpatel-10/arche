@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# snapper-pacman — create pre/post snapshot pairs around pacman transactions
+# Called by pacman hooks: 00-snapper-pre.hook and zz-snapper-post.hook
+
+set -euo pipefail
+
+SNAP_CONFIG="root"
+PRE_FILE="/run/snapper-pacman-pre-id"
+
+case "${1:-}" in
+    pre)
+        # Create pre-snapshot, store its ID
+        snap_id=$(snapper -c "$SNAP_CONFIG" create --type pre \
+            --cleanup-algorithm number \
+            --print-number \
+            --description "pacman pre-transaction")
+        echo "$snap_id" > "$PRE_FILE"
+        echo "[snapper] Pre-snapshot #$snap_id created"
+        ;;
+    post)
+        if [[ ! -f "$PRE_FILE" ]]; then
+            echo "[snapper] No pre-snapshot ID found — skipping post"
+            exit 0
+        fi
+        pre_id=$(cat "$PRE_FILE")
+        snap_id=$(snapper -c "$SNAP_CONFIG" create --type post \
+            --pre-number "$pre_id" \
+            --cleanup-algorithm number \
+            --print-number \
+            --description "pacman post-transaction")
+        rm -f "$PRE_FILE"
+        echo "[snapper] Post-snapshot #$snap_id created (paired with #$pre_id)"
+        ;;
+    *)
+        echo "Usage: snapper-pacman {pre|post}" >&2
+        exit 1
+        ;;
+esac
