@@ -36,9 +36,6 @@ PACMAN_PKGS=(
     amd-ucode         # AMD CPU microcode (Spectre/Meltdown patches)
     reflector         # mirror ranking
     snapper           # btrfs snapshots
-    openssh
-    ufw
-    tailscale
 )
 
 AUR_PKGS=(
