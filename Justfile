@@ -136,6 +136,11 @@ test:
 test-stow:
     bash {{dotfiles}}/tests/run.sh stow
 
+# Pre-install safety gate (blocks bootstrap on failure)
+[group: 'test']
+gate:
+    bash {{dotfiles}}/tests/run.sh gate
+
 # Run all tests (lint + stow + integration)
 [group: 'test']
 test-all:

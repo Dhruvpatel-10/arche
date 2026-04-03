@@ -17,6 +17,19 @@ log_info "ARCHE=$ARCHE"
 log_info "Log: $ARCHE_LOG_FILE"
 echo
 
+# ─── Pre-install safety gate ───
+
+log_info "Running pre-install checks..."
+echo
+if bash "$ARCHE/tests/run.sh" gate; then
+    log_ok "All pre-install checks passed"
+else
+    log_err "Pre-install checks failed — fix the issues above before running bootstrap"
+    log_info "Run 'just test' for the full test suite, or 'bash tests/run.sh gate' to re-check"
+    exit 1
+fi
+echo
+
 # ─── Script descriptions (shown at each prompt) ───
 
 declare -A descriptions=(
