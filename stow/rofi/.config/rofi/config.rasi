@@ -1,20 +1,15 @@
 /* rofi config — behavior only, colors come from theme.rasi */
 
 configuration {
-    /* Combi mode: one search bar for everything (Spotlight-style) */
-    modi: "combi,drun,run,filebrowser,window,ssh";
-    combi-modi: "drun,run,window";
+    /* Modes available via Tab cycling */
+    modi: "drun,run,filebrowser,window,ssh";
 
     /* Display names */
-    display-combi: " ";
     display-drun: "Apps";
     display-run: "Run";
     display-filebrowser: "Files";
     display-window: "Windows";
     display-ssh: "SSH";
-
-    /* Hide mode prefix in combi results (removes "Apps Brave" → "Brave") */
-    combi-display-format: "{text}";
 
     /* Search behavior */
     matching: "fuzzy";
@@ -27,6 +22,9 @@ configuration {
     show-icons: true;
     icon-theme: "Papirus-Dark";
     drun-display-format: "{name}";
+
+    /* Performance — cache .desktop file parsing */
+    drun-use-desktop-cache: true;
 
     /* Input */
     steal-focus: true;
