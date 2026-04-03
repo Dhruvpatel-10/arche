@@ -234,7 +234,7 @@ testing on v0.54. `match:class` with an exact match (`^popup$`) works reliably.
 
 ## Tools
 
-Pre-built binaries live in `tools/bin/`. Source code stays in external repos (`~/stuff/personal/arche-bin/`).
+Pre-built binaries live in `tools/bin/`. Source code stays in external repos (`~/projects/system/arche-bin/`).
 
 - `arche-greeter` — Ember-themed TUI greeter for greetd
   - **Deploy:** `05-hyprland.sh` symlinks to `/usr/local/bin/` via `link_system_file`

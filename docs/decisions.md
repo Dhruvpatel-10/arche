@@ -13,7 +13,7 @@ Newest entries at the top.
 Custom Rust TUI greeter built with ratatui, replacing the `greetd-tuigreet` AUR package.
 Speaks greetd IPC directly via `greetd_ipc` crate. Ember-themed, ~670KB stripped binary.
 
-Source: `~/stuff/personal/arche-bin/arche-greeter/` (separate git repo).
+Source: `~/projects/system/arche-bin/arche-greeter/` (separate git repo).
 Binary deployed to: `~/arche/stow/hypr/.local/bin/arche/arche-greeter`
 Build: `just build-greeter`
 
