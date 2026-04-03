@@ -5,17 +5,9 @@
 # Interrupting between sections leaves everything configured so far intact.
 #
 # What this script configures:
-#   1.  Security packages    — ufw, openssh, tailscale, gnome-keyring, firejail, usbguard
-#   2.  Firewall (UFW)       — deny incoming, allow SSH + Tailscale interface
-#   3.  Tailscale            — encrypted mesh VPN (Syncthing/KDE Connect route here)
-#   4.  SSH hardening        — key-only auth, no root login
-#   5.  Encrypted DNS        — NextDNS via systemd-resolved, Cloudflare fallback, DoT + DNSSEC
-#   6.  Kernel hardening     — sysctl network/kernel/filesystem protections
-#   7.  Lid close behavior   — logind suspend on lid close (explicit, not default)
-#   8.  MAC randomization    — WiFi privacy (NetworkManager or iwd)
-#   9.  USBGuard             — block unknown USB devices, usb-inspect helper
-#   10. Firejail             — app sandboxing for untrusted packages and AppImages
-#   11. Post-setup guidance  — LUKS/TPM2, Tailscale auth
+#   Packages, Firewall (UFW), Tailscale, SSH hardening, Fail2ban,
+#   Encrypted DNS, Kernel hardening, Lid close, MAC randomization,
+#   USBGuard, Firejail, LUKS/TPM2 enrollment
 
 source "$(dirname "$0")/lib.sh"
 
@@ -62,14 +54,17 @@ if command -v ufw &>/dev/null; then
     sudo ufw default allow outgoing 2>/dev/null
     log_info "Default policy: deny incoming, allow outgoing"
 
-    sudo ufw allow ssh 2>/dev/null
-    log_info "Allowed: SSH (port 22)"
+    # SSH only on Tailscale — not exposed on LAN or public interfaces.
+    # All your devices are on the tailnet; no reason to listen elsewhere.
+    sudo ufw delete allow ssh 2>/dev/null
+    sudo ufw allow in on tailscale0 to any port 22 proto tcp 2>/dev/null
+    log_info "Allowed: SSH only on tailscale0 (not LAN/public)"
 
     sudo ufw allow in on tailscale0 2>/dev/null
     log_info "Allowed: all traffic on tailscale0 (encrypted mesh)"
 
     svc_enable ufw
-    log_ok "UFW active — deny incoming, allow SSH + Tailscale"
+    log_ok "UFW active — deny incoming, SSH via tailscale only"
 else
     log_err "ufw not found — firewall not configured"
 fi
@@ -113,7 +108,41 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. Encrypted DNS — NextDNS + Cloudflare fallback, DNS-over-TLS, DNSSEC
+# 5. Fail2ban — brute-force protection
+# ─────────────────────────────────────────────────────────────────────────────
+# Monitors auth logs and bans IPs after repeated failed logins.
+# Default: 5 failures within 10 minutes → 1 hour ban.
+# Uses systemd journal backend (no syslog dependency).
+# ─────────────────────────────────────────────────────────────────────────────
+
+log_section "Fail2ban (Brute-Force Protection)"
+
+if command -v fail2ban-server &>/dev/null; then
+    local jail_local="/etc/fail2ban/jail.local"
+    if [[ ! -f "$jail_local" ]]; then
+        log_info "Configuring fail2ban sshd jail..."
+        sudo tee "$jail_local" > /dev/null <<'F2B'
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+backend  = systemd
+
+[sshd]
+enabled = true
+port    = ssh
+F2B
+        log_ok "fail2ban configured: 5 failures / 10min → 1h ban"
+    else
+        log_warn "fail2ban jail.local already exists"
+    fi
+    svc_enable fail2ban
+else
+    log_err "fail2ban not found"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. Encrypted DNS — NextDNS + Cloudflare fallback, DNS-over-TLS, DNSSEC
 # ─────────────────────────────────────────────────────────────────────────────
 # Primary:  NextDNS over TLS (port 853) — filtering + analytics
 # Fallback: Cloudflare over TLS — kicks in if NextDNS is unreachable
@@ -144,7 +173,7 @@ svc_enable systemd-resolved
 log_info "Primary: NextDNS (DoT) → Fallback: Cloudflare (DoT) → DNSSEC validation on"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Kernel Hardening — sysctl
+# 7. Kernel Hardening — sysctl
 # ─────────────────────────────────────────────────────────────────────────────
 # Drop-in at /etc/sysctl.d/99-arche-hardening.conf. Applied at boot.
 # Covers: SYN flood protection, spoofed packet filtering, ICMP hardening,
@@ -166,7 +195,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. Lid Close — explicit logind behavior
+# 8. Lid Close — explicit logind behavior
 # ─────────────────────────────────────────────────────────────────────────────
 # Makes lid close behavior explicit instead of relying on logind defaults.
 # Hypridle locks the screen before sleep (via loginctl lock-session),
@@ -183,7 +212,7 @@ log_info "Lid close → suspend (on battery and AC). Docked → ignored."
 log_info "Hypridle locks screen before sleep via loginctl lock-session"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. MAC Address Randomization — WiFi privacy
+# 9. MAC Address Randomization — WiFi privacy
 # ─────────────────────────────────────────────────────────────────────────────
 # Randomizes the WiFi MAC address per-network, so your hardware ID
 # isn't broadcast to every network you scan or connect to.
@@ -235,7 +264,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. USBGuard — block unknown USB devices
+# 10. USBGuard — block unknown USB devices
 # ─────────────────────────────────────────────────────────────────────────────
 # All currently connected USB devices are allowed (policy generated from
 # current state). Any NEW device plugged in after this is blocked by default.
@@ -271,7 +300,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. Firejail — app sandboxing
+# 11. Firejail — app sandboxing
 # ─────────────────────────────────────────────────────────────────────────────
 # Firejail sandboxes individual apps: restricts filesystem, network, syscalls.
 # Has 1000+ built-in profiles for common apps.
@@ -311,7 +340,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 11. Post-Setup Guidance
+# 12. Post-Setup Guidance
 # ─────────────────────────────────────────────────────────────────────────────
 
 log_section "Post-Setup — Manual Steps"
@@ -319,14 +348,56 @@ log_section "Post-Setup — Manual Steps"
 log_info "Tailscale: run 'tailscale up' to authenticate this device"
 log_info "SSH keys:  copy your ed25519 pubkey to this machine if needed"
 
+# ─── LUKS + TPM2 + PIN enrollment ───
+# If LUKS partitions exist and TPM2 is available, offer to enroll.
+# TPM2 binds the disk to THIS hardware — password-free boot on this machine,
+# encrypted if the drive is removed. PIN adds 6-digit theft protection
+# (hardware rate-limited to ~32 attempts before lockout).
+
 echo ""
-log_info "LUKS + TPM2 (if you set up disk encryption during install):"
-log_info "  Enroll TPM2 for password-free boot on this hardware:"
-log_info "    sudo systemd-cryptenroll --tpm2-device=auto /dev/<luks-partition>"
-log_info "  Add a 6-digit PIN for theft protection (recommended):"
-log_info "    sudo systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes /dev/<luks-partition>"
-log_info "  PIN is hardware rate-limited (~32 tries before lockout)."
-log_info "  Disk stays encrypted if removed from this machine."
+local luks_parts
+luks_parts=$(lsblk -nro NAME,FSTYPE | awk '$2 == "crypto_LUKS" {print "/dev/" $1}')
+
+if [[ -z "$luks_parts" ]]; then
+    log_warn "No LUKS partitions detected — skipping TPM2 enrollment"
+    log_info "Set up LUKS during Arch install for disk encryption"
+elif ! command -v systemd-cryptenroll &>/dev/null; then
+    log_warn "systemd-cryptenroll not found — skipping TPM2 enrollment"
+elif [[ ! -d /sys/class/tpm/tpm0 ]]; then
+    log_warn "No TPM2 chip detected — skipping hardware enrollment"
+    log_info "Your LUKS partitions: $luks_parts"
+else
+    log_info "LUKS partitions found: $luks_parts"
+    log_info "TPM2 chip detected"
+    echo ""
+    log_info "TPM2 + PIN enrollment binds disk encryption to this hardware."
+    log_info "  - Boot on this machine: enter 6-digit PIN (no full passphrase)"
+    log_info "  - Drive removed/stolen: stays fully encrypted"
+    log_info "  - PIN is hardware rate-limited (~32 tries → lockout)"
+    echo ""
+
+    for part in $luks_parts; do
+        # Check if TPM2 is already enrolled
+        if systemd-cryptenroll "$part" --tpm2-device=list 2>/dev/null | grep -q 'tpm2'; then
+            log_warn "TPM2 already enrolled on $part"
+            continue
+        fi
+
+        printf "  Enroll TPM2 + PIN on %s? [y/N] " "$part"
+        read -r choice
+        if [[ "$choice" =~ ^[yY]$ ]]; then
+            log_info "Enrolling TPM2 + PIN on $part..."
+            log_info "You'll be asked for your LUKS passphrase, then a new 6-digit PIN."
+            if sudo systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes "$part"; then
+                log_ok "TPM2 + PIN enrolled on $part"
+            else
+                log_err "Enrollment failed on $part — your existing passphrase still works"
+            fi
+        else
+            log_warn "Skipped TPM2 enrollment for $part"
+        fi
+    done
+fi
 
 echo ""
 log_ok "Security setup complete"

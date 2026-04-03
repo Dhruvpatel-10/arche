@@ -36,8 +36,9 @@ PACMAN_PKGS=(
     bluez
     bluez-utils
 
-    # Misc
+    # Docker (rootless — no docker group needed)
     docker
+    docker-rootless-extras
     docker-buildx
     docker-compose
 )
