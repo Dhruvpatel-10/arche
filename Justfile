@@ -84,7 +84,7 @@ audio:
 hyprland:
     bash {{dotfiles}}/scripts/05-hyprland.sh
 
-# Install and configure shell (fish)
+# Install and configure shell (bash + ble.sh + atuin + carapace)
 [group: 'scripts']
 shell:
     bash {{dotfiles}}/scripts/06-shell.sh
@@ -119,7 +119,7 @@ stow:
 appearance:
     bash {{dotfiles}}/scripts/12-appearance.sh
 
-# Re-stow a single package (e.g. just restow fish)
+# Re-stow a single package (e.g. just restow bash)
 [group: 'utilities']
 restow pkg:
     stow -d {{dotfiles}}/stow -t $HOME --restow --no-folding {{pkg}}
