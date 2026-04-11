@@ -89,7 +89,7 @@ Last updated: 2026-04-03
 | Binary                       | Source                  | Deploy                        | Status |
 |------------------------------|-------------------------|-------------------------------|--------|
 | `arche-legion`               | `tools/bin/` (pre-built)  | `~/.local/bin/arche/` (symlink) | Done   |
-| `arche-greeter`              | `tools/bin/` (pre-built)  | `/usr/local/bin/` (symlink)   | Done   |
+| `sddm-silent`                | `vendor/` (SilentSDDM, glassmorphism) | `/usr/share/sddm/themes/silent/` (cp) | Done |
 
 ## System Configs
 
@@ -103,7 +103,7 @@ Last updated: 2026-04-03
 | `system/usr/local/bin/snapper-pacman`   | `/usr/local/bin/snapper-pacman` | Done   |
 | `system/usr/local/bin/usb-inspect`     | `/usr/local/bin/usb-inspect`    | Done   |
 | `system/etc/snapper/configs/root`        | `/etc/snapper/configs/root`     | Done   |
-| `system/etc/greetd/config.toml`         | `/etc/greetd/config.toml`       | Done   |
+| `system/etc/sddm.conf.d/10-arche.conf`  | `/etc/sddm.conf.d/10-arche.conf` | Done  |
 | `system/etc/systemd/resolved.conf`      | `/etc/systemd/resolved.conf`    | Done   |
 | `system/etc/sysctl.d/99-arche-hardening.conf` | `/etc/sysctl.d/`          | Done   |
 | `system/etc/systemd/logind.conf.d/99-arche.conf` | `/etc/systemd/logind.conf.d/` | Done |

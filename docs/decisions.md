@@ -5,6 +5,195 @@ Newest entries at the top.
 
 ---
 
+## D014 — Repo lives at /opt/arche, shared between users
+
+**Date:** 2026-04-11
+**Status:** Accepted
+
+Moved the canonical repo location from `$HOME/arche` to `/opt/arche`. Each
+human user gets a per-user `~/arche` → `/opt/arche` symlink so anything
+hardcoding the old path keeps working.
+
+**Why:** This machine now has two human users (personal + work). Cloning
+arche into each home directory is wasteful — the repo is the source of truth
+for *system-wide* state (pacman packages, `/etc/` configs, the `system/` tree
+that gets symlinked into root-owned paths). Two clones means two places to
+keep in sync, two places to git pull, and two opportunities for the work
+user's repo to drift from the personal user's. Worse, the personal user's
+home is mode 700 (so the work user couldn't read the repo even if they
+wanted to), and `/home/stark/arche/system/` is symlinked from `/etc/` —
+which means root-owned paths point into a directory that one specific user
+"owns". That's fragile.
+
+**Why /opt:** /opt is the canonical FHS location for "add-on application
+software packages" — exactly what arche is. /opt is mode 755 so every user
+(and every system user, including `sddm`) can traverse it. Files inside
+become group-readable + group-writable for the `users` group, with the
+setgid bit on directories so files created by either user inherit
+group=users. Both users get write access without any user owning the tree.
+
+**Permissions model:**
+- Owner: the primary user (the one who ran the migration / install.sh)
+- Group: `users` (gid 100, the standard Arch shared group; both users
+  must be members via `usermod -aG users <name>`)
+- Files: 0664 (rw-rw-r--)
+- Directories: 2775 (rwxrwsr-x with setgid bit, so new files inherit group)
+- Executables (`*.sh`, `*.fish`, anything under `bin/` or `.local/bin/`): 0775
+
+**Per-user state stays per-user:** stow targets `$HOME` for every package,
+so each user gets their own `~/.config/*` symlinks pointing into the shared
+`/opt/arche/stow/` tree. Per-user runtime managers (fnm, rustup, bun) install
+under `$HOME` and are NOT shared — work and personal projects need different
+toolchain versions, and sharing them invites version conflicts. Disk cost
+of per-user runtimes is real (~2-5 GB per user) but it's the right cost.
+
+**The compat symlink:** Anything that hardcodes `~/arche` or `$HOME/arche`
+(yazi shortcut, `.claude/commands/*`, `.claude/skills/*`, etc.) keeps working
+because each user's `~/arche` is a symlink to `/opt/arche`. This was a
+deliberate choice to avoid touching dozens of files — the symlink is per-user
+so paths remain user-agnostic without rewrites.
+
+**Workflow:**
+- **Fresh install:** `install.sh` clones to `/opt/arche` directly, sets perms,
+  creates the symlink.
+- **Existing install (migration):** `just multi-user-init` runs
+  `helpers/migrate-to-opt.sh` which moves `$HOME/arche` → `/opt/arche`,
+  sets perms, adds the current user to `users`, creates the compat symlink.
+- **Adding a second user:** `sudo useradd -m -G wheel,users <name>`,
+  then from that user's session: `cd /opt/arche && just secondary-user`.
+  The `secondary-user` recipe runs only stow + the shell setup script —
+  it skips the system-level scripts (00-05, 07-10, 12) because pacman packages
+  and `/etc/` configs are already in place from the primary user's bootstrap.
+
+**Things explicitly NOT changed:**
+- `lib.sh::ARCHE` derivation — already correct, derives from script location
+  so `/opt/arche/scripts/foo.sh` self-locates as `ARCHE=/opt/arche`. No code
+  change needed.
+- `Justfile::dotfiles` — uses `justfile_directory()`, also self-locating.
+- `.claude/commands/*` and `.claude/skills/*` — keep `$HOME/arche` references
+  because the per-user compat symlink resolves them correctly without
+  baking the absolute path into Claude config.
+- Per-user runtime managers — stay per-user. See "Per-user state" above.
+
+**Files touched:**
+- `helpers/migrate-to-opt.sh` — new, one-shot migration script
+- `install.sh` — clones to `/opt/arche` instead of `$HOME/arche`, sets perms,
+  creates symlink
+- `Justfile` — adds `multi-user-init` and `secondary-user` recipes
+- `stow/fish/.config/fish/conf.d/path.fish` — exports `ARCHE=/opt/arche`
+- `README.md`, `CLAUDE.md`, `docs/architecture.md` — note the new convention
+
+---
+
+## D013 — SDDM + SilentSDDM replaces greetd + regreet + cage
+
+**Date:** 2026-04-11
+**Status:** Accepted — reverses D010
+
+Replaced the greetd + greetd-regreet + cage login stack with SDDM running the
+vendored `SilentSDDM` theme (modern glassmorphism, by uiriansan,
+github.com/uiriansan/SilentSDDM).
+
+**Why:** cage 0.2.1 has no way to pin the greeter to a specific output — its
+only flags are `-m extend` (span all outputs) and `-m last` (last connected).
+With a dual-monitor setup (laptop eDP-1 + external HDMI-A-1) the greeter
+stretched across both screens and was unusable on the main display. The fix
+options were (a) switch the kiosk compositor to sway, or (b) switch the whole
+display manager to SDDM. SDDM won because it additionally gives a native
+multi-user dropdown, session picker, and a GPL-licensed theme ecosystem —
+features that were already wanted and would have required custom work on the
+greetd path.
+
+**Reversal of D010:** D010 removed SDDM specifically to avoid pulling in Qt
+dependencies for a login screen. That calculus changed: Qt6 is already on the
+system (hyprpolkitagent pulls qt6-base and qt6-declarative). Net new deps:
+`sddm`, `qt6-5compat`, `qt6-svg`, `qt6-virtualkeyboard`, `qt6-multimedia-ffmpeg`
+— all of which the SilentSDDM QML imports unconditionally even when those
+features (virtual keyboard, animated video backgrounds) are unused. The
+original objection no longer applies because those Qt6 deps are small relative
+to what's already on disk.
+
+**Theme choice — eucalyptus-drop → SilentSDDM:** the first attempt at this
+migration vendored `sddm-eucalyptus-drop` (a Qt6 sugar-candy fork). It worked
+but visually felt like a 2018-era Linux DE — the centered form on a static
+background looked dated, and at 4K with HiDPI scaling the form rendered as a
+narrow horizontal strip ("mobile UI" effect). Switched to SilentSDDM, which
+ships modern glassmorphism, ~13 prebuilt color variants (catppuccin-mocha,
+nord, everforest, default, etc.), animated background support, and a
+proper avatar/dropdown system. eucalyptus-drop and its template were deleted
+in the same commit — git history is the rollback path if SilentSDDM breaks.
+
+**Theme vendoring:** SilentSDDM is a pure QML tree (~3.3 MB after pruning)
+copied into `vendor/sddm-silent/`. Pruned from upstream:
+- `backgrounds/*.mp4` — 16 MB of video wallpapers, not needed for static use
+- `backgrounds/*.png` — accompanying poster frames for the videos
+- `docs/` — preview screenshots, runtime irrelevant
+- `flake.nix`, `default.nix`, `nix/` — NixOS module, not relevant on Arch
+- `install.sh`, `test.sh`, `change_avatar.sh` — interactive setup scripts
+Kept: `Main.qml`, `metadata.desktop`, `qmldir`, `LICENSE`, `README.md`,
+`components/`, `configs/` (all 13 variants), `icons/`, `fonts/`, plus
+3 still-image backgrounds. Upstream commit pinned in `.source`.
+
+Copy (not symlink) because the `sddm` user runs with a clean PAM environment
+and cannot traverse `/home/stark` (mode 700) to follow symlinks back into the
+repo. The theme is installed by `05-hyprland.sh` via a `cp`-style mirror that
+wipes the destination first to stay idempotent across upstream file removals.
+
+**Theme config — not templated:** SilentSDDM does not use the standard SDDM
+`theme.conf` — it has its own `configs/<variant>.conf` files in INI format,
+and `metadata.desktop` selects the active variant via its `ConfigFile=` line.
+The default config has 260+ keys spread across nested sections, and most of
+the visual signature comes from per-variant background images, not color
+values. Templating it from `themes/ember.sh` would be high-effort and
+low-payoff (the glassmorphism look is independent of accent color). Instead,
+ship all upstream variants verbatim and let the user swap by editing one line
+in `metadata.desktop`. This is a deliberate departure from the arche
+convention that visual configs render from the theme engine.
+
+**Multi-monitor:** SDDM's X11 greeter places the login on the primary monitor
+automatically — no config needed, works the same docked or undocked. X11 is
+fine here even though the user session is Wayland: SDDM only launches the
+session, it does not dictate the display server the session uses.
+
+**Security note:** SDDM runs its greeter as a dedicated `sddm` system user
+(not root), then authenticates via PAM. The Qt6/QML runtime surface is larger
+than greetd's Rust daemon, but only during the login window; once a session
+starts, SDDM steps out of the way.
+
+**Files touched:**
+- `packages/hyprland.sh` — `greetd`/`greetd-regreet`/`cage` removed; `sddm`, `qt6-5compat`, `qt6-svg`, `qt6-virtualkeyboard`, `qt6-multimedia-ffmpeg` added
+- `system/etc/greetd/` — deleted (config.toml, regreet.toml)
+- `system/etc/sddm.conf.d/10-arche.conf` — new (X11 greeter, Theme.Current=silent)
+- `vendor/sddm-silent/` — new vendored theme tree (~3.3 MB)
+- `scripts/05-hyprland.sh` — installs theme via `cp`, removes the older eucalyptus-drop install dir if present, enables SDDM
+- `tools/bin/arche-greeter` — deleted (D012 retired it, was lingering)
+
+---
+
+## D012 — regreet + cage replaces arche-greeter
+
+**Date:** 2026-04-11
+**Status:** Accepted
+
+Replaced arche-greeter (custom Rust TUI) with greetd-regreet (GTK4 greeter) running inside
+cage (minimal kiosk Wayland compositor).
+
+**Why:** arche-greeter required ongoing maintenance as a custom binary. regreet and cage are
+community-maintained packages in the Arch `extra` repo with no custom code to own.
+
+**Security:** greetd daemon unchanged (Rust, minimal, no CVE history). cage runs a single
+fullscreen app with no window management surface. regreet runs unprivileged inside cage.
+
+**Deps:** greetd-regreet (4.6 MiB) + cage (62 KiB) + wlroots0.19 (1.6 MiB). GTK4 and all
+other regreet deps already on system via satty/ripdrag. Net new: ~6.3 MiB.
+
+**Config:** `system/etc/greetd/regreet.toml` — ember theme values (Bibata cursor, Papirus-Dark
+icons, IBM Plex Sans font, Adwaita-dark GTK theme). Linked by `05-hyprland.sh`.
+
+**Multi-user:** regreet shows a user dropdown natively, no extra config needed.
+
+---
+
 ## D011 — arche-greeter replaces tuigreet
 
 **Date:** 2026-04-03

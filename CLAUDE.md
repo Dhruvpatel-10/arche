@@ -5,7 +5,7 @@
 - Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
 - Primary interface: Claude Code (terminal, TUI-first)
 - Shell: Fish + fisher | Prompt: Starship | Terminal: Kitty
-- Dotfiles: ~/arche managed with GNU Stow 2.4.1
+- Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
 
 ## Goal
 Clone this repo on a fresh Arch install, run `bootstrap.sh`, get a fully configured system.
@@ -18,7 +18,7 @@ Full architecture and decision records live in `docs/`.
 ## Repository Structure
 
 ```
-~/arche/
+/opt/arche/                   # canonical location, ~/arche symlinks here per user
 ├── bootstrap.sh              # orchestrator — runs all scripts in order
 ├── Justfile                  # day-to-day interface: just <target>
 ├── CLAUDE.md                 # this file
@@ -54,9 +54,11 @@ Full architecture and decision records live in `docs/`.
 │       ├── boot-cleanup      # remove old UKI/kernels from /boot after upgrade
 │       └── snapper-pacman    # create pre/post btrfs snapshot pairs
 │
+├── vendor/                   # third-party source shipped as-is (not built, not symlinked)
+│   └── sddm-silent/          # SilentSDDM theme for the SDDM greeter (glassmorphism)
+│
 ├── tools/                    # custom binaries
 │   └── bin/                  # pre-built binaries from external repos (symlinked to system)
-│       ├── arche-greeter     # TUI greeter for greetd (built externally)
 │       └── arche-legion      # Lenovo Vantage replacement (built externally)
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
@@ -236,12 +238,29 @@ testing on v0.54. `match:class` with an exact match (`^popup$`) works reliably.
 
 Pre-built binaries live in `tools/bin/`. Source code stays in external repos (`~/projects/system/arche-bin/`).
 
-- `arche-greeter` — Ember-themed TUI greeter for greetd
-  - **Deploy:** `05-hyprland.sh` symlinks to `/usr/local/bin/` via `link_system_file`
 - `arche-legion` — Lenovo Vantage replacement (battery, fan, profile, camera, USB, Fn lock)
   - **Deploy:** `05-hyprland.sh` symlinks to `~/.local/bin/arche/`
 
 **Update workflow:** build in the external repo, copy the new binary into `tools/bin/` — symlinks pick it up immediately.
+
+---
+
+## Vendored Third-Party (vendor/)
+
+Third-party source shipped as-is — not built, not symlinked. Used when upstream
+ships assets that need to be installed into system paths `sddm` or other system
+users can reach (i.e. outside `/home/stark`, which is mode 700).
+
+- `vendor/sddm-silent/` — SilentSDDM (modern glassmorphism, by uiriansan).
+  Copied into `/usr/share/sddm/themes/silent/` by `05-hyprland.sh`. Pruned of
+  upstream `.mp4` video backgrounds, NixOS modules, docs, and install scripts.
+  Visual variant selected by editing the `ConfigFile=` line in
+  `metadata.desktop` (~13 prebuilt variants in `configs/`). Not templated —
+  the theme has 260+ config keys and visual signature comes from background
+  images, not colors. Upstream commit pinned in `.source`. See D013.
+
+**Update workflow:** `git clone` upstream to `/tmp`, copy changed files into
+`vendor/`, update `.source` with the new commit hash, commit.
 
 ---
 
@@ -302,7 +321,7 @@ fzf, eza, bat, ripgrep, fd, zoxide, yazi, lazygit, lazydocker,
 glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ### Compositor Stack
-- Hyprland 0.54.2 via uwsm, greetd + arche-greeter (TUI login)
+- Hyprland 0.54.2 via uwsm, SDDM + SilentSDDM (GUI login, see D013)
 - Waybar 0.15.0, Mako 1.10.0 (notifications), Rofi (app launcher, combi mode)
 - swaybg wallpaper, grim+slurp+satty screenshots
 - xdg-desktop-portal-hyprland, hyprlock, hypridle

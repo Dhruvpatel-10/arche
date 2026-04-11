@@ -9,7 +9,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 ## Repository Layout
 
 ```
-~/arche/
+/opt/arche/                  # ~/arche → /opt/arche per user, see D014
 ├── bootstrap.sh            # orchestrator — runs all scripts in order
 ├── Justfile                # day-to-day interface: just <target>
 ├── CLAUDE.md               # AI assistant standing instructions
@@ -41,9 +41,11 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   ├── theme.sh            # theme engine: apply / switch / list
 │   └── 00-preflight.sh ... 12-appearance.sh
 │
+├── vendor/                 # third-party source shipped as-is (see D013)
+│   └── sddm-silent/        # SilentSDDM theme for SDDM (glassmorphism)
+│
 ├── tools/                  # custom binaries
 │   └── bin/                # pre-built binaries from external repos
-│       ├── arche-greeter   # TUI greeter for greetd
 │       └── arche-legion    # Lenovo Vantage replacement
 │
 ├── system/                 # system configs (/etc/) — symlinked by scripts
@@ -146,7 +148,7 @@ Does not: clone repo, configure SSH, set up secrets.
 | Layer        | Tool                                         |
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
-| Compositor   | Hyprland via uwsm, greetd + arche-greeter    |
+| Compositor   | Hyprland via uwsm, SDDM + SilentSDDM theme   |
 | Shell        | fish + fisher + starship                     |
 | Terminal     | Kitty                                        |
 | Editor       | Neovim (LazyVim)                             |
