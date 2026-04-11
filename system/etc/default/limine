@@ -1,0 +1,32 @@
+# limine-entry-tool — boot entry generator config
+# Managed by arche (symlinked by scripts/00-preflight.sh)
+#
+# Values shared with /etc/limine-snapper-sync.conf:
+#   MAX_SNAPSHOT_ENTRIES, SNAPSHOT_FORMAT_CHOICE
+# Keep both files in sync — both live under system/etc/ in arche.
+
+# ─── OS Identity ───
+
+TARGET_OS_NAME="Omarchy"
+ESP_PATH="/boot"
+
+# ─── Kernel Command Line ───
+
+KERNEL_CMDLINE[default]="cryptdevice=PARTUUID=1e2ce429-719c-47bd-a79d-a2f337fd171b:root root=/dev/mapper/root zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs"
+KERNEL_CMDLINE[default]+="quiet splash"
+
+# ─── UKI (Unified Kernel Image) ───
+
+ENABLE_UKI=yes
+CUSTOM_UKI_NAME="omarchy"
+
+# ─── Boot Menu ───
+
+ENABLE_LIMINE_FALLBACK=yes
+FIND_BOOTLOADERS=yes
+BOOT_ORDER="*, *fallback, Snapshots"
+
+# ─── Snapshots (must match limine-snapper-sync.conf) ───
+
+MAX_SNAPSHOT_ENTRIES=5
+SNAPSHOT_FORMAT_CHOICE=5
