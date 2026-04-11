@@ -18,6 +18,12 @@ HISTSIZE=10000
 HISTFILESIZE=20000
 shopt -s histappend checkwinsize cmdhist globstar
 
+# ── Readline: case-insensitive completion (fish-like) ──
+# Tab on `cd w` completes to `Work/` regardless of case. ble.sh respects
+# these readline settings once attached.
+bind 'set completion-ignore-case on'
+bind 'set completion-map-case on'      # treat - and _ as equivalent
+
 # ── PATH + env (must run before any command lookups) ──
 [[ -r "$HOME/.bash/conf.d/00-path.sh" ]] && source "$HOME/.bash/conf.d/00-path.sh"
 
