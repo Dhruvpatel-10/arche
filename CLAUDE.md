@@ -4,7 +4,7 @@
 - User: stark
 - Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
 - Primary interface: Claude Code (terminal, TUI-first)
-- Shell: Fish + fisher | Prompt: Starship | Terminal: Kitty
+- Shell: Bash + ble.sh + bash-preexec + Atuin + carapace | Prompt: Starship | Terminal: Kitty
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
 
 ## Goal
@@ -62,7 +62,7 @@ Full architecture and decision records live in `docs/`.
 │       └── arche-legion      # Lenovo Vantage replacement (built externally)
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
-    ├── fish/                 # shell config
+    ├── bash/                 # shell config (D016)
     ├── kitty/                # terminal config
     ├── starship/             # prompt config
     ├── mpv/                  # media player
@@ -74,7 +74,6 @@ Full architecture and decision records live in `docs/`.
     ├── zathura/              # PDF viewer
     ├── btop/                 # system monitor
     ├── tmux/                 # terminal multiplexer
-    ├── yazi/                 # file browser
     ├── kvantum/              # Qt style engine
     ├── qt6ct/                # Qt6 config
     ├── pipewire/             # audio daemon
@@ -168,7 +167,7 @@ install_group <file>    — source packages file, run pkg_install + aur_install
 - Every script is independently runnable: `bash scripts/05-hyprland.sh`
 - bootstrap.sh runs them in numeric order, captures exit codes, prints summary
 - Scripts do exactly four things: install packages, stow config, enable services, verify
-- Bash only. No fish, no Python in scripts.
+- Bash only. No Python in scripts.
 - No --noconfirm anywhere.
 - Use $HOME not hardcoded paths.
 - Guards before every action — check before act, never assume.
@@ -181,7 +180,7 @@ Tests live in `tests/` and run via `just test`. Three levels:
 
 **Lint** — static analysis, runs everywhere (CI-safe, no root needed):
 - `bash -n` on all scripts and package files
-- `fish --no-execute` on all fish configs
+- `bash -n` on all stow/bash/ configs and vendored shell drops
 - `shellcheck` on all bash scripts
 - Package files declare only arrays (no side effects)
 - Theme files export all required variables
@@ -196,7 +195,7 @@ Tests live in `tests/` and run via `just test`. Three levels:
 - Commands from packages/ are available in PATH
 - Services from scripts are active
 - Rendered templates match expected output
-- Fish config loads without errors: `fish -c 'echo ok'`
+- Bash config loads without errors: `bash -lc 'echo ok'`
 
 Run: `just test` (lint only), `just test-stow`, `just test-all` (includes integration).
 
@@ -268,7 +267,7 @@ users can reach (i.e. outside `/home/stark`, which is mode 700).
 
 All stow packages live under `stow/`. Each mirrors the home directory structure:
 ```
-stow/fish/.config/fish/config.fish  →  ~/.config/fish/config.fish
+stow/bash/.bashrc  →  ~/.bashrc
 ```
 
 The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
@@ -317,13 +316,13 @@ preflight, base, security, gpu, audio, hyprland, shell, bar, notifications, runt
 - Docker 29.3.0 system
 
 ### Key CLI Tools
-fzf, eza, bat, ripgrep, fd, zoxide, yazi, lazygit, lazydocker,
+fzf, eza, bat, ripgrep, fd, zoxide, lazygit, lazydocker,
 glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ### Compositor Stack
 - Hyprland 0.54.2 via uwsm, SDDM + SilentSDDM (GUI login, see D013)
 - Waybar 0.15.0, Mako 1.10.0 (notifications), Rofi (app launcher, combi mode)
-- swaybg wallpaper, grim+slurp+satty screenshots
+- hyprpaper wallpaper, grim+slurp+satty screenshots
 - xdg-desktop-portal-hyprland, hyprlock, hypridle
 
 ### Lenovo Legion Pro 5 (16ARX8)
@@ -360,7 +359,7 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - CPU: amd-ucode for microcode vulnerability patches
 - USB: USBGuard blocks unknown devices; usb-inspect for sandboxed inspection
 - Sandboxing: firejail for untrusted apps and AppImages
-- Secrets: API keys in local.fish (not tracked in git)
+- Secrets: API keys in ~/.bash/local.bash (not tracked in git)
 
 ---
 
@@ -370,8 +369,8 @@ Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
 Scripts: all 12 numbered scripts (00-preflight through 11-stow)
 Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, bar, notifications, runtimes, apps, appearance)
 Themes: ember.sh (active), schema.sh (variable registry)
-Templates: 13 sets (fish, kitty, hypr, waybar, syshud, rofi, yazi, gtk-4.0, btop, mako, tmux, hyprland-preview-share-picker)
-Stow: 23 packages (see Repository Structure above)
+Templates: 11 sets (kitty, hypr, waybar, syshud, rofi, gtk-4.0, btop, mako, tmux, hyprland-preview-share-picker, starship)
+Stow: 22 packages (see Repository Structure above)
 System: pacman.conf, 3 pacman hooks, 2 system binaries
 
 See `docs/status.md` for full tracking.
@@ -404,11 +403,14 @@ See `docs/status.md` for the full table.
 ---
 
 ## What NOT to Do
-- Do not suggest Oh My Zsh or zinit — fish + fisher is the shell stack
+- Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash — bash + ble.sh + bash-preexec + carapace is the stack (D016)
+- Do not install ble.sh, bash-preexec, or carapace from AUR — they are vendored under vendor/ and tools/bin/ (D016)
+- Do not call `ble-update` — upgrades happen by re-vendoring a new pinned commit
 - Do not use GRUB syntax — bootloader is Limine
 - Do not reference nvm — fnm is the active Node manager
 - Do not reference pyenv — not installed
-- Do not reference zsh — fish is the shell
+- Do not reference zsh, fish, or fisher — bash is the shell (D016 reverses D003)
 - Do not hardcode /home/stark — use $HOME
-- Do not suggest storing secrets in dotfiles — local.fish is the pattern
+- Do not suggest storing secrets in dotfiles — ~/.bash/local.bash is the pattern
+- Do not rely on leading-space to hide a command from history — bash-preexec rewrites HISTCONTROL=ignorespace to ignoredups (D016)
 - Do not reference any external config repos — arche is self-contained

@@ -24,7 +24,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `bar.sh` | `07-bar.sh` | Waybar |
 | `notifications.sh` | `08-notifications.sh` | Mako |
 | `runtimes.sh` | `09-runtimes.sh` | Rust, Go, cmake, clang, Bun |
-| `apps.sh` | `10-apps.sh` | Neovim, Vivaldi, yazi, mpv, Docker, Bluetooth |
+| `apps.sh` | `10-apps.sh` | Neovim, Vivaldi, Nemo, mpv, Docker, Bluetooth |
 | `appearance.sh` | `12-appearance.sh` | Fonts, icons, cursors, GTK/Qt theming |
 
 ## Package Inventory
@@ -49,13 +49,14 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Core:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, uwsm
 - **Portals:** xdg-desktop-portal-hyprland
 - **Login:** SDDM (X11 greeter) + vendored eucalyptus-drop theme (see D013)
-- **Wayland utils:** swww, grim, slurp, satty, wl-clipboard, cliphist, wev, brightnessctl
+- **Wayland utils:** hyprpaper, grim, slurp, satty, wl-clipboard, cliphist, wev, brightnessctl
 - **Launcher:** rofi-wayland
 - **Qt:** qt5-wayland, qt6-wayland, hyprpolkitagent
 - **AUR:** syshud (OSD overlay)
 
-### shell.sh — Shell (pacman: 4)
-- fish, starship, kitty, tmux
+### shell.sh — Shell (pacman: 6)
+- bash, bash-completion, atuin, starship, kitty, tmux
+- ble.sh, bash-preexec, carapace are **vendored** (see D016), not installed from AUR
 
 ### bar.sh — Status Bar (pacman: 1)
 - waybar
@@ -67,16 +68,15 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - rust, go, cmake, clang, gdb
 - **Note:** fnm (Node) and Bun install via their own scripts in `09-runtimes.sh`, not pacman
 
-### apps.sh — Applications (pacman: 20, AUR: 1)
+### apps.sh — Applications (pacman: 20)
 - **Editor:** neovim
 - **Browser:** vivaldi
-- **Files:** yazi, syncthing
+- **Files:** nemo, syncthing
 - **Media:** mpv, imv, imagemagick, ffmpegthumbnailer
 - **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
 - **Desktop:** qbittorrent, zathura, zathura-pdf-mupdf
 - **Bluetooth:** bluez, bluez-utils
 - **Docker:** docker, docker-rootless-extras, docker-buildx, docker-compose
-- **AUR:** ripdrag
 
 ### appearance.sh — Appearance (pacman: 5)
 - **Fonts:** ttf-ibm-plex (UI sans), ttf-meslo-nerd (primary mono), ttf-jetbrains-mono-nerd (fallback), noto-fonts-emoji
@@ -86,7 +86,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 ## Totals
 
 - **Pacman:** ~99 packages across 11 files
-- **AUR:** 2 packages (syshud, ripdrag)
+- **AUR:** 1 package (syshud)
 
 ## Not Managed Here
 
@@ -95,7 +95,9 @@ These are installed outside the package registry:
 - **arche-greeter** — retired; replaced by SDDM + SilentSDDM (see D013, which reverses D010)
 - **sddm-silent** (SilentSDDM theme) — vendored under `vendor/sddm-silent/` (not a package), installed via `cp` by `05-hyprland.sh`
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
-- **fisher** — Fish plugin manager (installed via fish script, not pacman)
+- **ble.sh** — vendored under `vendor/blesh/`, sourced directly from `/opt/arche/vendor/blesh/ble.sh` (D016)
+- **bash-preexec** — vendored under `vendor/bash-preexec/`, sourced directly (D016)
+- **carapace** — vendored binary at `tools/bin/carapace`, symlinked to `~/.local/bin/arche/carapace` by `06-shell.sh` (D016)
 - **fnm** — Node version manager (curl script in `09-runtimes.sh`)
 - **Bun** — JS runtime (official curl script in `09-runtimes.sh`)
 - **LADSPA plugin** — removed; arche-denoise is now a single binary

@@ -20,7 +20,7 @@ Last updated: 2026-04-03
 
 | Package                        | Status  | Notes                                     |
 |--------------------------------|---------|--------------------------------------------|
-| `fish`                         | Done    | Full config, abbrs, functions, conf.d      |
+| `bash`                         | Done    | .bashrc, conf.d/, functions/, aliases, abbreviations (ble.sh) — D016 |
 | `kitty`                        | Done    | Terminal config + theme template           |
 | `starship`                     | Done    | Prompt config                              |
 | `mpv`                          | Done    | Media player                               |
@@ -32,7 +32,6 @@ Last updated: 2026-04-03
 | `syshud`                       | Done    | OSD overlay (behavior config + CSS template) |
 | `btop`                         | Done    | System monitor config                      |
 | `tmux`                         | Done    | Terminal multiplexer config                |
-| `yazi`                         | Done    | File browser config                        |
 | `kvantum`                      | Done    | Qt style engine (Ember theme)              |
 | `qt6ct`                        | Done    | Qt6 color palette (config is templated)    |
 | `pipewire`                     | Done    | Audio daemon config                        |
@@ -62,14 +61,12 @@ Last updated: 2026-04-03
 
 | Template                                              | Renders to                                       | Status |
 |-------------------------------------------------------|--------------------------------------------------|--------|
-| `templates/fish/conf.d/theme.fish.tmpl`               | `~/.config/fish/conf.d/theme.fish`               | Done   |
 | `templates/kitty/theme.conf.tmpl`                     | `~/.config/kitty/theme.conf`                     | Done   |
 | `templates/hypr/colors.conf.tmpl`                     | `~/.config/hypr/colors.conf`                     | Done   |
 | `templates/hypr/hyprlock-colors.conf.tmpl`            | `~/.config/hypr/hyprlock-colors.conf`            | Done   |
 | `templates/waybar/style.css.tmpl`                     | `~/.config/waybar/style.css`                     | Done   |
 | `templates/syshud/style.css.tmpl`                     | `~/.config/sys64/hud/style.css`                  | Done   |
 | `templates/rofi/theme.rasi.tmpl`                      | `~/.config/rofi/theme.rasi`                      | Done   |
-| `templates/yazi/theme.toml.tmpl`                      | `~/.config/yazi/theme.toml`                      | Done   |
 | `templates/gtk-4.0/gtk.css.tmpl`                      | `~/.config/gtk-4.0/gtk.css`                      | Done   |
 | `templates/btop/arche.theme.tmpl`                     | `~/.config/btop/arche.theme`                     | Done   |
 | `templates/mako/config.tmpl`                          | `~/.config/mako/config`                          | Done   |

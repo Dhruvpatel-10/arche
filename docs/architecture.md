@@ -31,7 +31,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   ├── qt6ct/              # Qt6 config (icons, fonts)
 │   ├── zathura/            # PDF viewer colors
 │   ├── mpv/                # media player fonts
-│   └── ...                 # btop, fish, tmux, yazi, walker, syshud
+│   └── ...                 # btop, tmux, walker, syshud
 │
 ├── packages/               # package registry — data only, no logic
 │   └── *.sh                # each file: PACMAN_PKGS=() and AUR_PKGS=()
@@ -53,7 +53,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   └── usr/local/bin/
 │
 └── stow/                   # behavior configs — symlinked via GNU Stow
-    ├── fish/               # shell config
+    ├── bash/               # shell config (D016)
     ├── kitty/              # terminal behavior
     ├── starship/           # prompt config
     ├── mpv/                # media player
@@ -62,7 +62,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
     ├── nvim/               # LazyVim editor
     ├── walker/             # app launcher
     ├── zathura/            # PDF viewer behavior
-    └── ...                 # tmux, btop, yazi, kvantum, qt6ct, etc.
+    └── ...                 # tmux, btop, kvantum, qt6ct, etc.
 ```
 
 ## The Three-Layer Config Split
@@ -82,7 +82,7 @@ Examples: `waybar/style.css`, `gtk-3.0/settings.ini`, `hypr/envs.conf`
 Configs that contain **behavior**: keybinds, module lists, rules, logic.
 Symlinked directly via GNU Stow. Committed as-is. Lives in `stow/`.
 
-Examples: `hyprland.conf`, `waybar/config.jsonc`, `fish/config.fish`
+Examples: `hyprland.conf`, `waybar/config.jsonc`, `bash/.bashrc`
 
 ### Layer 3: Generated Output
 
@@ -123,7 +123,7 @@ All stow packages live under `stow/`. Each package mirrors the home directory
 structure it targets:
 
 ```
-stow/fish/.config/fish/config.fish  →  ~/.config/fish/config.fish
+stow/bash/.bashrc                  →  ~/.bashrc
 stow/mpv/.config/mpv/mpv.conf      →  ~/.config/mpv/mpv.conf
 ```
 
@@ -149,7 +149,7 @@ Does not: clone repo, configure SSH, set up secrets.
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
 | Compositor   | Hyprland via uwsm, SDDM + SilentSDDM theme   |
-| Shell        | fish + fisher + starship                     |
+| Shell        | bash + ble.sh + bash-preexec + atuin + carapace + starship (D016) |
 | Terminal     | Kitty                                        |
 | Editor       | Neovim (LazyVim)                             |
 | Bar          | Waybar                                       |
