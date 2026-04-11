@@ -9,7 +9,18 @@ PACMAN_PKGS=(
     hyprsunset
     uwsm                    # Hyprland session wrapper
     xdg-desktop-portal-hyprland
-    greetd                  # minimal login daemon
+
+    # Login manager — SDDM with vendored SilentSDDM theme (see D013).
+    # qt6-5compat       — Qt5Compat.GraphicalEffects shaders used by the theme
+    # qt6-svg           — vector icons (sessions, power, language, etc.)
+    # qt6-virtualkeyboard — required by the theme's QML imports even if VK is hidden
+    # qt6-multimedia-ffmpeg — Multimedia QML module (for animated bg support;
+    #                         imported unconditionally by Main.qml)
+    sddm
+    qt6-5compat
+    qt6-svg
+    qt6-virtualkeyboard
+    qt6-multimedia-ffmpeg
 
     # Wayland utilities
     swww                     # wallpaper daemon (animated transitions)

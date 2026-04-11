@@ -35,7 +35,7 @@ test_integration() {
 
     section "Integration: Custom binaries"
 
-    local bins=(arche-legion arche-greeter)
+    local bins=(arche-legion)
     for bin in "${bins[@]}"; do
         local path="$ARCHE/tools/bin/$bin"
         if [[ -x "$path" ]]; then
@@ -139,7 +139,7 @@ test_integration() {
 
     section "Integration: Services"
 
-    local services=(greetd pipewire wireplumber ufw systemd-resolved)
+    local services=(sddm pipewire wireplumber ufw systemd-resolved)
     for svc in "${services[@]}"; do
         if systemctl is-enabled "$svc" &>/dev/null; then
             pass "$svc enabled"

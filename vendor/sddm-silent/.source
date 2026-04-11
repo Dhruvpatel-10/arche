@@ -1,0 +1,4 @@
+upstream: https://github.com/uiriansan/SilentSDDM
+commit: a0fb8a48de772c0340dd6639b331ebf6ec2eb554
+fetched: 2026-04-11
+note: video backgrounds (.mp4), docs/, nix files, install scripts skipped to keep repo small. .jpg backgrounds kept; switch via configs/<variant>.conf.
