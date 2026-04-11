@@ -10,6 +10,7 @@ PACMAN_PKGS=(
     gst-plugin-pipewire      # GStreamer integration
     alsa-utils               # amixer, aplay, etc.
     pamixer                  # CLI volume control
+    wiremix                  # TUI audio mixer for PipeWire
     playerctl                # MPRIS media controls
     sof-firmware             # Sound Open Firmware
 )

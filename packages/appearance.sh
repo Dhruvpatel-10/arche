@@ -16,5 +16,4 @@ PACMAN_PKGS=(
 )
 
 AUR_PKGS=(
-    bibata-cursor-theme-bin   # Modern cursor theme
 )
