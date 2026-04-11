@@ -1,53 +1,59 @@
 #!/usr/bin/env bash
-# 06-shell.sh — bash + bash-completion + ble.sh + bash-preexec + atuin + starship
-# See docs/decisions.md D016 (reverses D003).
+# 06-shell.sh — fish shell + starship prompt + terminal
+# See docs/decisions.md D018 (reverses D016, restores D003).
 #
-# ble.sh and bash-preexec are sourced directly from /opt/arche/vendor/ —
-# no system install step. Per-tool completions come from bash-completion
-# (extra repo), sourced in .bashrc.
+# fish is from extra repo. fisher is installed from upstream curl into
+# ~/.config/fish/functions/fisher.fish — not from AUR (D018 keeps D016's
+# supply-chain principle: no AUR PKGBUILDs for shell-layer tooling).
 
 source "$(dirname "$0")/lib.sh"
 
 log_info "Setting up shell..."
 install_group "$ARCHE/packages/shell.sh"
 
-# ── Set bash as default shell ──
+# ── Set fish as default shell ──
 
-bash_path="$(command -v bash)"
-if [[ -n "$bash_path" ]]; then
-    if ! grep -qx "$bash_path" /etc/shells; then
-        log_info "Adding bash to /etc/shells..."
-        echo "$bash_path" | sudo tee -a /etc/shells > /dev/null
+fish_path="$(command -v fish)"
+if [[ -n "$fish_path" ]]; then
+    if ! grep -qx "$fish_path" /etc/shells; then
+        log_info "Adding fish to /etc/shells..."
+        echo "$fish_path" | sudo tee -a /etc/shells > /dev/null
     fi
 
     current_shell="$(getent passwd "$USER" | cut -d: -f7)"
-    if [[ "$current_shell" != "$bash_path" ]]; then
-        log_info "Changing default shell to bash..."
-        chsh -s "$bash_path"
-        log_ok "Default shell set to bash"
+    if [[ "$current_shell" != "$fish_path" ]]; then
+        log_info "Changing default shell to fish..."
+        chsh -s "$fish_path"
+        log_ok "Default shell set to fish"
     else
-        log_warn "Bash already default shell"
+        log_warn "Fish already default shell"
     fi
 else
-    log_err "bash not found after install"
+    log_err "fish not found after install"
 fi
 
-# ── Verify vendored ble.sh + bash-preexec are readable ──
+# ── Stow fish config ──
 
-for f in "$ARCHE/vendor/blesh/ble.sh" "$ARCHE/vendor/bash-preexec/bash-preexec.sh"; do
-    if [[ -r "$f" ]]; then
-        log_ok "vendored: ${f#$ARCHE/}"
-    else
-        log_err "missing vendor file: ${f#$ARCHE/}"
-    fi
-done
+stow_pkg fish
 
-# ── Stow bash package ──
+# ── Render fish theme + starship prompt (template-only — from active theme) ──
 
-stow_pkg bash
-
-# ── Render starship prompt (template-only — colors from active theme) ──
-
+theme_render fish
 theme_render starship
+
+# ── Install fisher + plugins from fish_plugins ──
+
+if command -v fish &>/dev/null; then
+    if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
+        log_info "Installing fisher from upstream..."
+        fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher'
+        log_ok "Fisher installed"
+    else
+        log_warn "Fisher already installed"
+    fi
+
+    log_info "Updating fisher plugins..."
+    fish -c 'fisher update' 2>/dev/null || true
+fi
 
 log_ok "Shell setup done"

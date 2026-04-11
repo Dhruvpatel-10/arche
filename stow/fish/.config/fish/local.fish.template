@@ -1,0 +1,7 @@
+# Secrets — copy this file to ~/.config/fish/local.fish and fill in real values.
+# local.fish is gitignored and must never be committed.
+
+set -gx GEMINI_API_KEY YOUR_KEY_HERE
+set -gx OPENAI_API_KEY YOUR_KEY_HERE
+set -gx GROQ_API_KEY YOUR_KEY_HERE
+set -gx ANTHROPIC_API_KEY YOUR_KEY_HERE

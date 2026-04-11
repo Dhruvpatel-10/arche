@@ -467,6 +467,9 @@ _theme_reload() {
         starship)
             log_ok "Starship updates instantly"
             ;;
+        fish)
+            log_ok "Fish theme picks up on next shell launch"
+            ;;
         gtk-4.0)
             log_ok "GTK4 picks up changes on next app launch"
             ;;

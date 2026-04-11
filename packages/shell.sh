@@ -1,13 +1,12 @@
-# Shell packages — bash (primary) + prompt + terminal.
+# Shell packages — fish (primary) + prompt + terminal.
 # Used by: scripts/06-shell.sh
 #
-# ble.sh and bash-preexec are vendored under /opt/arche/vendor/ — not packages.
-# See docs/decisions.md D016.
+# fisher is installed from upstream curl by 06-shell.sh — not from AUR.
+# See docs/decisions.md D018 (reverses D016, restores D003).
 
 PACMAN_PKGS=(
-    bash                 # GNU bash, default login shell
-    bash-completion      # per-tool completions (git, docker, systemd, ssh, kubectl, etc.)
-    atuin                # SQLite-backed fuzzy history + encrypted sync (used in offline mode)
+    fish                 # friendly interactive shell, default login shell
+    atuin                # SQLite-backed fuzzy history + Ctrl-R
     starship             # cross-shell prompt
     kitty                # terminal emulator
     tmux                 # terminal multiplexer
