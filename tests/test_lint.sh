@@ -19,57 +19,27 @@ test_lint() {
         fi
     done
 
-    # ── stow/bash/ tree — D016 ──
+    # ── stow/fish/ tree — D018 ──
 
-    section "Lint: stow/bash/ syntax"
+    section "Lint: stow/fish/ syntax"
 
-    local bash_stow_files
-    bash_stow_files=$(find "$ARCHE/stow/bash" \
-        \( -name '*.sh' -o -name '.bashrc' -o -name '.bash_profile' -o -name '.bash_logout' -o -name '.blerc' \) \
-        -type f 2>/dev/null || true)
-    if [[ -n "$bash_stow_files" ]]; then
-        while IFS= read -r f; do
-            local rel="${f#$ARCHE/}"
-            if bash -n "$f" 2>/dev/null; then
-                pass "bash -n $rel"
-            else
-                fail "bash -n $rel"
-            fi
-        done <<< "$bash_stow_files"
-    else
-        skip "stow/bash/ not present"
-    fi
-
-    # ── Vendored shell integrations — D016 ──
-
-    section "Lint: vendor/ shell drops"
-
-    if [[ -r "$ARCHE/vendor/bash-preexec/bash-preexec.sh" ]]; then
-        if bash -n "$ARCHE/vendor/bash-preexec/bash-preexec.sh" 2>/dev/null; then
-            pass "bash -n vendor/bash-preexec/bash-preexec.sh"
+    if command -v fish &>/dev/null; then
+        local fish_stow_files
+        fish_stow_files=$(find "$ARCHE/stow/fish" -name '*.fish' -type f 2>/dev/null || true)
+        if [[ -n "$fish_stow_files" ]]; then
+            while IFS= read -r f; do
+                local rel="${f#$ARCHE/}"
+                if fish --no-execute "$f" 2>/dev/null; then
+                    pass "fish --no-execute $rel"
+                else
+                    fail "fish --no-execute $rel"
+                fi
+            done <<< "$fish_stow_files"
         else
-            fail "bash -n vendor/bash-preexec/bash-preexec.sh"
+            skip "stow/fish/ not present"
         fi
     else
-        skip "vendor/bash-preexec/ missing"
-    fi
-
-    if [[ -r "$ARCHE/vendor/blesh/ble.sh" ]]; then
-        # ble.sh installs its own DEBUG trap on source. Non-interactive
-        # `bash -n` is sufficient for a structural check without executing it.
-        if bash -n "$ARCHE/vendor/blesh/ble.sh" 2>/dev/null; then
-            pass "bash -n vendor/blesh/ble.sh"
-        else
-            fail "bash -n vendor/blesh/ble.sh"
-        fi
-        # Pinned-commit manifest must exist
-        if [[ -f "$ARCHE/vendor/blesh/.source" ]]; then
-            pass "vendor/blesh/.source manifest present"
-        else
-            fail "vendor/blesh/.source manifest missing"
-        fi
-    else
-        skip "vendor/blesh/ missing"
+        skip "fish not installed — cannot lint stow/fish/"
     fi
 
     # ── Strict mode ──

@@ -18,20 +18,18 @@ test_integration() {
         fail "bash not installed"
     fi
 
-    # ble.sh + bash-preexec vendored drops must be sourceable
-    for f in "$ARCHE/vendor/blesh/ble.sh" "$ARCHE/vendor/bash-preexec/bash-preexec.sh"; do
-        if [[ -r "$f" ]]; then
-            pass "vendor drop readable: ${f#$ARCHE/}"
-        else
-            fail "vendor drop missing: ${f#$ARCHE/}"
-        fi
-    done
-
-    # bash-completion installed
-    if [[ -r /usr/share/bash-completion/bash_completion ]]; then
-        pass "bash-completion available"
+    # fish must be installed and runnable
+    if command -v fish &>/dev/null && fish -c 'echo ok' &>/dev/null; then
+        pass "fish runnable"
     else
-        fail "bash-completion not installed"
+        fail "fish not runnable"
+    fi
+
+    # fisher installed in user's fish functions dir
+    if [[ -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
+        pass "fisher installed"
+    else
+        fail "fisher missing — run scripts/06-shell.sh"
     fi
 
     # ── Core tools ──
