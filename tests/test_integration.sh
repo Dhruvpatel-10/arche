@@ -8,21 +8,37 @@ test_integration() {
 
     section "Integration: Shell"
 
-    if command -v fish &>/dev/null; then
-        if fish -c 'echo ok' &>/dev/null; then
-            pass "fish loads cleanly"
+    if command -v bash &>/dev/null; then
+        if bash -lc 'echo ok' &>/dev/null; then
+            pass "bash loads cleanly"
         else
-            fail "fish fails to load"
+            fail "bash fails to load"
         fi
     else
-        skip "fish not installed"
+        fail "bash not installed"
+    fi
+
+    # ble.sh + bash-preexec vendored drops must be sourceable
+    for f in "$ARCHE/vendor/blesh/ble.sh" "$ARCHE/vendor/bash-preexec/bash-preexec.sh"; do
+        if [[ -r "$f" ]]; then
+            pass "vendor drop readable: ${f#$ARCHE/}"
+        else
+            fail "vendor drop missing: ${f#$ARCHE/}"
+        fi
+    done
+
+    # carapace binary present and symlinked
+    if [[ -x "$ARCHE/tools/bin/carapace" ]]; then
+        pass "tools/bin/carapace executable"
+    else
+        fail "tools/bin/carapace missing"
     fi
 
     # ── Core tools ──
 
     section "Integration: Core tools"
 
-    local tools=(git stow just eza bat rg fd fzf zoxide fish starship kitty paru)
+    local tools=(git stow just eza bat rg fd fzf zoxide bash atuin starship kitty paru)
     for tool in "${tools[@]}"; do
         if command -v "$tool" &>/dev/null; then
             pass "$tool in PATH"
