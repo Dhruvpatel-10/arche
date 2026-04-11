@@ -1,0 +1,22 @@
+upstream: https://github.com/rcaloras/bash-preexec
+commit:   a220343bf206372d4b90275eb30866c409f22f79
+date:     2026-04-08
+audit:    docs/decisions.md D016 (2026-04-11)
+
+Pinned commit is 23 commits ahead of latest tag 0.6.0. Post-tag commits are
+bugfixes authored mostly by akinomyoga (ble.sh maintainer) — bash-5.3 PS0/funsub
+path, PROMPT_COMMAND sanitization, login-shell first-preexec fix #180. These
+directly improve ble.sh + bash-preexec compat, so newer-than-tag is correct here.
+
+Audit findings: 2 evals (both parse bash's own `trap -p DEBUG` output — safe),
+DEBUG trap recursion guarded, no temp files, no network, no base64.
+Caveat: __bp_adjust_histcontrol rewrites HISTCONTROL=ignorespace → ignoredups
+and exports it, so ' export SECRET=…' (leading-space) becomes visible to
+preexec hooks (notably Atuin) and to history. See CLAUDE.md.
+
+Upgrade workflow:
+  1. git clone https://github.com/rcaloras/bash-preexec /tmp/bpx && cd /tmp/bpx
+  2. git checkout <new-commit>
+  3. re-run the audit agent
+  4. cp bash-preexec.sh LICENSE.md /opt/arche/vendor/bash-preexec/
+  5. update this .source with new commit hash + date

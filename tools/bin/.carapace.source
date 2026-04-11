@@ -1,0 +1,29 @@
+tool:     carapace-bin
+upstream: https://github.com/carapace-sh/carapace-bin
+tag:      v1.6.4
+commit:   c74847b3ea0120d6d53baa19624b8334d8576a73
+date:     2026-04-10
+audit:    docs/decisions.md D016 (2026-04-11)
+
+Archive (as published, checked against upstream checksums.txt):
+  file:   carapace-bin_1.6.4_linux_amd64.tar.gz
+  sha256: 885ee9f90ab759c60e50d8123966c4edabb426c5cac531253c8d75a30145eff2
+  url:    https://github.com/carapace-sh/carapace-bin/releases/download/v1.6.4/carapace-bin_1.6.4_linux_amd64.tar.gz
+  verify: https://github.com/carapace-sh/carapace-bin/releases/download/v1.6.4/carapace-bin_1.6.4_checksums.txt
+
+Extracted binary (./carapace):
+  sha256: b3e58ea31098109c18161f1fb913298c3d731745bc487d551130027288d66f71
+  size:   65413304 bytes
+  type:   ELF 64-bit LSB, x86-64, static-pie linked, stripped (CGO_ENABLED=0)
+  go:     go1.25.4
+
+Audit findings: static Go, zero runtime network, zero telemetry, safe argv-form
+exec, writes confined to XDG dirs, no CVEs, 46-line go.sum, reproducible via
+pinned container + GoReleaser. Bus factor 1 (rsteube) — single standing risk.
+
+Upgrade workflow:
+  1. Download new tarball + checksums.txt from GitHub releases
+  2. Verify sha256 against upstream checksums.txt
+  3. Re-run audit agent against new source commit
+  4. tar xzf and drop binary into /opt/arche/tools/bin/carapace
+  5. Update this .source file with new tag/sha256/size/go version
