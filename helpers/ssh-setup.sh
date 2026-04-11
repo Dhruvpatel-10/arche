@@ -71,16 +71,19 @@ generate_key() {
 }
 
 write_ssh_config_entry() {
-    local host_alias="$1" keyfile="$2"
+    local host_alias="$1" keyfile="$2" extra_alias="${3:-}"
 
     if grep -q "^Host $host_alias$" "$SSH_CONFIG" 2>/dev/null; then
         warn "SSH config entry exists — skipping"
         return 0
     fi
 
+    local host_line="$host_alias"
+    [[ -n "$extra_alias" ]] && host_line="$host_alias $extra_alias"
+
     cat >> "$SSH_CONFIG" <<EOF
 
-Host $host_alias
+Host $host_line
     HostName github.com
     User git
     IdentityFile $keyfile
@@ -108,9 +111,12 @@ declare -a accounts=()
 for i in $(seq 1 "$num_accounts"); do
     header "Account $i"
 
-    label=$(ask "Label (personal/work):")
+    auto_label=$( [[ "$i" -eq 1 ]] && echo "personal" || echo "account$i" )
+    echo -en "  ${dim}Label (personal/work):${reset} " >/dev/tty
+    read -r label </dev/tty
     label="${label,,}"
     label="${label// /-}"
+    [[ -z "$label" ]] && label="$auto_label"
 
     name=$(ask "Name (for commits):")
     email=$(ask "Email (for commits):")
@@ -121,7 +127,8 @@ for i in $(seq 1 "$num_accounts"); do
 
     echo ""
     generate_key "$label" "$email" "$keyfile"
-    write_ssh_config_entry "$host_alias" "$keyfile"
+    extra=$( [[ "$i" -eq 1 ]] && echo "github" || echo "" )
+    write_ssh_config_entry "$host_alias" "$keyfile" "$extra"
 
     accounts+=("$label|$name|$email|$github_user|$keyfile|$host_alias")
 done
@@ -130,10 +137,20 @@ done
 
 header "Git Config"
 
-IFS='|' read -r def_label def_name def_email _ _ _ <<< "${accounts[0]}"
+IFS='|' read -r def_label def_name def_email _ def_keyfile _ <<< "${accounts[0]}"
 git config --global user.name "$def_name"
 git config --global user.email "$def_email"
 ok "Default: $def_name <$def_email>"
+
+# Optional: SSH commit signing for default account
+echo ""
+if confirm "Enable SSH commit signing for $def_label?"; then
+    git config --global gpg.format ssh
+    git config --global user.signingKey "$def_keyfile.pub"
+    git config --global commit.gpgsign true
+    ok "Commit signing enabled (SSH) for $def_label"
+    info "Add ${def_keyfile}.pub to GitHub → Settings → SSH keys (as a Signing key)"
+fi
 
 for entry in "${accounts[@]:1}"; do
     IFS='|' read -r label name email github_user keyfile host_alias <<< "$entry"
@@ -145,6 +162,21 @@ for entry in "${accounts[@]:1}"; do
     email = $email
 EOF
     chmod 600 "$gitconfig_file"
+
+    # Optional: SSH commit signing for this account
+    echo ""
+    if confirm "Enable SSH commit signing for $label?"; then
+        cat >> "$gitconfig_file" <<EOF
+[gpg]
+    format = ssh
+[user]
+    signingKey = $keyfile.pub
+[commit]
+    gpgsign = true
+EOF
+        ok "Commit signing enabled (SSH) for $label"
+        info "Add ${keyfile}.pub to GitHub → Settings → SSH keys (as a Signing key)"
+    fi
 
     case "$label" in
         work*)   dir="$HOME/Work/" ;;
@@ -171,27 +203,37 @@ echo ""
 echo -e "  ${bold}═══════════════════════════════════════════${reset}"
 echo ""
 
+idx=0
 for entry in "${accounts[@]}"; do
     IFS='|' read -r label name email github_user keyfile host_alias <<< "$entry"
 
     echo -e "  ${bold}${label}${reset} ${dim}(${github_user})${reset}"
     echo ""
-    echo -e "    Host alias    ${cyan}${host_alias}${reset}"
+    if [[ "$idx" -eq 0 ]]; then
+        echo -e "    Host alias    ${cyan}${host_alias}${reset} ${dim}(or: github)${reset}"
+    else
+        echo -e "    Host alias    ${cyan}${host_alias}${reset}"
+    fi
     echo -e "    Identity      ${name} <${email}>"
     echo -e "    Key           ${dim}${keyfile}${reset}"
     echo ""
     echo -e "    ${dim}Public key:${reset}"
     echo -e "    ${green}$(cat "$keyfile.pub")${reset}"
     echo ""
-    echo -e "    ${dim}Clone:${reset}  git clone ${cyan}git@${host_alias}:${github_user}/repo.git${reset}"
+    if [[ "$idx" -eq 0 ]]; then
+        echo -e "    ${dim}Clone:${reset}  git clone ${cyan}git@github:${github_user}/repo.git${reset}"
+    else
+        echo -e "    ${dim}Clone:${reset}  git clone ${cyan}git@${host_alias}:${github_user}/repo.git${reset}"
+    fi
     echo ""
+    (( idx++ )) || true
     echo -e "  ${dim}───────────────────────────────────────────${reset}"
     echo ""
 done
 
 echo -e "  ${bold}Next steps${reset}"
 echo ""
-echo -e "    ${dim}1.${reset} Add public keys above to ${cyan}https://github.com/settings/keys${reset}"
+echo -e "    ${dim}1.${reset} Add public keys above to ${cyan}https://github.com/settings/keys${reset} (Auth key + Signing key if enabled)"
 echo -e "    ${dim}2.${reset} Test connections:"
 echo ""
 for entry in "${accounts[@]}"; do
