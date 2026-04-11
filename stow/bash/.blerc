@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# ~/.blerc — ble.sh runtime config.
+# ble.sh auto-sources this after `ble-attach`, so `ble-sabbrev` and friends
+# are guaranteed to be loaded by the time we get here. Putting abbreviations
+# in .bashrc before attach is too early — core-complete.sh isn't loaded yet.
+
+# ── Inline history autosuggestion (fish-like) ──
+# Default face renders as reverse-video on some palettes — force a dim-gray
+# foreground with no background/reverse so suggestions blend into the prompt.
+ble-face -s auto_complete fg=240
+
+# Auto-complete from history only — never invoke programmable completion
+# (carapace) on every keystroke. carapace's bash bridge calls `read` internally
+# and errors on partial input ("read: `': not a valid identifier"). Tab still
+# triggers full completion via carapace; this only restricts the inline ghost.
+bleopt complete_auto_complete_opts=syntax-disabled
+
+# No auto-popup menu while typing. Tab still opens it on demand.
+bleopt complete_auto_menu=
+
+# Ctrl+Backspace → delete previous whitespace-delimited word.
+# kitty sends ^H for ctrl+backspace. Use uword (unix word, whitespace-only) —
+# cword splits on shell metachars and eword splits on punctuation, both feel
+# random. uword = "delete back to the previous space".
+ble-bind -f 'C-h' kill-backward-uword
+
+# General
+ble-sabbrev c='clear'
+ble-sabbrev ..='cd ..'
+ble-sabbrev ...='cd ../..'
+ble-sabbrev ....='cd ../../..'
+
+# Git
+ble-sabbrev g='git'
+ble-sabbrev gcm='git commit -m'
+ble-sabbrev gcam='git commit -a -m'
+ble-sabbrev gcad='git commit -a --amend'
+ble-sabbrev gst='git status -sb'
+ble-sabbrev gd='git diff'
+ble-sabbrev gds='git diff --staged'
+ble-sabbrev glog='git log --oneline --graph --decorate -20'
+
+# Tmux
+ble-sabbrev tn='tmux new -s'
+ble-sabbrev ta='tmux attach -t'
+ble-sabbrev tls='tmux ls'
+ble-sabbrev tk='tmux kill-session -t'
+ble-sabbrev td='tmux detach'
+ble-sabbrev t='tmux attach || tmux new'
+
+# Network
+ble-sabbrev myipv4='curl -s ipv4.icanhazip.com'
+ble-sabbrev myipv6='curl -s ipv6.icanhazip.com'
