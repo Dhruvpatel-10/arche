@@ -10,19 +10,30 @@
 ble-face -s auto_complete fg=240
 
 # Auto-complete from history only — never invoke programmable completion
-# (carapace) on every keystroke. carapace's bash bridge calls `read` internally
-# and errors on partial input ("read: `': not a valid identifier"). Tab still
-# triggers full completion via carapace; this only restricts the inline ghost.
+# on every keystroke. Tab still triggers full bash-completion completion;
+# this just keeps the inline ghost suggestion fish-like (history only).
 bleopt complete_auto_complete_opts=syntax-disabled
+_ble_complete_auto_source=(history)  # belt-and-suspenders override
 
 # No auto-popup menu while typing. Tab still opens it on demand.
 bleopt complete_auto_menu=
 
+# Pasted multi-line text should run line-by-line, not enter MULTILINE edit mode.
+# Disabling bracketed-paste makes ble.sh treat pasted newlines as Enter presses
+# (each line executes immediately), same as plain bash. The downside: pasting
+# a multi-line script you wanted to *edit before running* won't work — but you
+# can still use a heredoc or paste into an editor for that case.
+bleopt term_bracketed_paste_mode=
+
 # Ctrl+Backspace → delete previous whitespace-delimited word.
-# kitty sends ^H for ctrl+backspace. Use uword (unix word, whitespace-only) —
-# cword splits on shell metachars and eword splits on punctuation, both feel
-# random. uword = "delete back to the previous space".
-ble-bind -f 'C-h' kill-backward-uword
+# Kitty reports the key two ways depending on mode:
+#   - Legacy: ^H (= C-h) — what `cat -v` sees
+#   - Kitty keyboard protocol: C-DEL — what ble.sh sees once attached
+# Bind both to kill-backward-uword (whitespace-only word, "delete back to
+# previous space"). cword/eword split on shell metachars/punctuation and
+# feel random.
+ble-bind -f 'C-h'   kill-backward-uword
+ble-bind -f 'C-DEL' kill-backward-uword
 
 # General
 ble-sabbrev c='clear'
