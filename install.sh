@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # install.sh — one-liner bootstrap for arche
 # Usage: curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/install.sh | bash
+#
+# Clones the repo to /opt/arche so multiple human users on the same machine
+# share one source of truth (see docs/decisions.md D014). Creates a per-user
+# ~/arche → /opt/arche compat symlink so older scripts and shortcuts still
+# work transparently.
 set -euo pipefail
 
 ARCHE_REPO="https://github.com/Dhruvpatel-10/arche.git"
-ARCHE_DIR="$HOME/arche"
+ARCHE_DIR="/opt/arche"
+SHARED_GROUP="users"
+HOME_LINK="$HOME/arche"
 
 # ─── Helpers ───
 
@@ -23,15 +30,36 @@ ping -c 1 -W 3 archlinux.org &>/dev/null || err "No internet"
 
 if [[ -d "$ARCHE_DIR/.git" ]]; then
     info "arche already exists at $ARCHE_DIR — pulling latest..."
-    git -C "$ARCHE_DIR" pull --ff-only || err "Pull failed — resolve manually"
+    sudo -u "$USER" git -C "$ARCHE_DIR" pull --ff-only || err "Pull failed — resolve manually"
     ok "Updated"
 else
-    if [[ -d "$ARCHE_DIR" ]]; then
+    if [[ -e "$ARCHE_DIR" ]]; then
         err "$ARCHE_DIR exists but is not a git repo — remove it first or clone manually"
     fi
+    info "Creating $ARCHE_DIR (needs sudo for /opt)..."
+    sudo install -d -m 2775 -o "$USER" -g "$SHARED_GROUP" "$ARCHE_DIR"
     info "Cloning arche to $ARCHE_DIR..."
     git clone "$ARCHE_REPO" "$ARCHE_DIR"
     ok "Cloned"
+fi
+
+# ─── Permissions (idempotent) ───
+
+# Make sure both the current user and any future user in the `users` group
+# can read and write the tree, and that new files inherit the shared group.
+sudo chown -R "$USER:$SHARED_GROUP" "$ARCHE_DIR"
+sudo find "$ARCHE_DIR" -type d -exec chmod 2775 {} \;
+ok "Permissions set ($USER:$SHARED_GROUP, setgid dirs)"
+
+# ─── Compat symlink ───
+
+if [[ -L "$HOME_LINK" ]]; then
+    :  # already linked
+elif [[ -e "$HOME_LINK" ]]; then
+    err "$HOME_LINK exists and is not a symlink — refusing to overwrite"
+else
+    ln -s "$ARCHE_DIR" "$HOME_LINK"
+    ok "Symlinked $HOME_LINK → $ARCHE_DIR"
 fi
 
 # ─── Bootstrap ───

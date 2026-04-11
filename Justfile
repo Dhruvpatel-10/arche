@@ -10,6 +10,48 @@ dotfiles := justfile_directory()
 install:
     bash {{dotfiles}}/bootstrap.sh
 
+# ─── Helpers ───
+
+# Generate SSH key and configure SSH agent
+[group: 'helpers']
+ssh-setup:
+    bash {{dotfiles}}/helpers/ssh-setup.sh
+
+# Migrate the repo from $HOME/arche to /opt/arche for multi-user setups
+[group: 'helpers']
+multi-user-init:
+    bash {{dotfiles}}/helpers/migrate-to-opt.sh
+
+# Run only per-user setup (stow + appearance) — for the secondary user
+# after the primary user has bootstrapped the system. Skips system-level
+# scripts since pacman/etc/ are already configured machine-wide.
+[group: 'helpers']
+secondary-user:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! -d /opt/arche ]]; then
+        echo "[✗] /opt/arche not found — primary user must run 'just multi-user-init' first" >&2
+        exit 1
+    fi
+    if ! id -nG | grep -qw users; then
+        echo "[✗] $USER is not in the 'users' group. Run as primary user:" >&2
+        echo "      sudo usermod -aG users $USER" >&2
+        echo "      then log out + back in" >&2
+        exit 1
+    fi
+    # Per-user compat symlink so $HOME/arche keeps working in this user's session
+    if [[ ! -e $HOME/arche ]]; then
+        ln -s /opt/arche $HOME/arche
+        echo "[✓] Linked $HOME/arche → /opt/arche"
+    fi
+    cd /opt/arche
+    bash scripts/11-stow.sh
+    bash scripts/06-shell.sh
+    echo ""
+    echo "[✓] Secondary user setup complete."
+    echo "    Per-user runtime managers (fnm, bun, rustup) are NOT installed —"
+    echo "    run 'just runtimes' yourself if you want them in this user's \$HOME."
+
 # ─── Individual Scripts ───
 
 # Run preflight checks
@@ -81,6 +123,11 @@ appearance:
 [group: 'utilities']
 restow pkg:
     stow -d {{dotfiles}}/stow -t $HOME --restow --no-folding {{pkg}}
+
+# Re-symlink all system files (/etc/, /usr/local/bin/)
+[group: 'utilities']
+relink:
+    bash -c 'source {{dotfiles}}/scripts/lib.sh && link_system_all'
 
 # ─── Theme ───
 
