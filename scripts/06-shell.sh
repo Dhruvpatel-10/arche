@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 06-shell.sh — bash + ble.sh + bash-preexec + atuin + carapace + starship
+# 06-shell.sh — bash + bash-completion + ble.sh + bash-preexec + atuin + starship
 # See docs/decisions.md D016 (reverses D003).
 #
 # ble.sh and bash-preexec are sourced directly from /opt/arche/vendor/ —
-# no system install step. carapace is a vendored binary symlinked into
-# ~/.local/bin/arche/.
+# no system install step. Per-tool completions come from bash-completion
+# (extra repo), sourced in .bashrc.
 
 source "$(dirname "$0")/lib.sh"
 
@@ -30,16 +30,6 @@ if [[ -n "$bash_path" ]]; then
     fi
 else
     log_err "bash not found after install"
-fi
-
-# ── Symlink vendored carapace binary into ~/.local/bin/arche/ ──
-
-mkdir -p "$HOME/.local/bin/arche"
-if [[ -x "$ARCHE/tools/bin/carapace" ]]; then
-    ln -sf "$ARCHE/tools/bin/carapace" "$HOME/.local/bin/arche/carapace"
-    log_ok "Linked carapace → ~/.local/bin/arche/carapace"
-else
-    log_warn "tools/bin/carapace missing — skipping symlink"
 fi
 
 # ── Verify vendored ble.sh + bash-preexec are readable ──

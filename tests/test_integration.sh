@@ -27,11 +27,11 @@ test_integration() {
         fi
     done
 
-    # carapace binary present and symlinked
-    if [[ -x "$ARCHE/tools/bin/carapace" ]]; then
-        pass "tools/bin/carapace executable"
+    # bash-completion installed
+    if [[ -r /usr/share/bash-completion/bash_completion ]]; then
+        pass "bash-completion available"
     else
-        fail "tools/bin/carapace missing"
+        fail "bash-completion not installed"
     fi
 
     # ── Core tools ──

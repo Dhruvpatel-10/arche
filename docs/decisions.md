@@ -5,6 +5,54 @@ Newest entries at the top.
 
 ---
 
+## D017 — Carapace removed, bash-completion takes over
+
+**Date:** 2026-04-12
+**Status:** Accepted
+**Amends:** D016 (carapace was part of original D016 stack)
+
+Removing `carapace-bin` entirely. Per-tool completions now come from
+`bash-completion` (extra repo), which was already installed but unsourced.
+
+**Why:**
+- carapace's bash bridge (`_carapace_completer`) shells out per keystroke and
+  emits `bash: read: \`': not a valid identifier` errors mid-typing on partial
+  input. ble.sh's auto-complete preview was triggering it on every character,
+  spamming the prompt with errors and a popup that pasted multi-line garbage.
+- The friction was severe enough that day-to-day shell use became unpleasant
+  within 24h of D016 landing — far beyond the "5% UX gap" estimate in D016.
+- carapace's value was the long tail of tool completions (uv, deno, k6, etc).
+  bash-completion covers the high-value 80% natively (git, docker, systemd,
+  ssh, kubectl, pacman, ~200 tools) without the bridge fragility. The long
+  tail falls back to filename completion, which is acceptable.
+- Net supply-chain win: one fewer vendored binary (65 MB Go static binary +
+  pinned-commit manifest + audit burden) in exchange for one extra-repo
+  package that already shipped on the system.
+
+**What changed:**
+- Deleted: `tools/bin/carapace`, `tools/bin/.carapace.source`,
+  `stow/bash/.bash/conf.d/70-carapace.sh`.
+- `stow/bash/.bashrc` now sources `/usr/share/bash-completion/bash_completion`
+  before bash-preexec.
+- `scripts/06-shell.sh` no longer symlinks the carapace binary.
+- `tests/test_lint.sh` lost the carapace presence check.
+- `tests/test_integration.sh` swaps the carapace binary check for a
+  bash-completion availability check.
+- `.blerc` keeps `complete_auto_complete_opts=syntax-disabled` and the
+  `_ble_complete_auto_source=(history)` override — these remain useful as
+  defense in depth, even though carapace is gone.
+
+**Consequences:**
+- ble.sh's Tab-triggered completion still works via bash-completion.
+- Inline ghost suggestion remains fish-like (history only).
+- D016's three pillars (supply-chain minimalism, interactive==script,
+  vendored stack) are intact and slightly improved.
+- If carapace's coverage is missed in practice, the path forward is to
+  install it from `extra` (not vendor it) and add a thin shim that *doesn't*
+  pipe through ble.sh's auto-complete preview.
+
+---
+
 ## D016 — Bash replaces Fish, with vendored ble.sh + bash-preexec + carapace
 
 **Date:** 2026-04-11

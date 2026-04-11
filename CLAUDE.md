@@ -4,7 +4,7 @@
 - User: stark
 - Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
 - Primary interface: Claude Code (terminal, TUI-first)
-- Shell: Bash + ble.sh + bash-preexec + Atuin + carapace | Prompt: Starship | Terminal: Kitty
+- Shell: Bash + ble.sh + bash-preexec + Atuin + bash-completion | Prompt: Starship | Terminal: Kitty
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
 
 ## Goal
@@ -403,8 +403,9 @@ See `docs/status.md` for the full table.
 ---
 
 ## What NOT to Do
-- Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash — bash + ble.sh + bash-preexec + carapace is the stack (D016)
-- Do not install ble.sh, bash-preexec, or carapace from AUR — they are vendored under vendor/ and tools/bin/ (D016)
+- Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash — bash + ble.sh + bash-preexec + bash-completion is the stack (D016)
+- Do not install ble.sh or bash-preexec from AUR — they are vendored under vendor/ (D016)
+- Do not reintroduce carapace — removed due to flaky bash bridge (`read \`': not a valid identifier` errors). bash-completion covers tools natively.
 - Do not call `ble-update` — upgrades happen by re-vendoring a new pinned commit
 - Do not use GRUB syntax — bootloader is Limine
 - Do not reference nvm — fnm is the active Node manager

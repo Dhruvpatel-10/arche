@@ -72,12 +72,6 @@ test_lint() {
         skip "vendor/blesh/ missing"
     fi
 
-    if [[ -x "$ARCHE/tools/bin/carapace" && -f "$ARCHE/tools/bin/.carapace.source" ]]; then
-        pass "tools/bin/carapace + .carapace.source present"
-    else
-        skip "tools/bin/carapace or manifest missing"
-    fi
-
     # ── Strict mode ──
 
     section "Lint: Scripts use strict mode"

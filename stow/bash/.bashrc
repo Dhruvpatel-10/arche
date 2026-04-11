@@ -2,9 +2,9 @@
 # ~/.bashrc — arche interactive bash config
 # See docs/decisions.md D016 for the migration from fish.
 #
-# Load order matters: bash-preexec → ble.sh (noattach) → tool integrations
-# (atuin must come after bash-preexec; carapace after ble.sh) → functions
-# → aliases/abbreviations → local secrets → ble-attach (LAST).
+# Load order matters: bash-completion → bash-preexec → ble.sh → tool
+# integrations (atuin must come after bash-preexec) → functions →
+# aliases/abbreviations → local secrets. ble.sh auto-attaches on first prompt.
 
 # Exit if non-interactive
 [[ $- == *i* ]] || return
@@ -21,6 +21,12 @@ shopt -s histappend checkwinsize cmdhist globstar
 # ── PATH + env (must run before any command lookups) ──
 [[ -r "$HOME/.bash/conf.d/00-path.sh" ]] && source "$HOME/.bash/conf.d/00-path.sh"
 
+# ── bash-completion (system tool completions: git, docker, systemd, etc.) ──
+if [[ -r /usr/share/bash-completion/bash_completion ]]; then
+    # shellcheck source=/dev/null
+    source /usr/share/bash-completion/bash_completion
+fi
+
 # ── bash-preexec hooks (required by Atuin; vendored — D016) ──
 if [[ -r /opt/arche/vendor/bash-preexec/bash-preexec.sh ]]; then
     # shellcheck source=/dev/null
@@ -35,7 +41,7 @@ if [[ -r /opt/arche/vendor/blesh/ble.sh ]]; then
     source /opt/arche/vendor/blesh/ble.sh --attach=prompt
 fi
 
-# ── Tool integrations (starship, zoxide, fnm, uv, ssh-agent, atuin, carapace) ──
+# ── Tool integrations (starship, zoxide, fnm, uv, ssh-agent, atuin) ──
 if [[ -d "$HOME/.bash/conf.d" ]]; then
     for _f in "$HOME"/.bash/conf.d/[1-9]*.sh; do
         [[ -r "$_f" ]] && source "$_f"

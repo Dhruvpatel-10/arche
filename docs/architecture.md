@@ -149,7 +149,7 @@ Does not: clone repo, configure SSH, set up secrets.
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
 | Compositor   | Hyprland via uwsm, SDDM + SilentSDDM theme   |
-| Shell        | bash + ble.sh + bash-preexec + atuin + carapace + starship (D016) |
+| Shell        | bash + ble.sh + bash-preexec + atuin + bash-completion + starship (D016) |
 | Terminal     | Kitty                                        |
 | Editor       | Neovim (LazyVim)                             |
 | Bar          | Waybar                                       |

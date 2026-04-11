@@ -56,7 +56,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 
 ### shell.sh — Shell (pacman: 6)
 - bash, bash-completion, atuin, starship, kitty, tmux
-- ble.sh, bash-preexec, carapace are **vendored** (see D016), not installed from AUR
+- ble.sh and bash-preexec are **vendored** (see D016), not installed from AUR. bash-completion provides per-tool completions natively.
 
 ### bar.sh — Status Bar (pacman: 1)
 - waybar
@@ -97,7 +97,6 @@ These are installed outside the package registry:
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
 - **ble.sh** — vendored under `vendor/blesh/`, sourced directly from `/opt/arche/vendor/blesh/ble.sh` (D016)
 - **bash-preexec** — vendored under `vendor/bash-preexec/`, sourced directly (D016)
-- **carapace** — vendored binary at `tools/bin/carapace`, symlinked to `~/.local/bin/arche/carapace` by `06-shell.sh` (D016)
 - **fnm** — Node version manager (curl script in `09-runtimes.sh`)
 - **Bun** — JS runtime (official curl script in `09-runtimes.sh`)
 - **LADSPA plugin** — removed; arche-denoise is now a single binary

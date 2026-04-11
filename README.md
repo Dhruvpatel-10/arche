@@ -53,7 +53,7 @@ versions, so each user opts in via `just runtimes` if they want them.
 |---------------|-------------------------------------------|
 | OS            | Arch Linux (btrfs, Limine)                |
 | Compositor    | Hyprland via uwsm                        |
-| Shell         | bash + ble.sh + bash-preexec + atuin + carapace + starship |
+| Shell         | bash + ble.sh + bash-preexec + atuin + bash-completion + starship |
 | Terminal      | Kitty                                     |
 | Editor        | Neovim (LazyVim)                          |
 | Bar           | Waybar                                    |

@@ -84,7 +84,7 @@ audio:
 hyprland:
     bash {{dotfiles}}/scripts/05-hyprland.sh
 
-# Install and configure shell (bash + ble.sh + atuin + carapace)
+# Install and configure shell (bash + ble.sh + atuin + bash-completion)
 [group: 'scripts']
 shell:
     bash {{dotfiles}}/scripts/06-shell.sh
