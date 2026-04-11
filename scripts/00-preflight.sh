@@ -28,27 +28,43 @@ fi
 log_ok "Internet reachable"
 
 # ─── Link System Configs ───
-# Before stow is installed, we use ln for /etc/ and /usr/local/bin/ files.
-# link_system_file is provided by lib.sh
+# Auto-discover and symlink everything under system/ to /
+# Adding a new file to system/etc/foo automatically gets linked here.
+link_system_all
+svc_enable snapper-cleanup.timer
 
-# Pacman config
-link_system_file "$ARCHE/system/etc/pacman.conf" "/etc/pacman.conf"
-
-# Pacman hooks
-for hook in "$ARCHE/system/etc/pacman.d/hooks/"*.hook; do
-    [[ -f "$hook" ]] || continue
-    link_system_file "$hook" "/etc/pacman.d/hooks/$(basename "$hook")"
+# ─── Disable btrfs qgroups on snapshotted subvolumes ───
+# snapper create-config silently enables btrfs quota at FS level, even when
+# the snapper config sets QGROUP="". Once on, btrfs-cleaner has to recompute
+# qgroup accounting for every freed extent during snapshot cleanup, which
+# causes multi-second IO stalls and load spikes (especially at boot when
+# btrfs replays pending subvolume deletions). We never use qgroup-aware
+# cleanup, so disable quotas entirely. Idempotent: btrfs quota disable is
+# a no-op when already off.
+for _mp in / /home; do
+    if sudo btrfs qgroup show "$_mp" &>/dev/null; then
+        log_info "Disabling btrfs qgroups on $_mp..."
+        if sudo btrfs quota disable "$_mp"; then
+            log_ok "qgroups disabled on $_mp"
+        else
+            log_warn "btrfs quota disable failed on $_mp"
+        fi
+    else
+        log_warn "qgroups already off on $_mp"
+    fi
 done
 
-# System scripts
-for script in "$ARCHE/system/usr/local/bin/"*; do
-    [[ -f "$script" ]] || continue
-    link_system_file "$script" "/usr/local/bin/$(basename "$script")"
-    sudo chmod +x "/usr/local/bin/$(basename "$script")"
-done
-
-# Snapper config (btrfs snapshot limits — must exist before pacman hooks fire)
-link_system_file "$ARCHE/system/etc/snapper/configs/root" "/etc/snapper/configs/root"
+# ─── Disable snapper-timeline.timer ───
+# Both root and home configs have TIMELINE_CREATE="no". The timer just runs
+# cleanup on a snapshot list that's always empty — pure waste. snapper-cleanup
+# (number-based) is the only timer we need.
+if systemctl is-enabled snapper-timeline.timer &>/dev/null; then
+    log_info "Disabling snapper-timeline.timer (timeline snapshots are off)..."
+    sudo systemctl disable --now snapper-timeline.timer
+    log_ok "snapper-timeline.timer disabled"
+else
+    log_warn "snapper-timeline.timer already disabled"
+fi
 
 # ─── Mirror Ranking ───
 

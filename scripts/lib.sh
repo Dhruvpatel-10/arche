@@ -59,6 +59,27 @@ link_system_file() {
     log_ok "Linked: $dst"
 }
 
+# Walk system/ tree and symlink every file to its / counterpart.
+# system/etc/pacman.conf → /etc/pacman.conf
+# system/usr/local/bin/foo → /usr/local/bin/foo (made executable)
+link_system_all() {
+    local sys_dir="$ARCHE/system"
+
+    if [[ ! -d "$sys_dir" ]]; then
+        log_err "system/ directory not found"
+        return 1
+    fi
+
+    while IFS= read -r -d '' src; do
+        local rel="${src#$sys_dir}"
+        link_system_file "$src" "$rel"
+        # Make scripts executable
+        if [[ "$rel" == /usr/local/bin/* ]]; then
+            sudo chmod +x "$rel"
+        fi
+    done < <(find "$sys_dir" -type f -print0)
+}
+
 # ─── Package Installation ───
 
 pkg_install() {

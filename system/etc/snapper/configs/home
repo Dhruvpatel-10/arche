@@ -1,0 +1,63 @@
+# /etc/snapper/configs/home — managed by arche (symlinked by scripts/00-preflight.sh)
+# Snapper config for btrfs /home subvolume.
+#
+# Snapshot strategy:
+#   - No timeline snapshots (workstation: /home only changes from user activity, not on a schedule)
+#   - No pacman pre/post pairs (those only apply to root)
+#   - Manual snapshots only (snapper -c home create -d "before X")
+#   - NUMBER_LIMIT keeps any manual snapshots bounded
+
+# subvolume to snapshot
+SUBVOLUME="/home"
+
+# filesystem type
+FSTYPE="btrfs"
+
+# btrfs qgroup for space aware cleanup algorithms — DISABLED
+# Enabling qgroups makes btrfs-cleaner recompute accounting on every freed
+# extent, which causes multi-second IO stalls and load spikes during cleanup.
+# Leave empty and ensure `btrfs quota disable /home` runs in 00-preflight.sh.
+QGROUP=""
+
+# fraction of filesystem space snapshots may use (30%)
+SPACE_LIMIT="0.3"
+
+# fraction of filesystem space that should remain free (30%)
+FREE_LIMIT="0.3"
+
+# users and groups allowed to work with config
+ALLOW_USERS=""
+ALLOW_GROUPS=""
+
+# sync users and groups from ALLOW_USERS and ALLOW_GROUPS to .snapshots directory
+SYNC_ACL="no"
+
+# compare pre/post snapshots in background after creating post-snapshot
+BACKGROUND_COMPARISON="yes"
+
+# ─── Number Cleanup (manual snapshots) ───
+
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="3600"
+NUMBER_LIMIT="10"
+NUMBER_LIMIT_IMPORTANT="5"
+
+# ─── Timeline Snapshots (disabled) ───
+# /home doesn't need automatic snapshots — meaningful changes are intentional.
+# All TIMELINE_LIMIT_* values must be 0 even though CREATE=no, otherwise
+# snapper-cleanup walks the (empty) timeline list pointlessly on every tick.
+
+TIMELINE_CREATE="no"
+TIMELINE_CLEANUP="yes"
+TIMELINE_MIN_AGE="3600"
+TIMELINE_LIMIT_HOURLY="0"
+TIMELINE_LIMIT_DAILY="0"
+TIMELINE_LIMIT_WEEKLY="0"
+TIMELINE_LIMIT_MONTHLY="0"
+TIMELINE_LIMIT_QUARTERLY="0"
+TIMELINE_LIMIT_YEARLY="0"
+
+# ─── Empty Pre/Post Cleanup ───
+
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="3600"
