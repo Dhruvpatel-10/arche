@@ -1,33 +1,55 @@
 #!/usr/bin/env bash
-# arche-wallpaper — browse and set wallpapers via swww
+# arche-wallpaper — browse and set wallpapers via hyprpaper
+#
+# hyprpaper 0.8 dropped the old `preload =` / `wallpaper = ,path` flat
+# syntax in favour of a `wallpaper { monitor = … path = … }` block, and
+# replaced its IPC with a Hyprwire protocol that hyprctl 0.54's legacy
+# `preload`/`wallpaper` subcommands don't speak. Easiest reliable path:
+# write hyprpaper.conf with the new block syntax and restart the daemon
+# on every switch.
 #
 # Usage:
 #   arche-wallpaper           — pick from wallpaper directory (fzf)
 #   arche-wallpaper random    — set a random wallpaper
+#   arche-wallpaper toggle    — cycle to the next wallpaper (sorted)
 #   arche-wallpaper <path>    — set a specific image
 
 set -euo pipefail
 
-WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
-TRANSITION="grow"
-TRANSITION_DURATION=2
-TRANSITION_FPS=60
+WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/.config/hypr/wallpapers}"
+HYPRPAPER_CONF="$HOME/.config/hypr/hyprpaper.conf"
 
-# Ensure exactly one swww daemon is running
-if ! swww query &>/dev/null; then
-    swww-daemon &disown
-    sleep 1
-fi
-
-set_wallpaper() {
-    swww img "$1" \
-        --transition-type "$TRANSITION" \
-        --transition-duration "$TRANSITION_DURATION" \
-        --transition-fps "$TRANSITION_FPS"
-    notify-send -i "$1" "Wallpaper set" "$(basename "$1")"
+list_wallpapers() {
+    fd -e png -e jpg -e jpeg -e webp . "$WALLPAPER_DIR" | sort
 }
 
-# Ensure wallpaper directory exists
+current_wallpaper() {
+    [[ -f "$HYPRPAPER_CONF" ]] || return 0
+    awk '/^[[:space:]]*path[[:space:]]*=/ {sub(/^[^=]*=[[:space:]]*/, ""); print; exit}' "$HYPRPAPER_CONF"
+}
+
+set_wallpaper() {
+    local img="$1"
+    cat > "$HYPRPAPER_CONF" <<EOF
+# Managed by arche-wallpaper — do not edit by hand.
+splash = 0
+ipc = 1
+
+wallpaper {
+    monitor =
+    path = $img
+    fit_mode = cover
+}
+EOF
+    pkill -x hyprpaper 2>/dev/null || true
+    sleep 0.2
+    # setsid -f detaches hyprpaper into its own session so Hyprland's exec
+    # dispatcher doesn't SIGTERM the whole process group when this script
+    # returns. Plain `&` / `disown` is not enough — same group, gets killed.
+    setsid -f hyprpaper >/dev/null 2>&1 < /dev/null
+    notify-send -i "$img" "Wallpaper set" "$(basename "$img")"
+}
+
 if [[ ! -d "$WALLPAPER_DIR" ]]; then
     notify-send "Wallpaper" "Create $WALLPAPER_DIR and add images"
     exit 1
@@ -35,13 +57,25 @@ fi
 
 case "${1:-}" in
     random)
-        pick=$(fd -e png -e jpg -e jpeg -e webp . "$WALLPAPER_DIR" | shuf -n1)
+        pick=$(list_wallpapers | shuf -n1)
         [[ -n "$pick" ]] && set_wallpaper "$pick"
         ;;
+    toggle)
+        mapfile -t all < <(list_wallpapers)
+        (( ${#all[@]} > 0 )) || { echo "No wallpapers in $WALLPAPER_DIR"; exit 1; }
+        current=$(current_wallpaper || true)
+        next="${all[0]}"
+        for i in "${!all[@]}"; do
+            if [[ "${all[$i]}" == "$current" ]]; then
+                next="${all[$(( (i + 1) % ${#all[@]} ))]}"
+                break
+            fi
+        done
+        set_wallpaper "$next"
+        ;;
     "")
-        pick=$(fd -e png -e jpg -e jpeg -e webp . "$WALLPAPER_DIR" \
-            | sort \
-            | fzf --prompt="wallpaper > " \
+        pick=$(list_wallpapers \
+            | SHELL=/bin/bash fzf --prompt="wallpaper > " \
                   --preview="kitty icat --clear --transfer-mode=memory --stdin=no --place=\${FZF_PREVIEW_COLUMNS}x\${FZF_PREVIEW_LINES}@0x0 {}" \
                   --preview-window=right:60%)
         [[ -n "$pick" ]] && set_wallpaper "$pick"

@@ -23,7 +23,7 @@ PACMAN_PKGS=(
     qt6-multimedia-ffmpeg
 
     # Wayland utilities
-    swww                     # wallpaper daemon (animated transitions)
+    hyprpaper                # wallpaper daemon (static, hyprwm official)
     grim                     # screenshot capture
     slurp                    # region select
     satty                    # screenshot annotate
