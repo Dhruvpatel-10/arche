@@ -4,7 +4,7 @@
 - User: stark
 - Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
 - Primary interface: Claude Code (terminal, TUI-first)
-- Shell: Bash + ble.sh + bash-preexec + Atuin + bash-completion | Prompt: Starship | Terminal: Kitty
+- Shell: Fish + Atuin (Ctrl-R) + Fisher (plugins) | Prompt: Starship | Terminal: Kitty
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
 
 ## Goal
@@ -62,7 +62,7 @@ Full architecture and decision records live in `docs/`.
 │       └── arche-legion      # Lenovo Vantage replacement (built externally)
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
-    ├── bash/                 # shell config (D016)
+    ├── fish/                 # shell config (D018 — restored from D003)
     ├── kitty/                # terminal config
     ├── starship/             # prompt config
     ├── mpv/                  # media player
@@ -180,7 +180,7 @@ Tests live in `tests/` and run via `just test`. Three levels:
 
 **Lint** — static analysis, runs everywhere (CI-safe, no root needed):
 - `bash -n` on all scripts and package files
-- `bash -n` on all stow/bash/ configs and vendored shell drops
+- `fish --no-execute` on all stow/fish/ configs
 - `shellcheck` on all bash scripts
 - Package files declare only arrays (no side effects)
 - Theme files export all required variables
@@ -267,7 +267,7 @@ users can reach (i.e. outside `/home/stark`, which is mode 700).
 
 All stow packages live under `stow/`. Each mirrors the home directory structure:
 ```
-stow/bash/.bashrc  →  ~/.bashrc
+stow/fish/.config/fish/config.fish  →  ~/.config/fish/config.fish
 ```
 
 The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
@@ -403,15 +403,12 @@ See `docs/status.md` for the full table.
 ---
 
 ## What NOT to Do
-- Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash — bash + ble.sh + bash-preexec + bash-completion is the stack (D016)
-- Do not install ble.sh or bash-preexec from AUR — they are vendored under vendor/ (D016)
-- Do not reintroduce carapace — removed due to flaky bash bridge (`read \`': not a valid identifier` errors). bash-completion covers tools natively.
-- Do not call `ble-update` — upgrades happen by re-vendoring a new pinned commit
+- Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash, ble.sh, bash-preexec, or carapace — fish + fisher + atuin is the stack (D018 reverses D016, restores D003)
+- Do not install fisher from AUR — install it from upstream curl into `~/.config/fish/functions/fisher.fish`. See `06-shell.sh`.
 - Do not use GRUB syntax — bootloader is Limine
 - Do not reference nvm — fnm is the active Node manager
 - Do not reference pyenv — not installed
-- Do not reference zsh, fish, or fisher — bash is the shell (D016 reverses D003)
-- Do not hardcode /home/stark — use $HOME
-- Do not suggest storing secrets in dotfiles — ~/.bash/local.bash is the pattern
-- Do not rely on leading-space to hide a command from history — bash-preexec rewrites HISTCONTROL=ignorespace to ignoredups (D016)
+- Do not reference bash, zsh, ble.sh, bash-preexec, or carapace as the active shell — fish is the shell (D018)
+- Do not hardcode /home/stark — use `$HOME` or `~`
+- Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is the pattern (gitignored)
 - Do not reference any external config repos — arche is self-contained

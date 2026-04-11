@@ -20,7 +20,7 @@ Last updated: 2026-04-03
 
 | Package                        | Status  | Notes                                     |
 |--------------------------------|---------|--------------------------------------------|
-| `bash`                         | Done    | .bashrc, conf.d/, functions/, aliases, abbreviations (ble.sh) — D016 |
+| `fish`                         | Done    | config.fish, conf.d/, functions/, abbreviations, fisher plugins — D018 |
 | `kitty`                        | Done    | Terminal config + theme template           |
 | `starship`                     | Done    | Prompt config                              |
 | `mpv`                          | Done    | Media player                               |

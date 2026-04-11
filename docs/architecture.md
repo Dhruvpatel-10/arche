@@ -53,7 +53,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   └── usr/local/bin/
 │
 └── stow/                   # behavior configs — symlinked via GNU Stow
-    ├── bash/               # shell config (D016)
+    ├── fish/               # shell config (D018 — restored from D003)
     ├── kitty/              # terminal behavior
     ├── starship/           # prompt config
     ├── mpv/                # media player
@@ -82,7 +82,7 @@ Examples: `waybar/style.css`, `gtk-3.0/settings.ini`, `hypr/envs.conf`
 Configs that contain **behavior**: keybinds, module lists, rules, logic.
 Symlinked directly via GNU Stow. Committed as-is. Lives in `stow/`.
 
-Examples: `hyprland.conf`, `waybar/config.jsonc`, `bash/.bashrc`
+Examples: `hyprland.conf`, `waybar/config.jsonc`, `fish/config.fish`
 
 ### Layer 3: Generated Output
 
@@ -123,7 +123,7 @@ All stow packages live under `stow/`. Each package mirrors the home directory
 structure it targets:
 
 ```
-stow/bash/.bashrc                  →  ~/.bashrc
+stow/fish/.config/fish/config.fish →  ~/.config/fish/config.fish
 stow/mpv/.config/mpv/mpv.conf      →  ~/.config/mpv/mpv.conf
 ```
 
@@ -149,7 +149,7 @@ Does not: clone repo, configure SSH, set up secrets.
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
 | Compositor   | Hyprland via uwsm, SDDM + SilentSDDM theme   |
-| Shell        | bash + ble.sh + bash-preexec + atuin + bash-completion + starship (D016) |
+| Shell        | fish + atuin + fisher + starship (D018 — restored from D003) |
 | Terminal     | Kitty                                        |
 | Editor       | Neovim (LazyVim)                             |
 | Bar          | Waybar                                       |

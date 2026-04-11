@@ -54,9 +54,9 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Qt:** qt5-wayland, qt6-wayland, hyprpolkitagent
 - **AUR:** syshud (OSD overlay)
 
-### shell.sh — Shell (pacman: 6)
-- bash, bash-completion, atuin, starship, kitty, tmux
-- ble.sh and bash-preexec are **vendored** (see D016), not installed from AUR. bash-completion provides per-tool completions natively.
+### shell.sh — Shell (pacman: 5)
+- fish, atuin, starship, kitty, tmux
+- fisher (fish plugin manager) is installed from upstream curl by `06-shell.sh` — not from AUR. See D018.
 
 ### bar.sh — Status Bar (pacman: 1)
 - waybar
@@ -95,8 +95,7 @@ These are installed outside the package registry:
 - **arche-greeter** — retired; replaced by SDDM + SilentSDDM (see D013, which reverses D010)
 - **sddm-silent** (SilentSDDM theme) — vendored under `vendor/sddm-silent/` (not a package), installed via `cp` by `05-hyprland.sh`
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
-- **ble.sh** — vendored under `vendor/blesh/`, sourced directly from `/opt/arche/vendor/blesh/ble.sh` (D016)
-- **bash-preexec** — vendored under `vendor/bash-preexec/`, sourced directly (D016)
+- **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
 - **fnm** — Node version manager (curl script in `09-runtimes.sh`)
 - **Bun** — JS runtime (official curl script in `09-runtimes.sh`)
 - **LADSPA plugin** — removed; arche-denoise is now a single binary

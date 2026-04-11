@@ -1,6 +1,6 @@
 # Secrets — never commit credentials
 secrets.sh
-local.bash
+local.fish
 *.env
 .env.*
 *.key

@@ -5,6 +5,105 @@ Newest entries at the top.
 
 ---
 
+## D018 — Fish restored, bash + ble.sh + bash-preexec removed
+
+**Date:** 2026-04-12
+**Status:** Accepted
+**Reverses:** D016 (and supersedes D017, which was a partial mitigation)
+**Restores:** D003 (Fish shell, with one tweak — fisher from upstream curl, not AUR)
+
+Switching the interactive and login shell back from Bash to Fish. The bash
+stack (`stow/bash/`, `vendor/blesh/`, `vendor/bash-preexec/`, `tools/bin/carapace`,
+bash-completion sourcing) is fully removed. fish + fisher + atuin replaces it.
+
+**Why D016 didn't survive 24 hours:**
+- D016 estimated a "~5% UX gap" between fish and bash+ble.sh. The actual gap
+  was much larger and surfaced as continuous, daily friction:
+  - carapace's bash bridge errored on partial input (`read: \`': not a valid
+    identifier`) on every keystroke. Removed in D017 — but the underlying
+    issue was that ble.sh + programmable completion is a fragile coupling.
+  - ble.sh's multiline paste mode (MULTILINE edit, `C-j: run` hint) confused
+    every paste of more than one line.
+  - ble.sh's word-deletion widgets (`cword`/`eword`/`uword`) split on shell
+    metacharacters and felt random for Ctrl+Backspace.
+  - Kitty's keyboard protocol (`C-DEL`) vs legacy (`C-h`) for the same
+    physical key meant binding ctrl+backspace correctly took multiple tries.
+  - Inline ghost suggestions pulled stale or context-irrelevant lines from
+    history because ble.sh's history source has no command-aware filter.
+- Fish ships all of this **as defaults**, with no .blerc tuning, no widget
+  bindings, no carapace bridge, no kitty keyboard-protocol gymnastics.
+
+**What stays from D016:**
+- The supply-chain principle: no AUR PKGBUILDs for shell-layer tooling.
+  - `fish` is from the `extra` repo (clean, audited by Arch maintainers).
+  - `fisher` is **installed from upstream curl**, not from AUR. The official
+    one-liner downloads `fisher.fish` directly into
+    `~/.config/fish/functions/`, exactly as upstream documents. This avoids
+    AUR PKGBUILD execution, matching D016's vendoring intent without the
+    overhead of vendoring fisher itself (it's a 700-line fish script that
+    self-updates).
+- atuin (extra repo, SQLite history, `Ctrl-R`) — kept unchanged from D016.
+- starship, kitty, tmux, fnm, uv, zoxide, ssh-agent — all shell-agnostic,
+  unchanged.
+
+**What we lose vs D016:**
+- Interactive == script shell. Fish is not POSIX, so one-liner pastes from
+  bash documentation may need translation. This was D016's biggest argument
+  in favor of bash, but in practice the friction of using bash interactively
+  outweighed the friction of occasional fish translation for one-liners.
+
+**Layout:**
+- `stow/fish/` — restored from commit `4ed5d6d^` (the commit immediately
+  before D016 deleted it). Same `config.fish`, `conf.d/`, `functions/`,
+  `fish_plugins`, `local.fish.template` as the original D003 setup.
+- `templates/fish/conf.d/theme.fish.tmpl` — restored. Renders fish color
+  variables from the active theme palette (`fish_color_*`).
+- `stow/bash/` — deleted entirely.
+- `vendor/blesh/`, `vendor/bash-preexec/` — deleted entirely.
+- `tools/bin/carapace` and its `.source` manifest — already removed in D017.
+- `packages/shell.sh` — `bash`, `bash-completion` removed. `fish` added.
+  `atuin`, `starship`, `kitty`, `tmux` unchanged.
+- `scripts/06-shell.sh` — restored to the pre-D016 fish flow: install fish,
+  add to `/etc/shells`, `chsh`, stow, render theme template, install fisher
+  via upstream curl, run `fisher update`.
+
+**Test changes:**
+- `tests/test_lint.sh` — `bash -n stow/bash/...` and `vendor/blesh,
+  bash-preexec/...` checks replaced with `fish --no-execute stow/fish/*.fish`.
+- `tests/test_integration.sh` — ble.sh / bash-preexec presence checks and
+  the bash-completion availability check replaced with fish runnability
+  check and fisher-installed check.
+
+**Operator tasks on already-installed machines:**
+```
+# 1. Install fish + change shell
+sudo pacman -S --needed fish
+chsh -s "$(command -v fish)"
+
+# 2. Stow fish, render theme, install fisher
+just shell
+
+# 3. Tear down bash stack from $HOME
+stow -D -d /opt/arche/stow -t "$HOME" bash 2>/dev/null || true
+rm -f ~/.bashrc ~/.bash_profile ~/.bash_logout ~/.blerc
+rm -rf ~/.bash
+
+# 4. Open a new kitty window. You should land in fish.
+```
+
+**Consequences:**
+- `.claude/rules/secrets.md` updated to reference `~/.config/fish/local.fish`
+  again (gitignored).
+- `.gitignore` reverts `local.bash` → `local.fish`.
+- `CLAUDE.md`, `README.md`, `Justfile`, `bootstrap.sh`, `docs/architecture.md`,
+  `docs/status.md`, `packages/CLAUDE.md`, `helpers/migrate-to-opt.sh` all
+  updated to reflect the fish stack.
+- D016 and D017 stay in the log as historical record. The lessons:
+  bash+ble.sh in 2026 is still not a drop-in for fish, and the supply-chain
+  win of vendoring is real but not worth multi-hour debugging sessions.
+
+---
+
 ## D017 — Carapace removed, bash-completion takes over
 
 **Date:** 2026-04-12
