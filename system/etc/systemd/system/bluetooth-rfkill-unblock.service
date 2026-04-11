@@ -1,0 +1,12 @@
+[Unit]
+Description=Unblock Bluetooth soft-block via rfkill
+Before=bluetooth.service
+After=dbus.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rfkill unblock bluetooth
+RemainAfterExit=yes
+
+[Install]
+WantedBy=bluetooth.target

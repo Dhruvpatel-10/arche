@@ -1,0 +1,10 @@
+[Unit]
+Description=Unblock Bluetooth soft-block after suspend/resume
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rfkill unblock bluetooth
+
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
