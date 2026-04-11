@@ -70,6 +70,6 @@ application/x-yaml=nvim.desktop
 text/markdown=glow.desktop
 text/x-markdown=glow.desktop
 
-# File manager — yazi
-inode/directory=yazi.desktop
+# File manager — nemo
+inode/directory=nemo.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop

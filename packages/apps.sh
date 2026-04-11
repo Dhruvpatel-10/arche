@@ -9,7 +9,7 @@ PACMAN_PKGS=(
     vivaldi
 
     # File management
-    yazi                     # TUI file manager
+    nemo                     # GTK file manager (Cinnamon, Wayland-native)
     syncthing
 
     # Media
@@ -43,6 +43,4 @@ PACMAN_PKGS=(
     docker-compose
 )
 
-AUR_PKGS=(
-    ripdrag                  # drag-and-drop from TUI (GTK4, Wayland-native)
-)
+AUR_PKGS=()

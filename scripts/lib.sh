@@ -470,9 +470,6 @@ _theme_reload() {
         gtk-4.0)
             log_ok "GTK4 picks up changes on next app launch"
             ;;
-        yazi)
-            log_ok "Yazi picks up theme on next launch"
-            ;;
         legion)
             log_ok "Legion picks up theme on next launch"
             ;;

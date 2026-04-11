@@ -49,21 +49,13 @@ svc_enable bluetooth-rfkill-unblock-resume
 svc_enable bluetooth
 
 # Stow app configs
-for pkg in mpv zathura yazi mimeapps; do
+for pkg in mpv zathura mimeapps; do
     if [[ -d "$ARCHE/stow/$pkg" ]]; then
         stow_pkg "$pkg"
     else
         log_warn "stow/$pkg not found — skipping"
     fi
 done
-
-# Install yazi plugins from package.toml
-if command -v ya &>/dev/null; then
-    log_info "Installing yazi plugins..."
-    ya pkg install 2>/dev/null && log_ok "Yazi plugins installed"
-else
-    log_warn "ya not found — skipping yazi plugin install"
-fi
 
 # ─── Arche-Denoise (GPU noise suppression) ───
 # Single binary that creates a PipeWire virtual mic with Maxine GPU denoising.
