@@ -1,0 +1,7 @@
+[Unit]
+Description=Arche battery monitor check
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/arche/arche-battery-monitor

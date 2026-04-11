@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# arche-battery-monitor — low battery warning via sysfs + mako
+# Designed to run every 30s via systemd timer
+
+THRESHOLD=15
+CRITICAL=5
+FLAG="/run/user/$UID/arche_battery_notified"
+
+capacity=$(cat /sys/class/power_supply/BAT0/capacity 2>/dev/null) || exit 0
+status=$(cat /sys/class/power_supply/BAT0/status 2>/dev/null) || exit 0
+
+if [[ "$status" == "Discharging" && "$capacity" -le "$CRITICAL" ]]; then
+    if [[ ! -f "${FLAG}_critical" ]]; then
+        notify-send -u critical "Battery critical" "${capacity}% — plug in now" -i battery-empty -t 0
+        touch "${FLAG}_critical"
+    fi
+elif [[ "$status" == "Discharging" && "$capacity" -le "$THRESHOLD" ]]; then
+    if [[ ! -f "$FLAG" ]]; then
+        notify-send -u critical "Battery low" "${capacity}% — consider plugging in" -i battery-caution -t 30000
+        touch "$FLAG"
+    fi
+else
+    rm -f "$FLAG" "${FLAG}_critical"
+fi
