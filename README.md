@@ -53,7 +53,7 @@ versions, so each user opts in via `just runtimes` if they want them.
 |---------------|-------------------------------------------|
 | OS            | Arch Linux (btrfs, Limine)                |
 | Compositor    | Hyprland via uwsm                        |
-| Shell         | fish + fisher + starship                  |
+| Shell         | bash + ble.sh + bash-preexec + atuin + carapace + starship |
 | Terminal      | Kitty                                     |
 | Editor        | Neovim (LazyVim)                          |
 | Bar           | Waybar                                    |
@@ -110,7 +110,7 @@ just theme apply     # re-render theme
 just reload          # render + reload Hyprland
 just test            # lint checks
 just test-all        # lint + stow + integration
-just restow fish     # re-stow a single package
+just restow bash     # re-stow a single package
 ```
 
 ## Security

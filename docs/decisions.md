@@ -5,6 +5,147 @@ Newest entries at the top.
 
 ---
 
+## D016 — Bash replaces Fish, with vendored ble.sh + bash-preexec + carapace
+
+**Date:** 2026-04-11
+**Status:** Accepted
+**Reverses:** D003 (Fish shell replaces Zsh)
+
+Switching the interactive and login shell from Fish to GNU Bash, recovering
+fish's autosuggestions, syntax highlighting, and abbreviations via a vendored
+layer: `ble.sh` (readline replacement, pure bash), `bash-preexec`, and
+`carapace-bin` (1000+ tool completions). Atuin from the `extra` repo provides
+SQLite-backed fuzzy history in offline mode.
+
+**Why:**
+- Supply-chain minimalism — bypassing AUR PKGBUILDs for ble.sh, bash-preexec,
+  and carapace. PKGBUILDs execute arbitrary build-time code; vendoring
+  upstream pinned releases with auditable source removes that attack surface.
+- Interactive shell == script shell: no more fish/bash context-switching
+  when writing or pasting one-liners.
+- ble.sh in 2026 is mature enough that the UX gap vs fish is ~5%. With
+  `ble-sabbrev`, abbreviations expand inline and record expanded form in
+  history — same muscle memory as fish `abbr`.
+
+**Audit (2026-04-11, three parallel agents — all CLEAN):**
+- **ble.sh** `b99cadb4` — single-maintainer (akinomyoga) with excellent commit
+  hygiene; ~900 internal `eval`s all scoped to pre-parsed literals and state
+  arrays; temp files under `umask 077` with TOCTOU guards; no runtime network;
+  pinned CI; vendored as `make`-built output of the pinned commit.
+- **bash-preexec** `a220343b` (23 commits ahead of 0.6.0 tag) — 2 `eval`s both
+  parse bash's own `trap -p DEBUG` output; DEBUG trap recursion guarded;
+  PROMPT_COMMAND preservation is array-aware and sanitized; no `/tmp`, no
+  network. Post-tag commits are bash-5.3 + ble.sh compat fixes authored mostly
+  by ble.sh's maintainer — directly de-risks the integration.
+- **carapace-bin** `v1.6.4` (sha256 `885ee9f9...eff2` tarball / `b3e58ea3...`
+  binary) — static Go (`CGO_ENABLED=0`), 46-line `go.sum`, zero runtime network,
+  zero telemetry, safe argv-form `exec.Command`, writes confined to XDG dirs,
+  no CVEs. Bus factor 1 (rsteube) is the only standing risk — mitigated by
+  pinning the exact SHA.
+
+**Layout:**
+- `vendor/blesh/` — built output of `make` from pinned commit (4.6MB). Sourced
+  directly via `/opt/arche/vendor/blesh/ble.sh` — no `/usr/share` install step.
+- `vendor/bash-preexec/bash-preexec.sh` — 564-line pure bash. Same deal,
+  sourced directly from `/opt/arche/vendor/bash-preexec/`.
+- `tools/bin/carapace` — 65MB static binary, symlinked to
+  `~/.local/bin/arche/carapace` by `06-shell.sh` (matches `arche-legion`
+  pattern).
+- `.source` file next to each vendored drop records upstream URL, pinned
+  commit/tag, sha256 where applicable, audit date, and upgrade workflow.
+
+**Load order (critical) in `stow/bash/.bashrc`:**
+1. `bash-preexec.sh` (must precede atuin)
+2. `ble.sh --attach=none` (defer heavy work)
+3. `conf.d/[1-9]*.sh` — starship, zoxide, fnm, uv, ssh-agent, atuin, carapace
+4. `functions/*.sh` — ported from fish
+5. `aliases.sh` (contains `ble-sabbrev` calls, needs ble.sh sourced)
+6. `~/.bash/local.bash` — gitignored secrets
+7. `ble-attach` — MUST be last
+
+**Abbreviations → `ble-sabbrev`:** all 21 fish abbreviations ported 1:1.
+Space-triggered inline expansion, history records expanded form. Same UX.
+
+**Aliases (5) and functions (22):** direct syntactic translation from
+`stow/fish/` to `stow/bash/.bash/{aliases.sh,functions/*.sh}`.
+
+**History caveat — read this:** `bash-preexec.sh:92-101`
+(`__bp_adjust_histcontrol`) rewrites `HISTCONTROL=ignorespace` to `ignoredups`
+and exports it. Leading-space commands (` export SECRET=...`) therefore become
+visible to every `preexec_functions` hook (notably Atuin) and to bash history.
+This is documented upstream but breaks the "space-prefix hides a command"
+muscle memory. Put secrets in files (`~/.bash/local.bash`, gitignored), never
+in command lines.
+
+**Fish removed immediately (no rollback window held):**
+- `stow/fish/` deleted from the repo.
+- `templates/fish/` deleted (fish syntax-highlight colors no longer needed).
+- `fish` dropped from `packages/shell.sh`.
+- `scripts/06-shell.sh` no longer stows fish or touches `/etc/shells` for fish.
+- Operator tasks on already-installed machines: `stow -D fish` to unlink the
+  old symlinks, then `paru -Rns fish fisher` to remove the packages.
+
+**Upgrade workflow for vendored tools:** documented inline in each
+`.source` file. Always: clone → checkout new commit → re-run audit → build
+(ble.sh only) → copy → update `.source`. Never call `ble-update`.
+
+**Consequences:**
+- `.claude/rules/secrets.md` covers `~/.bash/local.bash` only.
+- `tests/run.sh` lint stage `bash -n`s the new `stow/bash/` tree and the
+  vendored shell drops; the old `fish --no-execute` block is removed.
+- Reverses D003. D003 stays in the log as historical record.
+
+---
+
+## D015 — hyprpaper replaces swww as wallpaper daemon
+
+**Date:** 2026-04-11
+**Status:** Accepted
+
+Swapped `swww` for `hyprpaper` as the sole wallpaper daemon.
+
+**Why:** hyprpaper is the official hyprwm tool and keeps the compositor stack
+self-contained. swww's animated transitions were nice-to-have but not worth
+the extra daemon.
+
+**Why config-file interface, not hyprctl IPC:** hyprpaper 0.8 is a full
+rewrite. The flat `preload =` / `wallpaper = ,path` syntax is gone — the
+new format is a Hyprlang block:
+
+```
+splash = 0
+ipc = 1
+
+wallpaper {
+    monitor =          # empty = wildcard / all monitors
+    path = /abs/path/to/image.jpg
+    fit_mode = cover
+}
+```
+
+The IPC also changed: it's now a Hyprwire-protocol object model
+(`hyprpaper_core_manager` → `get_wallpaper_object` → `path`/`fit_mode`/
+`monitor_name`/`apply`), not the old `hyprctl hyprpaper preload/wallpaper`
+subcommands. `hyprctl 0.54` doesn't speak this either, so any flat
+preload/wallpaper hyprctl call returns `invalid hyprpaper request`.
+
+Rather than chase versions or speak Hyprwire ourselves over the raw
+socket, `arche-wallpaper` writes `~/.config/hypr/hyprpaper.conf` with the
+new block syntax and restarts the daemon on every switch. Version-
+agnostic, works today, costs ~200 ms per switch.
+
+**Consequences:**
+- `hyprpaper.conf` is script-owned (not stowed) — `arche-wallpaper` is the
+  only writer, and autostart calls `arche-wallpaper random` on login instead
+  of launching `hyprpaper` directly.
+- Wallpapers live in-repo at `stow/hypr/.config/hypr/wallpapers/` so they
+  ship with arche and stow symlinks them into `~/.config/hypr/wallpapers/`.
+- New `toggle` subcommand and `SUPER SHIFT + P` bind cycle the sorted
+  wallpaper list.
+- No transitions, no wallpaper persistence across reboots.
+
+---
+
 ## D014 — Repo lives at /opt/arche, shared between users
 
 **Date:** 2026-04-11

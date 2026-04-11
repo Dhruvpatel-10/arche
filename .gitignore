@@ -1,6 +1,6 @@
 # Secrets — never commit credentials
 secrets.sh
-local.fish
+local.bash
 *.env
 .env.*
 *.key
@@ -24,3 +24,4 @@ tools/*/target/
 
 # Generated output (rendered by theme.sh — never committed)
 # These live in ~/.config/<component>/ and are recreated by `just theme`
+.audit/
