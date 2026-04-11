@@ -65,7 +65,7 @@
         "tooltip-format-ethernet": "Wired\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
         "tooltip-format-disconnected": "Disconnected",
         "interval": 3,
-        "on-click": "kitty --title impala -e impala"
+        "on-click": "arche-popup impala"
     },
 
     "battery": {
@@ -89,7 +89,7 @@
         "format-no-controller": "",
         "tooltip-format-connected": "{device_alias} ({num_connections})",
         "tooltip-format-on": "On",
-        "on-click": "kitty --title bluetui -e bluetui"
+        "on-click": "arche-popup bluetui"
     },
 
     "pulseaudio": {
@@ -101,7 +101,7 @@
             "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pamixer -t",
-        "on-click-right": "kitty --title wiremix -e wiremix",
+        "on-click-right": "arche-popup wiremix",
         "scroll-step": 5,
         "tooltip-format": "{volume}%  {desc}"
     },
@@ -112,7 +112,7 @@
         "exec": "$HOME/.config/waybar/idle.sh",
         "interval": "once",
         "signal": 9,
-        "on-click": "$HOME/.local/bin/arche/arche-toggle-idle",
+        "on-click": "arche-toggle-idle",
         "tooltip": true
     },
 
