@@ -85,9 +85,22 @@ sudo chown -R "$USER:$shared_group" "$dst"
 info "Setting permissions: dirs 2775 (setgid), files 0664, executables 0775..."
 sudo find "$dst" -type d -exec chmod 2775 {} \;
 sudo find "$dst" -type f -exec chmod 0664 {} \;
-# Re-mark executables (scripts and binaries). The find -perm /u+x catches
-# anything that was executable before chmod 0664 stripped the bit.
-sudo find "$dst" -type f \( -name '*.sh' -o -name '*.fish' -o -path '*/bin/*' -o -path '*/.local/bin/*' \) -exec chmod 0775 {} \;
+
+# Re-mark legitimately-executable files. We can't chmod by extension because
+# many *.sh and *.fish files in this repo are DATA (sourced, not run):
+#   packages/*.sh — sourced by install_group, declare PACMAN_PKGS arrays
+#   themes/*.sh   — sourced by theme_render, declare COLOR_* variables
+#   stow/fish/.config/fish/{conf.d,functions}/*.fish — sourced by fish itself
+# Heuristic: a file is executable iff it (a) has a #! shebang at byte 0, or
+# (b) lives under a bin/ directory (catches binaries without shebangs like
+# tools/bin/arche-legion). Everything else stays 0664.
+sudo find "$dst" -type f -path '*/bin/*' -exec chmod 0775 {} \;
+sudo find "$dst" -type f -not -path '*/bin/*' -not -path '*/.git/*' -print0 \
+| while IFS= read -r -d '' f; do
+    if [[ "$(head -c 2 "$f" 2>/dev/null)" == "#!" ]]; then
+        sudo chmod 0775 "$f"
+    fi
+done
 ok "Permissions set"
 
 # ─── Add current user to shared group ───
