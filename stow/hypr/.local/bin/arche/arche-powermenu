@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# arche-powermenu — rofi power menu for session/system actions
+# Actions: Lock, Sleep, Logout, Reboot, Shutdown
+
+set -euo pipefail
+
+declare -A ACTIONS=(
+    ["  Lock"]="loginctl lock-session"
+    ["󰒲  Sleep"]="systemctl suspend"
+    ["󰈆  Logout"]="uwsm stop"
+    ["󰜉  Reboot"]="systemctl reboot"
+    ["󰐥  Shutdown"]="systemctl poweroff"
+)
+
+ORDERED=(
+    "  Lock"
+    "󰒲  Sleep"
+    "󰈆  Logout"
+    "󰜉  Reboot"
+    "󰐥  Shutdown"
+)
+
+choice=$(printf '%s\n' "${ORDERED[@]}" | rofi -dmenu -p 'Power' -i)
+
+[[ -z "$choice" ]] && exit 0
+
+cmd="${ACTIONS[$choice]:-}"
+[[ -z "$cmd" ]] && exit 1
+
+exec $cmd

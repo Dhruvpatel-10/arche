@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# arche-webapp — open a URL as a standalone app window (no tabs/address bar)
+# Usage: arche-webapp <url>
+# Used by .desktop files for web apps (Slack, Discord, etc.)
+
+if [[ -z "$1" ]]; then
+    echo "Usage: arche-webapp <url>" >&2
+    exit 1
+fi
+
+exec vivaldi-stable --app="$1"
