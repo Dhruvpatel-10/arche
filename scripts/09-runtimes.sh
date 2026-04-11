@@ -25,6 +25,15 @@ if command -v fnm &>/dev/null; then
     fi
 fi
 
+# Bun — installed via official script
+if ! command -v bun &>/dev/null; then
+    log_info "Installing Bun..."
+    curl -fsSL https://bun.sh/install | bash
+    log_ok "Bun installed (restart shell to use)"
+else
+    log_warn "Bun already installed: $(bun --version)"
+fi
+
 # Verify key runtimes
 for cmd in go rustc ruby node bun; do
     if command -v "$cmd" &>/dev/null; then

@@ -11,5 +11,4 @@ PACMAN_PKGS=(
 )
 
 AUR_PKGS=(
-    bun-bin                  # Bun JS runtime
 )
