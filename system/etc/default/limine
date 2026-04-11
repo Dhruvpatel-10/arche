@@ -2,7 +2,7 @@
 # Managed by arche (symlinked by scripts/00-preflight.sh)
 #
 # Values shared with /etc/limine-snapper-sync.conf:
-#   MAX_SNAPSHOT_ENTRIES, SNAPSHOT_FORMAT_CHOICE
+#   ROOT_SUBVOLUME_PATH, MAX_SNAPSHOT_ENTRIES, SNAPSHOT_FORMAT_CHOICE
 # Keep both files in sync — both live under system/etc/ in arche.
 
 # ─── OS Identity ───
@@ -28,5 +28,6 @@ BOOT_ORDER="*, *fallback, Snapshots"
 
 # ─── Snapshots (must match limine-snapper-sync.conf) ───
 
+ROOT_SUBVOLUME_PATH="/@"
 MAX_SNAPSHOT_ENTRIES=5
 SNAPSHOT_FORMAT_CHOICE=5
