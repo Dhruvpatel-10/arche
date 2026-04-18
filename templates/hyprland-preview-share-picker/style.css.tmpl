@@ -1,0 +1,126 @@
+/* hyprland-preview-share-picker — rendered by theme.sh */
+/* Source: templates/hyprland-preview-share-picker/style.css.tmpl */
+
+@define-color foreground ${COLOR_FG};
+@define-color background ${COLOR_BG};
+@define-color accent ${COLOR_ACCENT};
+@define-color muted ${COLOR_OVERLAY0};
+@define-color card_bg ${COLOR_BG_SURFACE};
+@define-color text_dark ${COLOR_BG};
+@define-color border ${COLOR_BORDER};
+@define-color surface ${COLOR_SURFACE1};
+
+* {
+    all: unset;
+    font-family: '${FONT_SANS}', sans-serif;
+    color: @foreground;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.window {
+    background: alpha(@background, 0.96);
+    border: 1px solid alpha(@border, 0.6);
+    border-radius: ${RADIUS}px;
+    padding: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── Tabs ─── */
+
+tabs {
+    padding: 0 0 12px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid alpha(@surface, 0.3);
+}
+
+tabs > tab {
+    margin-right: 20px;
+    padding-bottom: 8px;
+}
+
+.tab-label {
+    color: @muted;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+tabs > tab:checked > .tab-label,
+tabs > tab:active > .tab-label {
+    color: @accent;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+}
+
+tabs > tab:hover > .tab-label {
+    color: @foreground;
+}
+
+/* ─── Content ─── */
+
+.page {
+    padding: 12px 4px;
+}
+
+/* ─── Cards ─── */
+
+flowboxchild > .card,
+button > .card {
+    transition: all 0.2s ease;
+    border: 2px solid alpha(@surface, 0.3);
+    border-radius: 8px;
+    background-color: alpha(@card_bg, 0.7);
+    padding: 6px;
+}
+
+flowboxchild:hover > .card,
+button:hover > .card {
+    border-color: alpha(@accent, 0.6);
+    background-color: alpha(@card_bg, 0.9);
+}
+
+flowboxchild:active > .card,
+flowboxchild:selected > .card,
+button:active > .card,
+button:selected > .card,
+button:focus > .card {
+    border-color: @accent;
+}
+
+.image {
+    border-radius: 6px;
+}
+
+.image-label {
+    font-size: 11px;
+    color: @muted;
+    padding: 4px 2px 0 2px;
+}
+
+/* ─── Region button ─── */
+
+.region-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background-color: @accent;
+    color: @text_dark;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.region-button > label {
+    color: @text_dark;
+}
+
+.region-button:not(:disabled):hover,
+.region-button:not(:disabled):focus {
+    background-color: alpha(@accent, 0.85);
+}
+
+.region-button:disabled {
+    background-color: @muted;
+    color: @background;
+}

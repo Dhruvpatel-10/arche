@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# arche-wallpaper — browse and set wallpapers via awww (D026 — replaces
+# hyprpaper-conf-rewrite dance from D015).
+#
+# awww is the maintained successor to swww (LGFae moved it to codeberg and
+# renamed it; Arch replaced swww with awww in March 2026). CLI is the same
+# as swww: a long-running daemon with socket IPC, transitions, the works.
+#
+# Usage:
+#   arche-wallpaper           — pick from wallpaper directory (fzf)
+#   arche-wallpaper random    — set a random wallpaper
+#   arche-wallpaper toggle    — cycle to the next wallpaper (sorted)
+#   arche-wallpaper <path>    — set a specific image
+
+set -euo pipefail
+
+WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/.config/hypr/wallpapers}"
+STATE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/arche-wallpaper/current"
+
+# Transition knobs — override via env to taste.
+TRANSITION_TYPE="${ARCHE_WP_TRANSITION:-grow}"
+TRANSITION_FPS="${ARCHE_WP_FPS:-60}"
+TRANSITION_DURATION="${ARCHE_WP_DURATION:-1}"
+
+list_wallpapers() {
+    fd -e png -e jpg -e jpeg -e webp . "$WALLPAPER_DIR" | sort
+}
+
+ensure_daemon() {
+    if awww query >/dev/null 2>&1; then
+        return 0
+    fi
+    # setsid -f detaches into its own session so Hyprland's exec dispatcher
+    # doesn't SIGTERM it when the caller returns.
+    setsid -f awww-daemon >/dev/null 2>&1 < /dev/null
+    # Wait for socket (up to ~1s).
+    for _ in {1..20}; do
+        awww query >/dev/null 2>&1 && return 0
+        sleep 0.05
+    done
+    return 1
+}
+
+current_wallpaper() {
+    [[ -f "$STATE_FILE" ]] && cat "$STATE_FILE"
+}
+
+set_wallpaper() {
+    local img="$1"
+    ensure_daemon
+    awww img "$img" \
+        --transition-type "$TRANSITION_TYPE" \
+        --transition-fps "$TRANSITION_FPS" \
+        --transition-duration "$TRANSITION_DURATION"
+    mkdir -p "$(dirname "$STATE_FILE")"
+    printf '%s\n' "$img" > "$STATE_FILE"
+    notify-send -i "$img" "Wallpaper set" "$(basename "$img")"
+}
+
+if [[ ! -d "$WALLPAPER_DIR" ]]; then
+    notify-send "Wallpaper" "Create $WALLPAPER_DIR and add images"
+    exit 1
+fi
+
+case "${1:-}" in
+    random)
+        pick=$(list_wallpapers | shuf -n1)
+        [[ -n "$pick" ]] && set_wallpaper "$pick"
+        ;;
+    toggle)
+        mapfile -t all < <(list_wallpapers)
+        (( ${#all[@]} > 0 )) || { echo "No wallpapers in $WALLPAPER_DIR"; exit 1; }
+        current=$(current_wallpaper || true)
+        next="${all[0]}"
+        for i in "${!all[@]}"; do
+            if [[ "${all[$i]}" == "$current" ]]; then
+                next="${all[$(( (i + 1) % ${#all[@]} ))]}"
+                break
+            fi
+        done
+        set_wallpaper "$next"
+        ;;
+    "")
+        pick=$(list_wallpapers \
+            | SHELL=/bin/bash fzf --prompt="wallpaper > " \
+                  --preview="kitty icat --clear --transfer-mode=memory --stdin=no --place=\${FZF_PREVIEW_COLUMNS}x\${FZF_PREVIEW_LINES}@0x0 {}" \
+                  --preview-window=right:60%)
+        [[ -n "$pick" ]] && set_wallpaper "$pick"
+        ;;
+    *)
+        [[ -f "$1" ]] && set_wallpaper "$1" || { echo "File not found: $1"; exit 1; }
+        ;;
+esac

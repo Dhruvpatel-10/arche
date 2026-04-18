@@ -38,12 +38,14 @@ declare -A descriptions=(
     [02-security]="Firewall, SSH hardening, Tailscale, DNS, kernel hardening, USBGuard"
     [03-gpu]="NVIDIA open driver + CUDA (skipped if no NVIDIA GPU)"
     [04-audio]="PipeWire + WirePlumber audio stack"
-    [05-kde]="Configure KDE (verify plasma installed, stow configs, fonts, colorscheme)"
+    [05-hyprland]="Hyprland compositor, Wayland utils, SDDM (default Breeze theme), rofi"
     [06-shell]="Fish + atuin + fisher + starship"
-    [07-runtimes]="Node.js (fnm), Go, Rust, Bun, Docker"
-    [08-apps]="Desktop apps (browser, media, file manager, etc.)"
-    [09-stow]="Symlink all stow packages to \$HOME"
-    [10-appearance]="Fonts, icons, cursors, GTK/Qt theming"
+    [07-panel]="Quickshell panel (bar + control-center + notifications) + arche-shell clone"
+    [08-runtimes]="Node.js (fnm), Go, Rust, Bun, Docker"
+    [09-apps]="Desktop apps (browser, media, file manager, etc.)"
+    [10-stow]="Symlink all stow packages to \$HOME"
+    [11-appearance]="Fonts, icons, cursors, GTK theming (nwg-look)"
+    [12-boot]="Plymouth splash + sd-encrypt + UKI (rebuilds UKIs; enroll TPM2 separately)"
 )
 
 # ─── Run all scripts in order ───
@@ -54,12 +56,14 @@ scripts=(
     02-security
     03-gpu
     04-audio
-    05-kde
+    05-hyprland
     06-shell
-    07-runtimes
-    08-apps
-    09-stow
-    10-appearance
+    07-panel
+    08-runtimes
+    09-apps
+    10-stow
+    11-appearance
+    12-boot
 )
 
 auto_yes=false

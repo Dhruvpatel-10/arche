@@ -1,0 +1,2 @@
+root=/dev/mapper/root rootfstype=btrfs rootflags=subvol=@ rw quiet splash loglevel=3 zswap.enabled=0
+

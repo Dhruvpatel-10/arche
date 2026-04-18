@@ -1,12 +1,12 @@
 # arche
 
-Personal Arch Linux dotfiles. Clone, run, get a fully configured KDE Plasma desktop.
+Personal Arch Linux dotfiles. Clone, run, get a fully configured Hyprland desktop
+with the Quickshell-based arche-shell panel (D023).
 
 ## Quick Start
 
-Install Arch with the **`plasma` group** already in pacstrap (archinstall
-handles this if you pick the KDE profile). As of Plasma 6.6 the group pulls
-in `plasma-login-manager`, the KDE-native display manager — see D022. Then:
+A base Arch install is enough — arche installs the compositor, the greeter,
+and the Wayland utility stack itself. Then:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/install.sh | bash
@@ -28,10 +28,11 @@ users on the same machine (e.g. personal + work). Each user gets a per-user
 hardcodes `~/arche` keeps working. See `docs/decisions.md` D014 for the full
 reasoning. To add a second user later, see [Multi-user setup](#multi-user-setup).
 
-Bootstrap only **configures** KDE — it never installs it. `scripts/05-kde.sh`
-verifies `plasma-desktop`, `kwin`, and `plasma-login-manager` are present and
-aborts with clear instructions if they're missing. See `docs/decisions.md`
-D021 and D022.
+`scripts/05-hyprland.sh` installs Hyprland, SDDM (default Breeze theme), rofi,
+and the Wayland utility stack. `scripts/07-panel.sh` installs Quickshell and
+clones the arche-shell repo (the QML source for the bar + control-center +
+notifications) into `~/projects/system/arche-shell/`. See `docs/decisions.md`
+D023.
 
 ## Multi-user setup
 
@@ -58,23 +59,25 @@ versions, so each user opts in via `just runtimes` if they want them.
 
 ## Stack
 
-| Layer         | Tool                                      |
-|---------------|-------------------------------------------|
-| OS            | Arch Linux (btrfs, Limine)                |
-| Desktop       | KDE Plasma 6 (Wayland)                    |
-| Compositor    | KWin                                      |
-| Shell         | fish + atuin + fisher + starship          |
-| Terminal      | Kitty                                     |
-| Editor        | Neovim (LazyVim)                          |
-| Panel / OSD   | KDE Panel + KDE OSD                       |
-| Launcher      | KRunner                                   |
-| Notifications | KDE Notifications                         |
-| Lock / Idle   | kscreenlocker + Powerdevil                |
-| Screenshots   | Spectacle                                 |
-| Theme         | Ember (warm amber on deep charcoal)       |
-| GPU           | NVIDIA open-dkms                          |
-| Audio         | PipeWire full stack                       |
-| Login         | Plasma Login Manager (D022)               |
+| Layer         | Tool                                                         |
+|---------------|--------------------------------------------------------------|
+| OS            | Arch Linux (btrfs, systemd-boot, UKIs)                       |
+| Pre-boot UI   | Plymouth + arche theme (purple ARCHE splash, TPM2+PIN)       |
+| Compositor    | Hyprland (Wayland) via uwsm                                  |
+| Greeter       | SDDM — default Breeze theme                                  |
+| Panel / OSD   | Quickshell (arche-shell) — bar + control-center + toasts     |
+| Launcher      | rofi-wayland                                                 |
+| Notifications | Quickshell ToastLayer / NotificationsList                    |
+| Lock / Idle   | hyprlock + hypridle                                          |
+| Wallpaper     | hyprpaper                                                    |
+| Screenshots   | grim + slurp + satty                                         |
+| Clipboard     | cliphist + wl-clipboard                                      |
+| Shell         | fish + atuin + fisher + starship                             |
+| Terminal      | Kitty                                                        |
+| Editor        | Neovim (LazyVim)                                             |
+| Theme         | Ember (warm amber on deep charcoal)                          |
+| GPU           | NVIDIA open-dkms                                             |
+| Audio         | PipeWire full stack                                          |
 
 ## Structure
 
@@ -86,7 +89,7 @@ arche/
 ├── themes/             # color palettes, fonts, layout values
 ├── templates/          # visual configs rendered via envsubst
 ├── packages/           # declarative package lists (pacman + AUR)
-├── scripts/            # numbered setup scripts (00-preflight … 10-appearance)
+├── scripts/            # numbered setup scripts (00-preflight … 11-appearance)
 ├── stow/               # behavior configs symlinked via GNU Stow
 ├── system/             # /etc/ configs (pacman, systemd, sysctl)
 ├── tools/bin/          # pre-built binaries (arche-legion, arche-denoise, arche-denoise-mic)
@@ -106,10 +109,12 @@ Every config belongs to exactly one layer:
 
 Ember ships as the default — warm amber (`#c9943e`) on deep charcoal (`#13151c`).
 
-Themes are defined in `themes/` and rendered across templates for kitty, the
-KDE color scheme, GTK, Qt, fish, starship, btop, tmux, zathura, mpv, glow,
-and arche-legion. `themes/schema.sh` is the single source of truth for every
-variable; `docs/theme-standard.md` documents the full spec.
+Themes are defined in `themes/` and rendered across templates for kitty, hypr,
+rofi, GTK, Qt, fish, starship, btop, tmux, mpv, glow, and arche-legion.
+`themes/schema.sh` is the single source of truth for every variable;
+`docs/theme-standard.md` documents the full spec. The Quickshell panel carries
+its own `Theme.qml` (in the arche-shell repo) — kept in sync with ember manually
+for now.
 
 ```bash
 just theme apply     # render templates + reload services
@@ -148,8 +153,7 @@ switch, and USB charging.
 
 ## Requirements
 
-- Arch Linux (fresh install) with `plasma` installed via pacstrap or
-  archinstall (pulls in `plasma-login-manager` as of Plasma 6.6)
+- Arch Linux (fresh base install)
 - `git` and `sudo`
 - Internet connection
 

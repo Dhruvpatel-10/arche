@@ -117,25 +117,49 @@ test_gate() {
 
     section "Gate: Secrets"
 
+    # Every key in secrets.sh.example must be present and non-empty in secrets.sh.
+    # Bootstrap will halt on 02-security.sh (DNS) otherwise, so catch it early.
     if [[ ! -f "$ARCHE/secrets.sh" ]]; then
-        skip "secrets.sh missing — 02-security.sh will skip DNS config"
+        fail "secrets.sh missing — cp secrets.sh.example secrets.sh and fill in real values"
+    elif [[ ! -f "$ARCHE/secrets.sh.example" ]]; then
+        fail "secrets.sh.example missing — cannot determine required keys"
     else
-        pass "secrets.sh present"
-    fi
+        local required_keys=()
+        while IFS= read -r key; do
+            [[ -n "$key" ]] && required_keys+=("$key")
+        done < <(grep -oE '^[A-Z_][A-Z0-9_]*=' "$ARCHE/secrets.sh.example" | tr -d '=')
 
-    section "Gate: KDE prereqs"
+        local missing=() blank=()
+        # shellcheck disable=SC1091
+        (
+            set +u
+            source "$ARCHE/secrets.sh"
+            for k in "${required_keys[@]}"; do
+                if ! declare -p "$k" &>/dev/null; then
+                    echo "MISSING $k"
+                elif [[ -z "${!k}" ]]; then
+                    echo "BLANK $k"
+                fi
+            done
+        ) > /tmp/arche-secrets-gate.$$
 
-    if command -v pacman &>/dev/null; then
-        local missing=()
-        for pkg in plasma-desktop kwin plasma-login-manager; do
-            pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
-        done
-        if [[ ${#missing[@]} -eq 0 ]]; then
-            pass "plasma-desktop, kwin, plasma-login-manager installed"
-        else
-            fail "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma"
+        while read -r kind key; do
+            case "$kind" in
+                MISSING) missing+=("$key") ;;
+                BLANK)   blank+=("$key") ;;
+            esac
+        done < /tmp/arche-secrets-gate.$$
+        rm -f /tmp/arche-secrets-gate.$$
+
+        if [[ ${#missing[@]} -eq 0 && ${#blank[@]} -eq 0 ]]; then
+            pass "secrets.sh has all keys from secrets.sh.example (${#required_keys[@]})"
         fi
-    else
-        skip "pacman not available — cannot verify KDE prereqs"
+        if [[ ${#missing[@]} -gt 0 ]]; then
+            fail "secrets.sh missing keys: ${missing[*]} (expected from secrets.sh.example)"
+        fi
+        if [[ ${#blank[@]} -gt 0 ]]; then
+            fail "secrets.sh has blank values for: ${blank[*]}"
+        fi
     fi
+
 }

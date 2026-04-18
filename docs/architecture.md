@@ -23,13 +23,13 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │
 ├── templates/              # .tmpl files rendered by theme engine (envsubst)
 │   ├── kitty/              # terminal colors + fonts
-│   ├── mako/               # notification config
+│   ├── hypr/               # colors, envs, hyprlock fonts/colors (D023)
+│   ├── rofi/               # launcher theme (D023)
 │   ├── gtk-3.0/            # GTK3 settings (theme, icons, cursor, fonts)
 │   ├── gtk-4.0/            # GTK4 settings + CSS overrides
 │   ├── qt6ct/              # Qt6 config (icons, fonts)
-│   ├── zathura/            # PDF viewer colors
 │   ├── mpv/                # media player fonts
-│   └── ...                 # btop, tmux, rofi, starship
+│   └── ...                 # btop, tmux, starship, legion
 │
 ├── packages/               # package registry — data only, no logic
 │   └── *.sh                # each file: PACMAN_PKGS=() and AUR_PKGS=()
@@ -37,10 +37,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 ├── scripts/                # numbered setup scripts + shared library
 │   ├── lib.sh              # shared primitives (log, install, stow, etc.)
 │   ├── theme.sh            # theme engine: apply / switch / list
-│   └── 00-preflight.sh ... 10-appearance.sh
-│
-├── vendor/                 # third-party source shipped as-is (see D013)
-│   └── sddm-silent/        # SilentSDDM theme (obsolete — D021 switched SDDM to Breeze; D022 retired SDDM entirely)
+│   └── 00-preflight.sh ... 11-appearance.sh
 │
 ├── tools/                  # custom binaries
 │   └── bin/                # pre-built binaries from external repos
@@ -55,9 +52,12 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
     ├── kitty/              # terminal behavior
     ├── starship/           # prompt config
     ├── mpv/                # media player
-    ├── kde/                # KDE Plasma + KWin config (D021)
+    ├── hypr/               # Hyprland compositor (D023 — restored)
+    ├── rofi/               # launcher (D023 — restored)
+    ├── cliphist/           # clipboard history (D023 — restored)
+    ├── hyprland-preview-share-picker/  # screen-share picker (D023)
+    ├── arche-scripts/      # user scripts (wallpaper, popup, powermenu, …)
     ├── nvim/               # LazyVim editor
-    ├── zathura/            # PDF viewer behavior
     └── ...                 # tmux, btop, kvantum, qt6ct, etc.
 ```
 
@@ -78,7 +78,7 @@ Examples: `kitty/theme.conf`, `gtk-3.0/settings.ini`, `btop/arche.theme`
 Configs that contain **behavior**: keybinds, module lists, rules, logic.
 Symlinked directly via GNU Stow. Committed as-is. Lives in `stow/`.
 
-Examples: `fish/config.fish`, `kitty/kitty.conf`, `kde/kwinrc`
+Examples: `fish/config.fish`, `kitty/kitty.conf`, `hypr/bindings.conf`
 
 ### Layer 3: Generated Output
 
@@ -99,6 +99,8 @@ Examples: `~/.config/kitty/theme.conf`, `~/.config/btop/arche.theme`
 `themes/schema.sh` is the single source of truth for variable names, types, and defaults.
 `scripts/theme.sh` renders all templates and reloads affected services.
 nvim is excluded — it uses catppuccin/nvim plugin directly.
+Quickshell theme values live in the external arche-shell repo (`Theme.qml`) —
+kept in sync with ember manually for now (see status.md Q1).
 
 ## Package Management
 
@@ -131,8 +133,8 @@ stow_pkg() { stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$1"; }
 
 ## Bootstrap Flow
 
-`bootstrap.sh` runs numbered scripts `00` through `12` in order. Each script
-is independently runnable (`bash scripts/05-kde.sh`). Each section
+`bootstrap.sh` runs numbered scripts `00` through `11` in order. Each script
+is independently runnable (`bash scripts/05-hyprland.sh`). Each section
 prompts before running (y/N/a for all). The orchestrator captures exit codes
 and prints a final summary table.
 
@@ -141,17 +143,21 @@ Does not: clone repo, configure SSH, set up secrets.
 
 ## System Stack
 
-| Layer        | Tool                                         |
-|--------------|----------------------------------------------|
-| OS           | Arch Linux (btrfs, Limine bootloader)        |
-| Desktop      | KDE Plasma 6 (Wayland), plasma-login-manager (D022) |
-| Compositor   | KWin                                         |
-| Shell        | fish + atuin + fisher + starship (D018 — restored from D003) |
-| Terminal     | Kitty                                        |
-| Editor       | Neovim (LazyVim)                             |
-| Panel        | KDE Panel                                    |
-| Launcher     | KRunner                                      |
-| Notifications| KDE Notifications                            |
-| GPU          | NVIDIA open-dkms (RTX 4060 Laptop)           |
-| Audio        | PipeWire full stack                          |
-| Theme        | Ember (warm amber on deep charcoal)          |
+| Layer        | Tool                                                   |
+|--------------|--------------------------------------------------------|
+| OS           | Arch Linux (btrfs, systemd-boot with UKIs)             |
+| Pre-boot UI  | Plymouth + `arche` theme, TPM2+PIN via sd-encrypt (D024)|
+| Compositor   | Hyprland (Wayland) via uwsm (D023)                     |
+| Greeter      | SDDM, custom `arche` theme (D025)                      |
+| Panel        | Quickshell / arche-shell (D023) — bar + control-center |
+| Notifications| Quickshell ToastLayer / NotificationsList              |
+| OSD          | Quickshell                                             |
+| Launcher     | rofi-wayland                                           |
+| Lock / idle  | hyprlock / hypridle                                    |
+| Wallpaper    | awww (swww successor — D026)                           |
+| Shell        | fish + atuin + fisher + starship (D018)                |
+| Terminal     | Kitty                                                  |
+| Editor       | Neovim (LazyVim)                                       |
+| GPU          | NVIDIA open-dkms (RTX 4060 Laptop)                     |
+| Audio        | PipeWire full stack                                    |
+| Theme        | Ember (warm amber on deep charcoal)                    |

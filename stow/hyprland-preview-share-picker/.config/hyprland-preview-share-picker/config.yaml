@@ -1,0 +1,28 @@
+stylesheets: ["./style.css"]
+default_page: outputs
+
+window:
+  height: 520
+  width: 1050
+
+image:
+  resize_size: 500
+  widget_size: 180
+
+windows:
+  min_per_row: 3
+  max_per_row: 999
+  clicks: 1
+  spacing: 14
+
+outputs:
+  clicks: 1
+  spacing: 8
+  show_label: true
+  respect_output_scaling: true
+
+region:
+  command: slurp -f '%o@%x,%y,%w,%h'
+
+hide_token_restore: true
+debug: false

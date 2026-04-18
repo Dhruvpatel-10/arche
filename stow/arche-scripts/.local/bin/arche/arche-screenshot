@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# arche-screenshot — freeze → dim → select → capture → edit
+
+set -euo pipefail
+
+# Prevent double execution — exit if already running
+LOCKFILE="/tmp/arche-screenshot.lock"
+if [[ -f "$LOCKFILE" ]] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
+    exit 0
+fi
+echo $$ > "$LOCKFILE"
+trap 'rm -f "$LOCKFILE"' EXIT
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+dir="$HOME/Pictures/Screenshots"
+mkdir -p "$dir"
+f="$dir/$(date +%Y%m%d_%H%M%S).png"
+
+# Freeze screen — PID-based for clean lifecycle control
+"$SCRIPT_DIR/wayfreeze" --hide-cursor &
+freeze_pid=$!
+sleep 0.1
+
+# Guaranteed cleanup — no orphaned freeze on cancel or error
+cleanup() { kill "$freeze_pid" 2>/dev/null; wait "$freeze_pid" 2>/dev/null || true; }
+trap cleanup EXIT
+
+# Region select on frozen frame
+# Dark overlay signals "screenshot mode" (like Windows/KDE dim effect)
+geometry=$(slurp -d \
+    -b 00000066 \
+    -c c9943eff \
+    -s c9943e18 \
+    -B 00000066 \
+    -w 2) || exit 0
+
+# Capture from frozen frame
+grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
+
+# Unfreeze immediately — don't wait for clipboard/notification
+cleanup
+trap - EXIT
+
+# Copy to clipboard
+wl-copy -t image/png < "$f"
+
+# Notification with "Edit" action
+action=$(notify-send -i "$f" \
+    -a "Screenshot" \
+    -A "edit=Edit" \
+    "Screenshot copied" \
+    "$(basename "$f")")
+
+if [[ "$action" == "edit" ]]; then
+    satty --filename "$f" \
+        --output-filename "$f" \
+        --copy-command "wl-copy -t image/png" \
+        2>/dev/null
+fi

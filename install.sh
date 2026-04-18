@@ -2,10 +2,9 @@
 # install.sh — one-liner bootstrap for arche
 # Usage: curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/install.sh | bash
 #
-# Prerequisite: Arch must have been installed with the `plasma` group (via
-# archinstall or pacstrap). The plasma group pulls in plasma-login-manager
-# (the KDE-native display manager; see D022). This script verifies that
-# before doing anything destructive.
+# Prerequisite: Arch Linux (base install is enough). arche installs Hyprland,
+# SDDM, and the Wayland utility stack itself — no desktop need be preinstalled.
+# See D023.
 #
 # Clones the repo to /opt/arche so multiple human users on the same machine
 # share one source of truth (see docs/decisions.md D014). Creates a per-user
@@ -30,15 +29,6 @@ err()   { printf '\033[1;31m[✗]\033[0m %s\n' "$1"; exit 1; }
 command -v git &>/dev/null  || err "git not found — install with: pacman -S git"
 command -v sudo &>/dev/null || err "sudo not found"
 ping -c 1 -W 3 archlinux.org &>/dev/null || err "No internet"
-
-# KDE prereq — arche configures KDE but does not install it.
-missing=()
-for pkg in plasma-desktop kwin plasma-login-manager; do
-    pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
-done
-if [[ ${#missing[@]} -gt 0 ]]; then
-    err "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma"
-fi
 
 # ─── Clone or Update ───
 

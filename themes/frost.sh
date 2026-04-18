@@ -58,7 +58,7 @@ NOTIF_TIMEOUT="5000"
 COLOR_BG_ALPHA="40"          # 25% opaque — glassy
 NOTIF_BG_ALPHA="D8"          # 85% opaque — notifications must be readable
 KITTY_OPACITY="0.82"         # Medium glass — hint of wallpaper, fully readable
-BAR_OPACITY="0.25"           # Glassy waybar
+BAR_OPACITY="0.25"           # Glassy panel (quickshell)
 TOOLTIP_OPACITY="0.70"       # Readable tooltips
 
 # ─── Appearance ───

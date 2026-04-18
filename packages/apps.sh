@@ -1,5 +1,5 @@
 # Desktop applications — browsers, editors, tools.
-# Used by: scripts/08-apps.sh
+# Used by: scripts/09-apps.sh
 
 PACMAN_PKGS=(
     # Editor
@@ -9,14 +9,15 @@ PACMAN_PKGS=(
     vivaldi
 
     # File management
-    dolphin                  # KDE file manager
+    nautilus                 # GNOME file manager
     syncthing
 
     # Media
     mpv
     imagemagick              # CLI image manipulation
-    ffmpegthumbs             # Dolphin video thumbnail plugin
-    kdenlive                 # video editor (KDE native)
+    okular                   # PDF/EPUB viewer + annotation
+    gwenview                 # image viewer
+    kdenlive                 # video editor
 
     # Recording
     obs-studio                   # screen recording / streaming
@@ -33,9 +34,7 @@ PACMAN_PKGS=(
 
     # Desktop apps
     qbittorrent
-    okular                   # PDF/EPUB viewer + annotation (KDE native)
-    gwenview                 # image viewer (KDE native)
-    kdeconnect               # phone integration (clipboard, files, notifications)
+    kdeconnect               # phone integration
 
     # Bluetooth
     bluez
@@ -46,7 +45,7 @@ PACMAN_PKGS=(
     # Arch dropped `docker-rootless-extras` with Docker 29 — the upstream
     # `dockerd-rootless-setuptool.sh` is no longer packaged. Install the real
     # runtime deps (rootlesskit, slirp4netns) so a manual rootless setup works
-    # if the user fetches the setuptool from upstream. Otherwise 08-apps.sh
+    # if the user fetches the setuptool from upstream. Otherwise 09-apps.sh
     # falls back to system docker.
     docker
     docker-buildx

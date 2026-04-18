@@ -45,7 +45,7 @@ secondary-user:
         echo "[✓] Linked $HOME/arche → /opt/arche"
     fi
     cd /opt/arche
-    bash scripts/09-stow.sh
+    bash scripts/10-stow.sh
     bash scripts/06-shell.sh
     echo ""
     echo "[✓] Secondary user setup complete."
@@ -79,35 +79,50 @@ gpu:
 audio:
     bash {{dotfiles}}/scripts/04-audio.sh
 
-# Set up KDE Plasma desktop
+# Set up Hyprland compositor + SDDM greeter
 [group: 'scripts']
-kde:
-    bash {{dotfiles}}/scripts/05-kde.sh
+hyprland:
+    bash {{dotfiles}}/scripts/05-hyprland.sh
 
 # Install and configure shell (fish + atuin + fisher + starship)
 [group: 'scripts']
 shell:
     bash {{dotfiles}}/scripts/06-shell.sh
 
+# Install Quickshell panel + clone arche-shell
+[group: 'scripts']
+panel:
+    bash {{dotfiles}}/scripts/07-panel.sh
+
 # Install runtime managers (fnm, rustup, etc.)
 [group: 'scripts']
 runtimes:
-    bash {{dotfiles}}/scripts/07-runtimes.sh
+    bash {{dotfiles}}/scripts/08-runtimes.sh
 
 # Install user applications
 [group: 'scripts']
 apps:
-    bash {{dotfiles}}/scripts/08-apps.sh
+    bash {{dotfiles}}/scripts/09-apps.sh
 
 # Stow all packages to $HOME
 [group: 'scripts']
 stow:
-    bash {{dotfiles}}/scripts/09-stow.sh
+    bash {{dotfiles}}/scripts/10-stow.sh
 
 # Set up fonts, icons, cursors, GTK/Qt theming
 [group: 'scripts']
 appearance:
-    bash {{dotfiles}}/scripts/10-appearance.sh
+    bash {{dotfiles}}/scripts/11-appearance.sh
+
+# Set up pre-boot UI (Plymouth arche theme) + sd-encrypt + UKI
+[group: 'scripts']
+boot:
+    bash {{dotfiles}}/scripts/12-boot.sh
+
+# Enroll TPM2 + PIN keyslot on root LUKS (interactive; needs 12-boot first)
+[group: 'helpers']
+tpm-enroll:
+    bash {{dotfiles}}/helpers/tpm2-enroll.sh
 
 # Re-stow a single package (e.g. just restow fish)
 [group: 'utilities']
@@ -161,6 +176,11 @@ backup:
     echo "Backed up to $dest ($(du -sh "$dest" | cut -f1))"
 
 # ─── Testing ───
+
+# Preview the custom SDDM theme in a windowed test mode (no actual login)
+[group: 'utilities']
+sddm-preview:
+    sddm-greeter-qt6 --test-mode --theme {{dotfiles}}/system/usr/share/sddm/themes/arche
 
 # Run lint checks (CI-safe, no root)
 [group: 'test']

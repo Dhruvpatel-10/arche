@@ -120,15 +120,13 @@ test_integration() {
             fi
         fi
 
-        # Spot-check: accent color in KDE color scheme (RGB triplet)
-        local kde_scheme="$HOME/.local/share/color-schemes/Ember.colors"
-        if [[ -f "$kde_scheme" ]]; then
-            local hex="${accent#\#}"
-            local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
-            if grep -qF "${r},${g},${b}" "$kde_scheme" 2>/dev/null; then
-                pass "KDE Ember.colors contains accent RGB (${r},${g},${b})"
+        # Spot-check: accent color in hypr colors.conf
+        local hypr_colors="$HOME/.config/hypr/colors.conf"
+        if [[ -f "$hypr_colors" ]]; then
+            if grep -qiF "${accent#\#}" "$hypr_colors" 2>/dev/null; then
+                pass "hypr colors.conf contains accent (${accent})"
             else
-                fail "KDE Ember.colors missing accent RGB"
+                fail "hypr colors.conf missing accent"
             fi
         fi
 
@@ -148,7 +146,7 @@ test_integration() {
 
     section "Integration: Services"
 
-    local services=(plasmalogin pipewire wireplumber ufw systemd-resolved)
+    local services=(sddm pipewire wireplumber ufw systemd-resolved)
     for svc in "${services[@]}"; do
         if systemctl is-enabled "$svc" &>/dev/null; then
             pass "$svc enabled"

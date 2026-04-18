@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Software HDMI replug — forces a new handshake without touching the cable.
+# Disables the HDMI output, waits briefly, then re-enables it.
+
+set -euo pipefail
+
+MONITOR="HDMI-A-1"
+
+# Check if the monitor is currently known to Hyprland
+if ! hyprctl monitors -j | jq -e ".[] | select(.name == \"$MONITOR\")" > /dev/null 2>&1; then
+    notify-send -u normal "HDMI Reset" "$MONITOR not detected — nothing to reset"
+    exit 0
+fi
+
+notify-send -u low "HDMI Reset" "Cycling $MONITOR..."
+
+# Disable the output (equivalent to unplugging)
+hyprctl keyword monitor "$MONITOR, disable"
+
+sleep 2
+
+# Re-enable with the configured mode
+hyprctl keyword monitor "$MONITOR, 3840x2160@160.00Hz, 1600x0, 1.5"
+
+notify-send -u low "HDMI Reset" "$MONITOR re-enabled"

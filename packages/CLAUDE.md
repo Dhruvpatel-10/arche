@@ -19,11 +19,13 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `security.sh` | `02-security.sh` | Firewall, SSH, sandboxing, USB security |
 | `gpu-nvidia.sh` | `03-gpu.sh` | NVIDIA open kernel module, CUDA, VA-API |
 | `audio.sh` | `04-audio.sh` | Full PipeWire stack, TUI mixer |
-| `kde.sh` | `05-kde.sh` | KDE Plasma desktop, portals, plasma-login-manager, Wayland utils |
+| `hyprland.sh` | `05-hyprland.sh` | Hyprland, portals, SDDM, rofi, Wayland utils |
 | `shell.sh` | `06-shell.sh` | Fish, Starship, Kitty, tmux |
-| `runtimes.sh` | `07-runtimes.sh` | Rust, Go, cmake, clang, Bun |
-| `apps.sh` | `08-apps.sh` | Neovim, Vivaldi, Dolphin, mpv, Docker, Bluetooth |
-| `appearance.sh` | `10-appearance.sh` | Fonts, icons, cursors, GTK/Qt theming |
+| `panel.sh` | `07-panel.sh` | Quickshell + NetworkManager backend |
+| `runtimes.sh` | `08-runtimes.sh` | Rust, Go, cmake, clang, Bun |
+| `apps.sh` | `09-apps.sh` | Neovim, Vivaldi, Nautilus, mpv, Docker, Bluetooth |
+| `appearance.sh` | `11-appearance.sh` | Fonts, icons, nwg-look |
+| `boot.sh` | `12-boot.sh` | Plymouth splash, TPM2 tools |
 
 ## Package Inventory
 
@@ -46,17 +48,18 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **PipeWire stack:** pipewire, pipewire-alsa, pipewire-jack, pipewire-pulse, wireplumber
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
-### kde.sh — KDE Plasma Desktop (pacman: 0)
-- **Empty.** KDE is installed at Arch-install time via the `plasma` group
-  (archinstall or `pacstrap -K /mnt ... plasma`). As of Plasma 6.6 the group
-  pulls in `plasma-login-manager` — the KDE-native replacement for SDDM, see
-  D022 — so no separate display-manager package is needed.
-- `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `plasma-login-manager`
-  are present and fails fast if not — then proceeds to stow KDE configs,
-  disable Baloo, apply fonts/icons/cursor/colorscheme.
-- Add a package here only if it's arche-specific AND not pulled in by plasma.
-- **Hyprland leftovers removed:** `cliphist` (Klipper replaces it),
-  `brightnessctl` (Powerdevil handles brightness keys natively).
+### hyprland.sh — Hyprland Desktop (pacman: ~18)
+- **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland
+- **Login manager:** sddm, qt6-svg, qt5-wayland, qt6-wayland (default Breeze theme — see D023)
+- **Wayland utils:** awww (wallpaper — swww successor), grim, slurp, satty (screenshots), cliphist (clipboard)
+- **Input / backlight:** brightnessctl, wev
+- **Launcher:** rofi-wayland
+
+### panel.sh — Quickshell Panel (pacman: 2)
+- **Shell runtime:** quickshell (QML-based Wayland layer shell)
+- **Service backend:** networkmanager (nmcli, used by Quickshell's Net service)
+- **Note:** The QML source (arche-shell) is cloned by `07-panel.sh` from
+  <https://github.com/Dhruvpatel-10/quickshell>, not installed via pacman.
 
 ### shell.sh — Shell (pacman: 5)
 - fish, atuin, starship, kitty, tmux
@@ -64,40 +67,44 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 
 ### runtimes.sh — Dev Runtimes (pacman: 5)
 - rust, go, cmake, clang, gdb
-- **Note:** fnm (Node) and Bun install via their own scripts in `07-runtimes.sh`, not pacman
+- **Note:** fnm (Node) and Bun install via their own scripts in `08-runtimes.sh`, not pacman
 
-### apps.sh — Applications (pacman: 23)
+### apps.sh — Applications (pacman: ~22)
 - **Editor:** neovim
 - **Browser:** vivaldi
-- **Files:** dolphin, syncthing
-- **Media:** mpv, imagemagick, ffmpegthumbs, kdenlive
+- **Files:** nautilus, syncthing
+- **Media:** mpv, imagemagick, okular (PDF), gwenview (images), kdenlive (video)
 - **Recording:** obs-studio, v4l2loopback-dkms
 - **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
-- **Desktop:** qbittorrent, okular, gwenview, kdeconnect
+- **Desktop:** qbittorrent, kdeconnect
 - **Bluetooth:** bluez, bluez-utils
 - **Docker:** docker, docker-buildx, docker-compose, rootlesskit, slirp4netns
   (rootless setuptool is no longer packaged as of Docker 29 — fetch from
   upstream if rootless is needed)
 
-### appearance.sh — Appearance (pacman: 5)
+### appearance.sh — Appearance (pacman: 6)
 - **Fonts:** ttf-ibm-plex (UI sans), ttf-meslo-nerd (primary mono), ttf-jetbrains-mono-nerd (fallback), noto-fonts-emoji
 - **Icons:** papirus-icon-theme
-- **Note:** nwg-look removed (was Hyprland-era) — kde-gtk-config (in kde.sh) handles GTK theming
+- **GTK tool:** nwg-look (GTK3/4 configurator — there is no KDE to set GTK theming on Hyprland, D023)
+
+### boot.sh — Pre-boot UI + TPM2 (pacman: 2)
+- **Plymouth:** plymouth (script-module splash — custom `arche` theme lives in `tools/plymouth/arche/`)
+- **TPM2:** tpm2-tools (systemd-cryptenroll backend; tpm2-tss is already pulled by systemd)
+- **Note:** the Plymouth theme requires `ttf-ibm-plex` (in appearance.sh) and `imagemagick` (in apps.sh) to render the ARCHE wordmark at install time — `12-boot.sh` fails fast if they're missing.
 
 ## Totals
 
-- **Pacman:** ~79 packages across 9 files (KDE stack — including plasma-login-manager — assumed present from Arch install)
+- **Pacman:** ~85 packages across 11 files
 - **AUR:** 0 packages
 
 ## Not Managed Here
 
 These are installed outside the package registry:
 - **arche-denoise** — custom binary in `tools/bin/`, deployed via systemd service
-- **arche-greeter** — retired; SDDM (D013, D021) then plasma-login-manager (D022) replaced it
-- **sddm-silent** (SilentSDDM theme) — obsolete (D021/D022); SDDM itself has been retired in favour of plasma-login-manager
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
+- **arche-shell** — QML source, cloned from GitHub to `~/projects/system/arche-shell/`
+  by `07-panel.sh` (D023); `~/.config/quickshell/` is a symlink to that clone
 - **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
-- **fnm** — Node version manager (curl script in `07-runtimes.sh`)
-- **Bun** — JS runtime (official curl script in `07-runtimes.sh`)
+- **fnm** — Node version manager (curl script in `08-runtimes.sh`)
+- **Bun** — JS runtime (official curl script in `08-runtimes.sh`)
 - **shellcheck** — static binary from upstream GitHub release, installed to `/usr/local/bin/shellcheck` by `01-base.sh` (SHA256-pinned)
-- **LADSPA plugin** — removed; arche-denoise is now a single binary

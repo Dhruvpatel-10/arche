@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# arche-battery-monitor — low battery warning via sysfs + mako
-# Designed to run every 30s via systemd timer
+# arche-battery-monitor — low battery warning via sysfs + notify-send
+# Designed to run every 30s via systemd timer; notify-send is daemon-agnostic
+# (Quickshell picks it up via its NotificationsList service)
 
 THRESHOLD=15
 CRITICAL=5

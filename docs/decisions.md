@@ -5,10 +5,335 @@ Newest entries at the top.
 
 ---
 
-## D022 — plasma-login-manager replaces SDDM
+## D026 — `awww` replaces `hyprpaper` as the wallpaper daemon
 
 **Date:** 2026-04-18
 **Status:** Accepted
+**Reverses:** D015 (hyprpaper over swww)
+
+Flipped back to the swww-family daemon, but on its maintained successor.
+LGFae archived the original `swww` GitHub repo in October 2025 and moved
+development to `awww` on Codeberg; Arch replaced `swww` with `awww` in the
+official repos in March 2026 (same upstream, new name — "An Answer to your
+Wayland Wallpaper Woes" vs. "A Solution to…").
+
+**Why swap back:**
+- hyprpaper 0.8's rewrite broke both the flat `preload =` / `wallpaper =`
+  config syntax and the `hyprctl hyprpaper` subcommand path (see D015).
+  `arche-wallpaper` compensated by rewriting `~/.config/hypr/hyprpaper.conf`
+  and restarting the daemon on every switch — a ~200 ms stall per change
+  and a single point of failure if hyprpaper bumps its Hyprlang format again.
+- awww keeps the stable socket IPC from swww: `awww img <path>
+  --transition-type …`, no config file, no daemon restart. The CLI surface
+  is identical to swww, so anything on the internet about swww applies.
+- Smooth transitions (fade/grow/wipe/wave) that D015 dismissed as
+  "nice-to-have" come free. Replaces our `cat > hyprpaper.conf + pkill -x
+  hyprpaper + setsid -f hyprpaper` choreography with a single `awww img`.
+- Compositor-agnostic. If another compositor appears alongside Hyprland
+  (Niri, for instance — awww's README explicitly calls out `--namespace`
+  support for it), the same wallpaper daemon works.
+
+**What changed in the repo:**
+- `packages/hyprland.sh` — `hyprpaper` → `awww` (still PACMAN_PKGS).
+- `stow/arche-scripts/.local/bin/arche/arche-wallpaper` — fully rewritten:
+  `ensure_daemon` checks `awww query`, starts `awww-daemon` with
+  `setsid -f` if missing; `set_wallpaper` calls `awww img` with transition
+  flags; current wallpaper tracked in `$XDG_CACHE_HOME/arche-wallpaper/current`
+  (plain-text cache, no more awk-parsing of a config file).
+- `stow/hypr/.config/hypr/autostart.conf` — comment updated; the single
+  `exec-once = arche-wallpaper random` still does the work because
+  `ensure_daemon` auto-starts `awww-daemon` on first call.
+- Tunables via env (have sensible defaults): `ARCHE_WP_TRANSITION` (default
+  `grow`), `ARCHE_WP_FPS` (60), `ARCHE_WP_DURATION` (1).
+- Migration note: on an existing machine, `sudo pacman -Rns hyprpaper` after
+  the upgrade — the package is not removed automatically. `hyprpaper.conf`
+  under `~/.config/hypr/` becomes stale and can be deleted.
+
+---
+
+## D025 — Custom SDDM theme `arche` (minimal multiuser ember greeter)
+
+**Date:** 2026-04-18
+**Status:** Accepted
+**Amends:** D023 (no-vendored-theme clause — vendored theme is back, surface stays small)
+
+The Breeze fallback SDDM was never actually breeze — the `breeze` theme tree
+is not installed on this machine, so SDDM has been falling back to its stock
+greeter. Replaced it with a bespoke QML theme at
+`system/usr/share/sddm/themes/arche/`, symlinked into
+`/usr/share/sddm/themes/arche/` by `link_system_all`.
+
+**Design brief:**
+- Minimal, modern, multi-user first.
+- Horizontal row of user cards (avatars as initials on a disc — robust across
+  Qt versions, no shader-masking), selected card highlighted with the ember
+  accent ring, arrow-key navigable.
+- Password field below the selected user, amber focus ring, Enter to submit
+  with a small pill submit button.
+- Clock top-right (mono), hostname top-left.
+- Bottom-left chips cycle session and keyboard layout; bottom-right circular
+  buttons for shutdown / restart / suspend — each only shown if SDDM
+  reports the action is available.
+- Two-file palette: `theme.conf` holds colors/fonts/layout as flat keys that
+  the QML reads via `config.*`. Values match `themes/ember.sh` directly so
+  the greeter visually continues the rest of the system.
+
+**Why:**
+- Login is the first surface the user sees after Plymouth (D024). Stock SDDM
+  is functional but unstyled — the rest of the stack (Plymouth, Hyprland,
+  Quickshell, hyprlock) is themed end-to-end, this was the one gap.
+- A tiny single-directory QML theme is a much smaller surface than the old
+  SilentSDDM tree D023 removed (~260 config keys, plugin import chain). This
+  one is ~450 lines of QML across 6 files, no external imports beyond stock
+  QtQuick.
+
+**What changed in the repo:**
+- `system/usr/share/sddm/themes/arche/` — `Main.qml`, `theme.conf`,
+  `metadata.desktop`, and `components/` (`Clock`, `UserCard`, `PasswordField`,
+  `Chip`, `IconButton`).
+- `system/etc/sddm.conf.d/10-arche.conf` — `Current=breeze` → `Current=arche`.
+- `scripts/05-hyprland.sh` — updated comment; the theme itself needs no
+  special install step, `link_system_all` picks up the tree.
+- `Justfile` — added `just sddm-preview` (runs `sddm-greeter-qt6 --test-mode`
+  against the in-repo theme path for quick iteration without rebooting).
+
+**Trade-off accepted:**
+- Colors are baked literally into `theme.conf` against the ember palette. A
+  future theme switch won't recolour the greeter until the conf is rendered
+  too. If/when a second theme ships, promote `theme.conf` to a template and
+  teach `theme_render` to output to `/usr/share/sddm/themes/arche/theme.conf`
+  via sudo. Deferred until there's a second theme to justify the plumbing.
+
+---
+
+## D024 — Plymouth splash + TPM2 PIN unlock (systemd-boot + UKI + sd-encrypt)
+
+**Date:** 2026-04-18
+**Status:** Accepted
+
+Pre-boot UI is now a Plymouth script-theme (`arche` — subtle lavender on
+near-black with an **ARCHE** wordmark), and the LUKS root unlock flow can
+bind to TPM2+PIN instead of a passphrase. The two changes land together
+because either alone looks wrong: pretty-splash-without-TPM still gates on a
+typed passphrase, and TPM-without-Plymouth drops you to a bare-TTY PIN prompt.
+
+**Bootloader stays on systemd-boot.** The live system was already on
+systemd-boot (not Limine, despite what CLAUDE.md claimed pre-D024 — fixed
+in the same commit). Limine's branded menu is nicer if you linger, but with
+a single default UKI entry and `timeout=0` you never see either bootloader
+menu — it's firmware → Plymouth → desktop. For that flow, systemd-boot is
+simpler (no AUR mkinitcpio hook, `bootctl update` on `pacman -Syu` is
+automatic, UKIs auto-discovered from `/boot/EFI/Linux/`).
+
+**The flow, end-to-end:**
+
+1. Firmware loads `systemd-bootx64.efi` from the ESP.
+2. systemd-boot discovers UKIs in `/boot/EFI/Linux/*.efi` (BLS Type #2),
+   picks `arch-linux.efi`, loads it.
+3. The UKI bundles kernel + initramfs + cmdline + splash. Kernel boots,
+   `systemd` hook runs PID 1 in early userspace.
+4. `kms` hook pulls the NVIDIA modules — framebuffer is now live.
+5. `plymouth` hook starts `plymouthd` and registers it as a `systemd-ask-password`
+   agent. The `arche` theme draws its background + wordmark + rule sprites.
+6. `sd-encrypt` hook reads `/etc/crypttab.initramfs`, sees
+   `root UUID=<…> - tpm2-device=auto`, and hands off to
+   `systemd-cryptsetup@root.service`.
+7. systemd-cryptsetup queries the TPM2; policy requires the PIN, so it
+   calls `systemd-ask-password "Please enter PIN for root (nvme0n1p2):"`.
+8. The ask-password broadcast reaches `plymouthd`, which calls the theme's
+   `display_password_callback(prompt, bullets)`. Each keystroke updates the
+   dot row; wrong PIN → `display_message_callback("Wrong PIN…")` sets the
+   error flag and the next redraw uses dusty-rose dots.
+9. PIN correct → TPM unseals the LUKS key → `cryptsetup open` succeeds →
+   rootfs pivots → systemd transitions to the real root.
+10. `plymouth-quit-wait.service` holds the splash until SDDM's greeter is
+    drawn, then Plymouth fades out in a single cross-fade — no TTY flash.
+
+**Why pre-rendered PNGs for the wordmark and dots.** Plymouth script themes
+*can* call `Image.Text()` at runtime, which under the hood uses pango +
+fontconfig + freetype inside the initramfs. That works when it works, and
+silently falls back to Cantarell when it doesn't. The `arche` theme renders
+the wordmark, rule, and dots as PNGs during `12-boot.sh` via ImageMagick, then
+ships them into `/usr/share/plymouth/themes/arche/` where `mkinitcpio -P`
+bakes them into the UKI. One less failure surface, deterministic output, and
+the palette is hardcoded in one place (the script) — no runtime font-finding.
+Tradeoff: changing the wordmark text means regenerating the PNG
+(`just boot`), not editing a config string. That's fine — the wordmark is
+a brand element, not a configurable knob.
+
+**The palette.** Hand-picked, not from `themes/ember.sh`. The desktop is
+ember; the pre-boot identity is purple. Different on purpose — the splash is
+a front door, not a room you spend time in.
+
+- `#15131d` — backdrop
+- `#c8bbdd` — wordmark (light lavender, soft)
+- `#a08dc4` — accent: rule + PIN dots (muted mid-lavender)
+- `#b88a9a` — error: dusty rose for wrong-PIN flash
+- `#615572` (via Image.Text) — prompt text, dim enough to sit behind the dots
+
+These are hardcoded in `tools/plymouth/arche/arche.script` and in the
+ImageMagick render commands in `scripts/12-boot.sh`. Change one, change the
+other.
+
+**mkinitcpio HOOKS change.** Old: `base udev autodetect microcode modconf kms
+keyboard keymap consolefont block encrypt filesystems fsck`. New (via
+`/etc/mkinitcpio.conf.d/arche.conf` drop-in): `base systemd autodetect
+microcode modconf kms keyboard sd-vconsole block plymouth sd-encrypt
+filesystems fsck`. Four substitutions:
+- `udev` → `systemd`: early userspace is pid-1 systemd, required for
+  `systemd-cryptsetup`.
+- `keymap` + `consolefont` → `sd-vconsole`: systemd-native console setup.
+- `encrypt` → `sd-encrypt`: reads `/etc/crypttab.initramfs` and talks to
+  `systemd-cryptsetup`, which in turn can use TPM2.
+- `plymouth` inserted between `kms` and `sd-encrypt`: the framebuffer is up
+  by the time Plymouth draws, and Plymouth's password agent is registered
+  by the time sd-encrypt asks for the PIN.
+
+**UKI layout.** `/etc/mkinitcpio.d/linux.preset` now declares `default_uki`
+and `fallback_uki` at `/boot/EFI/Linux/arch-linux.efi` and
+`/boot/EFI/Linux/arch-linux-fallback.efi`. systemd-boot auto-discovers both
+and labels them correctly in the menu (if ever shown). The kernel cmdline
+lives in `/etc/kernel/cmdline` — `rw quiet splash loglevel=3 rootflags=subvol=@
+zswap.enabled=0` — and is embedded in each UKI at bake time. Legacy
+`/boot/loader/entries/*.conf` are archived to `*.arche-bak` by `12-boot.sh`
+(not deleted — reversible).
+
+**TPM2 enrollment is a separate, explicit step.** `12-boot.sh` prepares the
+boot chain but **does not** touch LUKS keyslots. The user runs
+`just tpm-enroll` (→ `helpers/tpm2-enroll.sh`) when they're ready, and the
+helper:
+- Guards: refuses to run if there's no passphrase keyslot to fall back on
+  (TPM-only is a lockout vector on any BIOS/bootloader update).
+- Runs `systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=0+7
+  --tpm2-with-pin=yes --wipe-slot=tpm2 <device>`.
+- PCRs 0 and 7 seal against firmware measurement + Secure Boot state.
+  Not PCR 4 (kernel + UKI) — that would re-seal on every kernel update.
+  Acceptable trade-off: an attacker with physical access *and* the ability
+  to swap the UKI in-place could bypass TPM, but they'd still need the PIN.
+  For threat model = "stolen laptop", this is fine.
+- Prints `luksDump` afterwards so the user can verify the enrollment.
+
+**Rollback.** Revert the HOOKS change (remove
+`/etc/mkinitcpio.conf.d/arche.conf` — the stock `/etc/mkinitcpio.conf`
+still has `encrypt`), delete the UKIs, restore
+`/boot/loader/entries/arch.conf.arche-bak` → `arch.conf`, rerun
+`mkinitcpio -P` with the old preset. The TPM2 keyslot removal is
+`sudo systemd-cryptenroll --wipe-slot=tpm2 <device>`. Passphrase keyslot is
+never touched, so unlock continues to work throughout.
+
+**Trade-offs / accepted costs:**
+- UKI rebuild adds ~30s to kernel upgrades. The existing
+  `95-boot-cleanup.hook` needs a minor tweak to also clean stale UKIs
+  alongside kernels; noted as a follow-up.
+- Any significant firmware update re-seals the TPM and invalidates the PCR
+  policy → PIN stops working. Fallback passphrase is the recovery path.
+  Re-run `just tpm-enroll` after firmware updates.
+- Plymouth's `display_message_callback` fires once per error, not persistently
+  — the script uses a one-tick `error_until` flag to hold the error state
+  across one keystroke redraw. If Plymouth's behaviour changes upstream
+  (unlikely — this API is stable) the error visual might need a rewrite.
+- Cantarell is the Plymouth fallback font. If `Image.Text` doesn't pick up
+  IBM Plex, the prompt line falls back to Cantarell at the same size. Visible
+  but not broken.
+
+---
+
+## D023 — Hyprland restored, Quickshell panel replaces KDE + Waybar
+
+**Date:** 2026-04-18
+**Status:** Accepted (SDDM-theme clause amended by D025)
+**Reverses:** D021 (KDE Plasma migration), D022 (plasma-login-manager swap)
+**Obsoletes:** vendored SilentSDDM (the bespoke QML returns in D025, but as a ~450-line tree, not the old ~260-key plugin chain)
+
+Hyprland is back as the desktop. Quickshell (arche-shell, an external QML-based
+repo at <https://github.com/Dhruvpatel-10/quickshell>) is the single layer that
+owns the bar, control-center, notifications, toasts, and OSD — all the pieces
+that D021 handed to KDE Plasma's built-ins.
+
+**What actually runs on this machine:**
+- Compositor: `Hyprland` (wayland session) via `uwsm`
+- Greeter: `sddm.service` (Breeze theme — no vendored theme)
+- Panel: `quickshell -p ~/.config/quickshell/shell.qml` (spawns Bar-per-screen,
+  ControlCenter, ToastLayer, NotificationsList)
+- Launcher: `rofi-wayland`
+- Lock / idle / night-light / wallpaper: `hyprlock` / `hypridle` / `hyprsunset` / `hyprpaper`
+- Clipboard history: `cliphist` (wl-clipboard is already in base)
+- Polkit: `hyprpolkitagent`
+- Screen-share picker: `hyprland-preview-share-picker`
+
+**Why:**
+- Personal preference. After living with KDE for D021/D022 the user chose to
+  come back to Hyprland — more control over the tiling and binding model,
+  lower visual latency, tighter loop for keyboard-first workflows.
+- Quickshell wasn't ready at D021 time; now it is. It collapses the old
+  Waybar + Mako + SwayOSD + cliphist-menu split into one QML tree with a
+  single theme source (`Theme.qml`) that lines up with `themes/ember.sh`.
+- Default Breeze SDDM theme is enough — the vendored SilentSDDM tree from
+  D013 is not restored; it carried ~260 config keys of surface area and
+  a QML import dependency chain that was never load-bearing. If the user
+  wants a bespoke greeter later, vendor it at that point, not preemptively.
+
+**What changed in the repo:**
+- Scripts: `05-kde.sh` → `05-hyprland.sh`; new `07-panel.sh`; renumber
+  `07-runtimes` → `08`, `08-apps` → `09`, `09-stow` → `10`, `10-appearance` → `11`.
+- Packages: `kde.sh` → `hyprland.sh` (wm + wayland utils + rofi + sddm + Qt wayland bits).
+  New `panel.sh` (quickshell + networkmanager). `apps.sh` swaps dolphin →
+  nautilus, adds okular + gwenview (standalone, don't pull plasma).
+  `appearance.sh` gains `nwg-look` (was handled by `kde-gtk-config` before).
+- Stow: delete `stow/kde/`. Restore `stow/hypr/`, `stow/rofi/`, `stow/cliphist/`,
+  `stow/hyprland-preview-share-picker/`. Merge the Hyprland-specific scripts
+  that used to live under `stow/hypr/.local/bin/` into `stow/arche-scripts/` —
+  keeps the D021 "compositor-agnostic location" refactor even though the
+  scripts themselves are compositor-specific, because that's where they're
+  already stowed on the live system and I don't want to churn the install
+  tree a second time.
+- Templates: restore `templates/hypr/`, `templates/rofi/`,
+  `templates/hyprland-preview-share-picker/`. Delete `templates/kde/`.
+  No waybar/mako/swayosd templates come back — Quickshell owns that layer and
+  reads its own theme file.
+- System: restore `system/etc/sddm.conf.d/10-arche.conf` (Breeze theme, X11
+  greeter, IBM Plex Sans font).
+- Desktop apps: remove dolphin, ffmpegthumbs from `apps.sh`. okular and
+  gwenview stay (standalone — they pull in a few kde-frameworks packages but
+  not plasma-desktop).
+
+**The Quickshell source does NOT live inside arche.** `07-panel.sh` clones
+Dhruvpatel-10/quickshell to `~/projects/system/arche-shell/` and symlinks
+`~/.config/quickshell/` to that clone. This matches the pattern established by
+the `tools/` convention (binaries built externally, pulled into the repo only
+as prebuilt artefacts — see the "Tools" section of CLAUDE.md). Symlink-not-stow
+because the shell is iterated on with hot-reload, and committing the QML into
+arche would fight that loop.
+
+**Deprecations:**
+- D021 and D022 are reversed. The `stow/kde/`, `scripts/05-kde.sh`,
+  `templates/kde/` trees are gone from the working tree (still in git history).
+- `plasmalogin.service` is disabled by the new `05-hyprland.sh`; `sddm.service`
+  takes over as the display-manager alias.
+- The vendored `vendor/sddm-silent/` tree (D013) is not restored either —
+  SilentSDDM was deprecated in D021 and stays that way. Default Breeze is
+  sufficient, no theme vendoring.
+
+**Trade-offs / accepted costs:**
+- Reboot needed to switch greeter from plasmalogin → sddm.
+- Reboot needed to switch session from Plasma → Hyprland (or log out and pick
+  Hyprland at the greeter).
+- arche-shell is a second repo to keep in sync — mitigated by `07-panel.sh`
+  doing `git pull --ff-only` on each run so subsequent bootstraps stay current.
+- Hyprland on the RTX 4060 laptop has more edge cases than Plasma (XWayland
+  hiccups with some Electron apps, HDMI resume quirks — see `arche-hdmi-reset`).
+  Accepted — the workflow win outweighs the friction for this user.
+
+**Rollback:** `git revert` this commit range, re-enable `plasmalogin.service`,
+disable `sddm.service`, restow `stow/kde/`. The D021/D022 trees are in git
+history at commits `4c9e6d2` (D021) and `d5d7a34` (D022).
+
+---
+
+## D022 — plasma-login-manager replaces SDDM
+
+**Date:** 2026-04-18
+**Status:** Reversed (see D023 — SDDM restored)
 **Amends:** D021 (SDDM was kept as login manager; now retired)
 **Supersedes:** D013 (SilentSDDM theming — obsolete, theme system no longer applies)
 
@@ -85,7 +410,7 @@ future commit if disk hygiene matters.
 ## D021 — KDE Plasma replaces Hyprland as desktop environment
 
 **Date:** 2026-04-16
-**Status:** Accepted
+**Status:** Reversed (see D023 — Hyprland restored, Quickshell replaces Plasma shell)
 **Reverses:** D008 (popup convention now uses KWin rules, not Hyprland windowrules)
 **Supersedes:** D009 (Rofi replaced by KRunner), D015 (hyprpaper replaced by Plasma Wallpaper), D019 (SwayOSD replaced by KDE OSD)
 
@@ -554,7 +879,7 @@ in command lines.
 ## D015 — hyprpaper replaces swww as wallpaper daemon
 
 **Date:** 2026-04-11
-**Status:** Accepted
+**Status:** Reversed (see D026 — awww, swww's maintained successor, is the daemon)
 
 Swapped `swww` for `hyprpaper` as the sole wallpaper daemon.
 
