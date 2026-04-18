@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Slack
+Comment=Team messaging
+Exec=arche-webapp https://app.slack.com
+Icon=slack
+Terminal=false
+Categories=Network;Chat;

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Claude
+Comment=AI assistant
+Exec=arche-webapp https://claude.ai
+Icon=claude-ai
+Terminal=false
+Categories=Network;

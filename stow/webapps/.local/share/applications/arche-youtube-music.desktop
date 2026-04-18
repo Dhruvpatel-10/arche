@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=YouTube Music
+Comment=Music streaming
+Exec=arche-webapp https://music.youtube.com
+Icon=youtube-music
+Terminal=false
+Categories=AudioVideo;Audio;

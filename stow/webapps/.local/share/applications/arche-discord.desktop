@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Discord
+Comment=Voice and text chat
+Exec=arche-webapp https://discord.com/app
+Icon=discord
+Terminal=false
+Categories=Network;Chat;

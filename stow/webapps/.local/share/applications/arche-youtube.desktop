@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=YouTube
+Comment=Video streaming
+Exec=arche-webapp https://youtube.com
+Icon=youtube
+Terminal=false
+Categories=AudioVideo;

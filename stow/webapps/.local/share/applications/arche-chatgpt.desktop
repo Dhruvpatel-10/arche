@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ChatGPT
+Comment=AI assistant
+Exec=arche-webapp https://chatgpt.com
+Icon=chatgpt
+Terminal=false
+Categories=Network;
