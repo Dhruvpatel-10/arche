@@ -496,8 +496,8 @@ _theme_reload() {
         glow)
             log_ok "Glow picks up theme on next launch"
             ;;
-        arche-share-picker)
-            log_ok "arche-share-picker picks up theme on next launch"
+        hyprland-preview-share-picker)
+            log_ok "hyprland-preview-share-picker picks up theme on next launch"
             ;;
         *)
             log_warn "No reload rule for $component"

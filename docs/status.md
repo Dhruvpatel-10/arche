@@ -27,8 +27,7 @@ Last updated: 2026-04-18
 | `hypr`                               | Done    | Hyprland compositor config (D023 — restored)    |
 | `rofi`                               | Done    | Spotlight-style app launcher (D023 — restored)  |
 | `cliphist`                           | Done    | Clipboard history (D023 — restored)             |
-| ~~`hyprland-preview-share-picker`~~  | Removed | Replaced by arche-share-picker (D027)           |
-| `arche-share-picker`                 | Done    | Screen-share source picker — tools/ binary (D027) |
+| `hyprland-preview-share-picker`      | Done    | Screen-share source picker — AUR (D028 reverses D027) |
 | `arche-scripts`                      | Done    | User scripts: wallpaper, popup, powermenu, etc. |
 | `nvim`                               | Done    | LazyVim + catppuccin                            |
 | `gtk`                                | Done    | Fully templated (no stow — all visual)          |
@@ -76,8 +75,7 @@ Last updated: 2026-04-18
 | `templates/hypr/envs.conf.tmpl`                       | `~/.config/hypr/envs.conf`                       | Done   |
 | `templates/hypr/hyprlock-colors.conf.tmpl`            | `~/.config/hypr/hyprlock-colors.conf`            | Done   |
 | `templates/hypr/hyprlock-fonts.conf.tmpl`             | `~/.config/hypr/hyprlock-fonts.conf`             | Done   |
-| ~~`templates/hyprland-preview-share-picker/style.css.tmpl`~~ | —                                             | Removed (D027) |
-| `templates/arche-share-picker/style.css.tmpl`            | `~/.config/arche-share-picker/style.css`     | Done   |
+| `templates/hyprland-preview-share-picker/style.css.tmpl` | `~/.config/hyprland-preview-share-picker/style.css` | Done (D028)   |
 | `templates/kitty/fonts.conf.tmpl`                     | `~/.config/kitty/fonts.conf`                     | Done   |
 | `templates/kitty/theme.conf.tmpl`                     | `~/.config/kitty/theme.conf`                     | Done   |
 | `templates/legion/colors.toml.tmpl`                   | `~/.config/legion/colors.toml`                   | Done   |
@@ -98,7 +96,6 @@ Last updated: 2026-04-18
 | `arche-legion`       | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 | `arche-denoise`      | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 | `arche-denoise-mic`  | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
-| `arche-share-picker` | `tools/bin/` (pre-built, D027)  | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 
 ## External Shell
 

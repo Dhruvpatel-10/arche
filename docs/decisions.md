@@ -5,6 +5,48 @@ Newest entries at the top.
 
 ---
 
+## D028 — revert to `hyprland-preview-share-picker` (AUR)
+
+**Date:** 2026-04-19
+**Status:** Accepted
+**Reverses:** D027
+
+Undid D027. The custom `arche-share-picker` binary kept hitting the xdph picker
+contract from the wrong direction — each bug we fixed revealed another edge case
+(missing `[SELECTION]` prefix, wrong window field, `select_child`/click race on
+auto-focus, etc). The AUR picker already handles all of these correctly, ships
+live monitor/window previews via `wlr-screencopy-v1` + `hyprland-toplevel-export-v1`,
+and is production-tested.
+
+**Why:**
+- The xdph protocol is tighter than it looks (`[SELECTION]{flags}/{payload}`
+  prefix mandatory; window payload is the toplevel id decimal, not the address;
+  `r` flag controls token persistence). Easy to get one of these subtly wrong.
+- Live previews require a Tokio runtime + `wayland-client` + `wayland-protocols-wlr`
+  + `memfd` + `image` crates — ~600 LOC for something the AUR picker already does.
+- Chasing parity with upstream is a bad use of time when one `paru -S` gets it.
+
+**Trade-off accepted:** one AUR dep returns to the stack. The rest of the system
+is still pacman-only.
+
+**What changed:**
+- `packages/hyprland.sh` — `gtk4-layer-shell` removed from PACMAN_PKGS; AUR_PKGS
+  now contains `hyprland-preview-share-picker-git` (installs gtk4-layer-shell as
+  a transitive runtime dep).
+- `stow/hyprland-preview-share-picker/` — restored (AUR picker's config.yaml).
+- `templates/hyprland-preview-share-picker/style.css.tmpl` — restored (Ember CSS).
+- `stow/hypr/.config/hypr/xdph.conf` — `custom_picker_binary =
+  hyprland-preview-share-picker`.
+- `scripts/05-hyprland.sh` — `stow_pkg hyprland-preview-share-picker` restored.
+- `scripts/lib.sh` — theme-reload case renamed.
+- `tools/bin/arche-share-picker` + `system/usr/local/bin/arche/arche-share-picker`
+  + `templates/arche-share-picker/` — all deleted.
+
+The external Rust source repo at `~/projects/system/arche-share-picker/` is
+retained for historical reference but is no longer wired into arche.
+
+---
+
 ## D027 — arche-share-picker replaces hyprland-preview-share-picker
 
 **Date:** 2026-04-19

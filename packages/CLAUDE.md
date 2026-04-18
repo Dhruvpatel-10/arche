@@ -48,13 +48,13 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **PipeWire stack:** pipewire, pipewire-alsa, pipewire-jack, pipewire-pulse, wireplumber
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
-### hyprland.sh — Hyprland Desktop (pacman: ~19, AUR: 0)
+### hyprland.sh — Hyprland Desktop (pacman: ~18, AUR: 1)
 - **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland
 - **Login manager:** sddm, qt6-svg, qt5-wayland, qt6-wayland (default Breeze theme — see D023)
 - **Wayland utils:** awww (wallpaper — swww successor), grim, slurp, satty (screenshots), cliphist (clipboard)
 - **Input / backlight:** brightnessctl, wev
 - **Launcher:** rofi-wayland
-- **Picker runtime:** gtk4-layer-shell (arche-share-picker dep — binary is in tools/bin/, D027; gtk4 pulled transitively)
+- **AUR:** hyprland-preview-share-picker-git (xdph's `custom_picker_binary` with live previews — D028 reverses D027)
 
 ### panel.sh — Quickshell Panel (pacman: 2)
 - **Shell runtime:** quickshell (QML-based Wayland layer shell)
@@ -96,7 +96,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 ## Totals
 
 - **Pacman:** ~85 packages across 11 files
-- **AUR:** 0 packages
+- **AUR:** 1 package (hyprland-preview-share-picker-git)
 
 ## Not Managed Here
 

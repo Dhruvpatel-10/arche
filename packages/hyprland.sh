@@ -33,9 +33,12 @@ PACMAN_PKGS=(
 
     # App launcher
     rofi-wayland             # Spotlight-style launcher (combi mode)
-
-    # Screen-share source picker runtime deps (arche-share-picker is a tools/ binary — D027)
-    gtk4-layer-shell         # GTK4 layer-shell binding used by arche-share-picker
 )
 
-AUR_PKGS=()
+AUR_PKGS=(
+    # Screen-share source picker with live previews for xdph's custom_picker_binary.
+    # PKGBUILD: https://aur.archlinux.org/packages/hyprland-preview-share-picker-git
+    # Upstream: https://github.com/WhySoBad/hyprland-preview-share-picker (MIT)
+    # Reverts D027 — see D028.
+    hyprland-preview-share-picker-git
+)
