@@ -147,19 +147,30 @@ fi
 # Primary:  NextDNS over TLS (port 853) — filtering + analytics
 # Fallback: Cloudflare over TLS — kicks in if NextDNS is unreachable
 # DNSSEC:   allow-downgrade — validates when available, doesn't break captive portals
-# Config:   system/etc/systemd/resolved.conf (symlinked, not copied)
+# Config:   system/etc/systemd/resolved.conf is a *template* (contains NEXTDNS_ID).
+#           We render it to /etc/systemd/resolved.conf as a real file. The symlink
+#           created by link_system_all in preflight is unlinked first — writing
+#           through it with `tee` would clobber the repo template with the real ID.
 # ─────────────────────────────────────────────────────────────────────────────
 
 log_section "Encrypted DNS (NextDNS + Cloudflare fallback)"
 
 if [[ -z "${NEXTDNS_ID:-}" ]]; then
-    log_err "NEXTDNS_ID not set — add it to secrets.sh (see secrets.sh.example)"
-else
-    # Render resolved.conf with actual NextDNS ID
-    sed "s/NEXTDNS_ID/${NEXTDNS_ID}/g" "$ARCHE/system/etc/systemd/resolved.conf" \
-        | sudo tee /etc/systemd/resolved.conf > /dev/null
-    log_ok "Rendered resolved.conf with NextDNS ID"
+    log_err "NEXTDNS_ID not set — create secrets.sh from secrets.sh.example"
+    log_err "Refusing to continue: /etc/systemd/resolved.conf would be left with a placeholder"
+    exit 1
 fi
+
+# Unlink the preflight symlink first so `tee` creates a fresh file
+# instead of writing the rendered content back through the symlink
+# into the repo template.
+if [[ -L /etc/systemd/resolved.conf ]]; then
+    sudo rm /etc/systemd/resolved.conf
+fi
+sed "s/NEXTDNS_ID/${NEXTDNS_ID}/g" "$ARCHE/system/etc/systemd/resolved.conf" \
+    | sudo tee /etc/systemd/resolved.conf > /dev/null
+sudo chmod 644 /etc/systemd/resolved.conf
+log_ok "Rendered /etc/systemd/resolved.conf with NextDNS ID"
 
 # Point /etc/resolv.conf to systemd-resolved stub
 if [[ "$(readlink -f /etc/resolv.conf)" != "/run/systemd/resolve/stub-resolv.conf" ]]; then
