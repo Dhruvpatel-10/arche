@@ -20,10 +20,9 @@ ok()    { echo -e "${green}[✓]${reset} $1"; }
 warn()  { echo -e "${yellow}[~]${reset} $1"; }
 
 # ─── Config ───
-# SSH host alias — matches what ssh-setup.sh generates
-# Change this if your alias is different
+# Uses stock github.com — ssh-setup.sh writes the key to the default
+# ~/.ssh/id_ed25519 so no host alias is needed.
 
-GH_HOST="${GH_HOST:-github-personal}"
 GH_USER="${GH_USER:-Dhruvpatel-10}"
 
 # ─── Directory structure ───
@@ -75,7 +74,7 @@ for entry in "${REPOS[@]}"; do
         continue
     fi
 
-    remote="git@${GH_HOST}:${GH_USER}/${repo}.git"
+    remote="git@github.com:${GH_USER}/${repo}.git"
     info "Cloning $repo..."
 
     if git clone "$remote" "$target" 2>/dev/null; then
