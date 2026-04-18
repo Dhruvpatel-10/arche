@@ -99,6 +99,17 @@ fi
 log_info "Running full system update..."
 sudo pacman -Syu
 
+# ─── Reboot Gate ───
+# If pacman -Syu upgraded the kernel, /usr/lib/modules/$(uname -r) is gone
+# (pacman removed the old kernel's modules). Running further scripts on a
+# stale kernel is bad — especially 03-gpu-nvidia which builds DKMS modules
+# against the current headers. Signal bootstrap.sh to prompt for reboot.
+if [[ ! -d "/usr/lib/modules/$(uname -r)" ]]; then
+    log_warn "Kernel was upgraded — running kernel $(uname -r) has no modules installed"
+    log_info "Bootstrap must pause here. Reboot, then re-run: bash bootstrap.sh"
+    exit 2
+fi
+
 # ─── AUR Helper Check ───
 
 if ! command -v paru &>/dev/null; then

@@ -75,6 +75,29 @@ test_lint() {
         skip "shellcheck not installed"
     fi
 
+    # ── KDE script ──
+
+    section "Lint: KDE script"
+
+    if [[ -f "$ARCHE/scripts/05-kde.sh" ]]; then
+        if bash -n "$ARCHE/scripts/05-kde.sh" 2>/dev/null; then
+            pass "bash -n scripts/05-kde.sh"
+        else
+            fail "bash -n scripts/05-kde.sh"
+        fi
+        if command -v shellcheck &>/dev/null; then
+            if shellcheck -x -s bash "$ARCHE/scripts/05-kde.sh" 2>/dev/null; then
+                pass "shellcheck scripts/05-kde.sh"
+            else
+                fail "shellcheck scripts/05-kde.sh"
+            fi
+        else
+            skip "shellcheck not installed — skipping scripts/05-kde.sh"
+        fi
+    else
+        skip "scripts/05-kde.sh not present"
+    fi
+
     # ── Package arrays ──
 
     section "Lint: Package files — arrays only"
@@ -93,6 +116,25 @@ test_lint() {
             fail "packages/$name failed to source"
         fi
     done
+
+    # ── KDE package file ──
+
+    section "Lint: KDE package file"
+
+    if [[ -f "$ARCHE/packages/kde.sh" ]]; then
+        if (
+            PACMAN_PKGS=()
+            AUR_PKGS=()
+            source "$ARCHE/packages/kde.sh"
+            [[ ${#PACMAN_PKGS[@]} -ge 0 && ${#AUR_PKGS[@]} -ge 0 ]]
+        ); then
+            pass "packages/kde.sh declares valid arrays"
+        else
+            fail "packages/kde.sh failed to source"
+        fi
+    else
+        skip "packages/kde.sh not present"
+    fi
 
     # ── Duplicate packages ──
 
@@ -164,12 +206,14 @@ test_lint() {
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                    "${SCHEMA_FONTS_REQUIRED[@]}" "${SCHEMA_INTEGERS_REQUIRED[@]}" \
                    "${SCHEMA_INTEGERS_OPTIONAL[@]}" "${SCHEMA_ALPHA_OPTIONAL[@]}" \
+                   "${SCHEMA_OPACITY_OPTIONAL[@]}" \
                    "${SCHEMA_APPEARANCE_REQUIRED[@]}" "${SCHEMA_APPEARANCE_INTEGERS[@]}"; do
             echo "$var"
         done
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
             echo "${var}_NOHASH"
             echo "${var}_RGBA"
+            echo "${var}_RGB"
         done
     )
 

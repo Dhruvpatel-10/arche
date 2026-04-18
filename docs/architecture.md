@@ -22,16 +22,14 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   └── active -> ember.sh  # symlink to current theme
 │
 ├── templates/              # .tmpl files rendered by theme engine (envsubst)
-│   ├── hypr/               # colors, cursor, fonts for Hyprland + hyprlock
 │   ├── kitty/              # terminal colors + fonts
-│   ├── waybar/             # bar stylesheet
 │   ├── mako/               # notification config
 │   ├── gtk-3.0/            # GTK3 settings (theme, icons, cursor, fonts)
 │   ├── gtk-4.0/            # GTK4 settings + CSS overrides
 │   ├── qt6ct/              # Qt6 config (icons, fonts)
 │   ├── zathura/            # PDF viewer colors
 │   ├── mpv/                # media player fonts
-│   └── ...                 # btop, tmux, walker, syshud
+│   └── ...                 # btop, tmux, rofi, starship
 │
 ├── packages/               # package registry — data only, no logic
 │   └── *.sh                # each file: PACMAN_PKGS=() and AUR_PKGS=()
@@ -39,10 +37,10 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 ├── scripts/                # numbered setup scripts + shared library
 │   ├── lib.sh              # shared primitives (log, install, stow, etc.)
 │   ├── theme.sh            # theme engine: apply / switch / list
-│   └── 00-preflight.sh ... 12-appearance.sh
+│   └── 00-preflight.sh ... 10-appearance.sh
 │
 ├── vendor/                 # third-party source shipped as-is (see D013)
-│   └── sddm-silent/        # SilentSDDM theme for SDDM (glassmorphism)
+│   └── sddm-silent/        # SilentSDDM theme (deprecated — D021, now using Breeze)
 │
 ├── tools/                  # custom binaries
 │   └── bin/                # pre-built binaries from external repos
@@ -57,10 +55,8 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
     ├── kitty/              # terminal behavior
     ├── starship/           # prompt config
     ├── mpv/                # media player
-    ├── hypr/               # compositor + hyprlock + hypridle
-    ├── waybar/             # status bar modules
+    ├── kde/                # KDE Plasma + KWin config (D021)
     ├── nvim/               # LazyVim editor
-    ├── walker/             # app launcher
     ├── zathura/            # PDF viewer behavior
     └── ...                 # tmux, btop, kvantum, qt6ct, etc.
 ```
@@ -75,21 +71,21 @@ Configs that contain **colors, fonts, sizes, cursors, icons, or spacing**. Rende
 `scripts/theme.sh` using `envsubst`. Output is gitignored. Lives in
 `templates/`.
 
-Examples: `waybar/style.css`, `gtk-3.0/settings.ini`, `hypr/envs.conf`
+Examples: `kitty/theme.conf`, `gtk-3.0/settings.ini`, `btop/arche.theme`
 
 ### Layer 2: Stow Packages
 
 Configs that contain **behavior**: keybinds, module lists, rules, logic.
 Symlinked directly via GNU Stow. Committed as-is. Lives in `stow/`.
 
-Examples: `hyprland.conf`, `waybar/config.jsonc`, `fish/config.fish`
+Examples: `fish/config.fish`, `kitty/kitty.conf`, `kde/kwinrc`
 
 ### Layer 3: Generated Output
 
 Files produced by rendering templates. Live in `~/.config/`. Never committed.
 Listed in `.gitignore`.
 
-Examples: `~/.config/waybar/style.css`, `~/.config/hypr/envs.conf`
+Examples: `~/.config/kitty/theme.conf`, `~/.config/btop/arche.theme`
 
 ## Theme System
 
@@ -136,7 +132,7 @@ stow_pkg() { stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$1"; }
 ## Bootstrap Flow
 
 `bootstrap.sh` runs numbered scripts `00` through `12` in order. Each script
-is independently runnable (`bash scripts/05-hyprland.sh`). Each section
+is independently runnable (`bash scripts/05-kde.sh`). Each section
 prompts before running (y/N/a for all). The orchestrator captures exit codes
 and prints a final summary table.
 
@@ -148,13 +144,14 @@ Does not: clone repo, configure SSH, set up secrets.
 | Layer        | Tool                                         |
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
-| Compositor   | Hyprland via uwsm, SDDM + SilentSDDM theme   |
+| Desktop      | KDE Plasma 6 (Wayland), SDDM + Breeze (D021) |
+| Compositor   | KWin                                         |
 | Shell        | fish + atuin + fisher + starship (D018 — restored from D003) |
 | Terminal     | Kitty                                        |
 | Editor       | Neovim (LazyVim)                             |
-| Bar          | Waybar                                       |
-| Launcher     | Rofi (rofi-wayland, combi mode)              |
-| Notifications| Mako                                         |
+| Panel        | KDE Panel                                    |
+| Launcher     | KRunner                                      |
+| Notifications| KDE Notifications                            |
 | GPU          | NVIDIA open-dkms (RTX 4060 Laptop)           |
 | Audio        | PipeWire full stack                          |
 | Theme        | Ember (warm amber on deep charcoal)          |

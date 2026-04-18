@@ -63,12 +63,14 @@ test_gate() {
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                    "${SCHEMA_FONTS_REQUIRED[@]}" "${SCHEMA_INTEGERS_REQUIRED[@]}" \
                    "${SCHEMA_INTEGERS_OPTIONAL[@]}" "${SCHEMA_ALPHA_OPTIONAL[@]}" \
+                   "${SCHEMA_OPACITY_OPTIONAL[@]}" \
                    "${SCHEMA_APPEARANCE_REQUIRED[@]}" "${SCHEMA_APPEARANCE_INTEGERS[@]}"; do
             echo "$var"
         done
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
             echo "${var}_NOHASH"
             echo "${var}_RGBA"
+            echo "${var}_RGB"
         done
     )
 
@@ -98,7 +100,7 @@ test_gate() {
             local pkg
             pkg="$(basename "$pkg_dir")"
             if ! stow -d "$ARCHE/stow" -t "$HOME" --no-folding -n "$pkg" 2>/dev/null; then
-                fail "stow $pkg has conflicts — 11-stow.sh will fail"
+                fail "stow $pkg has conflicts — 09-stow.sh will fail"
                 stow_failed=true
             fi
         done
@@ -115,5 +117,21 @@ test_gate() {
         skip "secrets.sh missing — 02-security.sh will skip DNS config"
     else
         pass "secrets.sh present"
+    fi
+
+    section "Gate: KDE prereqs"
+
+    if command -v pacman &>/dev/null; then
+        local missing=()
+        for pkg in plasma-desktop kwin sddm; do
+            pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
+        done
+        if [[ ${#missing[@]} -eq 0 ]]; then
+            pass "plasma-desktop, kwin, sddm installed"
+        else
+            fail "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma sddm"
+        fi
+    else
+        skip "pacman not available — cannot verify KDE prereqs"
     fi
 }

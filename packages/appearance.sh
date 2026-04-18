@@ -1,5 +1,5 @@
 # Fonts, icons, cursors, GTK/Qt theming tools.
-# Used by: scripts/12-appearance.sh
+# Used by: scripts/10-appearance.sh
 
 PACMAN_PKGS=(
     # Fonts
@@ -11,8 +11,7 @@ PACMAN_PKGS=(
     # Icons
     papirus-icon-theme        # Clean icon theme for GTK apps
 
-    # GTK/Qt integration
-    nwg-look                  # GTK settings editor for Wayland
+    # GTK/Qt integration handled by kde-gtk-config (in kde.sh)
 )
 
 AUR_PKGS=(

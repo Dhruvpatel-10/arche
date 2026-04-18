@@ -36,7 +36,11 @@ PACMAN_PKGS=(
     amd-ucode         # AMD CPU microcode (Spectre/Meltdown patches)
     reflector         # mirror ranking
     snapper           # btrfs snapshots
-    shellcheck        # shell script linter (used by tests/)
+    # shellcheck — installed as static binary in 01-base.sh (pacman version
+    # pulls 56 Haskell packages for a 4 MB tool; upstream ships a static binary)
+
+    # Wayland CLI
+    wl-clipboard      # wl-copy / wl-paste for terminal scripts
 )
 
 AUR_PKGS=(

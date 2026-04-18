@@ -62,6 +62,8 @@ link_system_file() {
 # Walk system/ tree and symlink every file to its / counterpart.
 # system/etc/pacman.conf → /etc/pacman.conf
 # system/usr/local/bin/foo → /usr/local/bin/foo (made executable)
+# Symlinks in system/ (e.g. to tools/bin/*) are preserved as-is so that
+# /usr/local/bin/arche/X → /opt/arche/system/usr/local/bin/arche/X → tools/bin/X.
 link_system_all() {
     local sys_dir="$ARCHE/system"
 
@@ -71,13 +73,13 @@ link_system_all() {
     fi
 
     while IFS= read -r -d '' src; do
-        local rel="${src#$sys_dir}"
+        local rel="${src#"$sys_dir"}"
         link_system_file "$src" "$rel"
-        # Make scripts executable
+        # Make scripts executable (follows symlinks — chmod on final target)
         if [[ "$rel" == /usr/local/bin/* ]]; then
             sudo chmod +x "$rel"
         fi
-    done < <(find "$sys_dir" -type f -print0)
+    done < <(find "$sys_dir" \( -type f -o -type l \) -print0)
 }
 
 # ─── Package Installation ───
@@ -156,7 +158,7 @@ stow_pkg() {
 
     # Clean broken symlinks in target paths before stowing
     while IFS= read -r -d '' target; do
-        local rel="${target#$stow_dir/$pkg/}"
+        local rel="${target#"$stow_dir"/"$pkg"/}"
         local dest="$HOME/$rel"
         if [[ -L "$dest" && ! -e "$dest" ]]; then
             rm -f "$dest"
@@ -169,7 +171,7 @@ stow_pkg() {
         log_warn "Stow conflict for $pkg — backing up and replacing"
         # Find conflicting files and move them aside
         while IFS= read -r -d '' src; do
-            local rel="${src#$stow_dir/$pkg/}"
+            local rel="${src#"$stow_dir"/"$pkg"/}"
             local dest="$HOME/$rel"
             if [[ -e "$dest" && ! -L "$dest" ]]; then
                 mv "$dest" "${dest}.pre-stow"
@@ -295,6 +297,14 @@ theme_validate() {
         fi
     done
 
+    # Opacity — if set, must be decimal 0.0–1.0
+    for var in "${SCHEMA_OPACITY_OPTIONAL[@]}"; do
+        if [[ -n "${!var:-}" && ! "${!var}" =~ ^[01]\.[0-9]+$ && "${!var}" != "1.0" && "${!var}" != "0.0" ]]; then
+            log_err "$var: invalid opacity '${!var}' (expected 0.0–1.0)"
+            fail=1
+        fi
+    done
+
     if [[ $fail -eq 0 ]]; then
         log_ok "Theme valid: $(basename "$theme_file" .sh)"
     fi
@@ -339,6 +349,7 @@ theme_render() {
     : "${COLOR_SURFACE1:=$COLOR_BORDER}"
     : "${COLOR_SURFACE2:=$COLOR_BORDER}"
     : "${COLOR_BG_ALPHA:=D0}"
+    : "${NOTIF_BG_ALPHA:=D8}"
     : "${NOTIF_WIDTH:=400}"
     : "${NOTIF_MARGIN:=12}"
     : "${NOTIF_PADDING_V:=16}"
@@ -351,6 +362,11 @@ theme_render() {
     : "${NOTIF_FONT_SIZE_SMALL:=$FONT_SIZE_SMALL}"
     : "${NOTIF_TIMEOUT:=5000}"
 
+    # Apply defaults for opacity variables
+    : "${KITTY_OPACITY:=1.0}"
+    : "${BAR_OPACITY:=0.62}"
+    : "${TOOLTIP_OPACITY:=0.95}"
+
     # Apply defaults for appearance variables
     : "${CURSOR_SIZE:=24}"
 
@@ -359,9 +375,9 @@ theme_render() {
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                "${SCHEMA_FONTS_REQUIRED[@]}" \
                "${SCHEMA_INTEGERS_REQUIRED[@]}" "${SCHEMA_INTEGERS_OPTIONAL[@]}" \
-               "${SCHEMA_ALPHA_OPTIONAL[@]}" \
+               "${SCHEMA_ALPHA_OPTIONAL[@]}" "${SCHEMA_OPACITY_OPTIONAL[@]}" \
                "${SCHEMA_APPEARANCE_REQUIRED[@]}" "${SCHEMA_APPEARANCE_INTEGERS[@]}"; do
-        [[ -n "${!var:-}" ]] && export "$var"
+        [[ -n "${!var:-}" ]] && export "${var?}"
     done
     # Schema-driven _NOHASH generation — all color vars get a stripped variant
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
@@ -376,19 +392,27 @@ theme_render() {
             export "${var}_RGBA=${r}, ${g}, ${b}"
         fi
     done
+    # Schema-driven _RGB generation — "R,G,B" for KDE .colors and similar INI formats
+    for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
+        if [[ -n "${!var:-}" ]]; then
+            local hex="${!var#\#}"
+            local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+            export "${var}_RGB=${r},${g},${b}"
+        fi
+    done
 
     # Build explicit envsubst variable list — only substitute theme vars, not app vars
     local _envsubst_vars=""
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                "${SCHEMA_FONTS_REQUIRED[@]}" \
                "${SCHEMA_INTEGERS_REQUIRED[@]}" "${SCHEMA_INTEGERS_OPTIONAL[@]}" \
-               "${SCHEMA_ALPHA_OPTIONAL[@]}" \
+               "${SCHEMA_ALPHA_OPTIONAL[@]}" "${SCHEMA_OPACITY_OPTIONAL[@]}" \
                "${SCHEMA_APPEARANCE_REQUIRED[@]}" "${SCHEMA_APPEARANCE_INTEGERS[@]}"; do
         _envsubst_vars+=" \${$var}"
         # Also include _NOHASH and _RGBA variants for color vars
     done
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
-        _envsubst_vars+=" \${${var}_NOHASH} \${${var}_RGBA}"
+        _envsubst_vars+=" \${${var}_NOHASH} \${${var}_RGBA} \${${var}_RGB}"
     done
 
     local components=("$@")
@@ -410,10 +434,10 @@ theme_render() {
         fi
 
         while IFS= read -r -d '' tmpl; do
-            # template path: templates/rofi/theme.rasi.tmpl
-            # relative:      theme.rasi.tmpl
-            # output path:   ~/.config/rofi/theme.rasi
-            local rel="${tmpl#$tmpl_dir/}"
+            # template path: templates/kitty/theme.conf.tmpl
+            # relative:      theme.conf.tmpl
+            # output path:   ~/.config/kitty/theme.conf
+            local rel="${tmpl#"$tmpl_dir"/}"
             local rel_noext="${rel%.tmpl}"
             output="$HOME/.config/$component/$rel_noext"
 
@@ -430,38 +454,26 @@ theme_render() {
 _theme_reload() {
     local component="$1"
     case "$component" in
-        hypr*)
-            if command -v hyprctl &>/dev/null; then
-                hyprctl reload &>/dev/null && log_ok "Reloaded Hyprland"
-            fi
-            ;;
-        waybar)
-            if pgrep -x waybar &>/dev/null; then
-                killall waybar 2>/dev/null
-                waybar &>/dev/null &
-                disown
-                log_ok "Restarted Waybar"
-            fi
-            ;;
-        mako)
-            if command -v makoctl &>/dev/null; then
-                makoctl reload 2>/dev/null && log_ok "Reloaded Mako"
-            fi
-            ;;
         kitty)
             if pgrep -x kitty &>/dev/null; then
                 kill -SIGUSR1 $(pgrep -x kitty) 2>/dev/null && log_ok "Reloaded Kitty"
             fi
             ;;
-        rofi)
-            log_ok "Rofi picks up theme on next launch"
-            ;;
-        sys64)
-            if pgrep -x syshud &>/dev/null; then
-                pkill syshud 2>/dev/null
-                syshud &>/dev/null &
-                disown
-                log_ok "Restarted syshud"
+        kde|plasma)
+            # Color scheme rendered to ~/.config/kde/ by theme_render;
+            # copy to where KDE reads custom schemes and apply
+            local src="$HOME/.config/kde/Ember.colors"
+            local dest="$HOME/.local/share/color-schemes/Ember.colors"
+            if [[ -f "$src" ]]; then
+                mkdir -p "$(dirname "$dest")"
+                cp "$src" "$dest"
+                if command -v plasma-apply-colorscheme &>/dev/null; then
+                    plasma-apply-colorscheme Ember 2>/dev/null && log_ok "Applied KDE color scheme: Ember"
+                else
+                    log_ok "KDE color scheme copied — apply on next login"
+                fi
+            else
+                log_warn "KDE color scheme not found at $src"
             fi
             ;;
         starship)

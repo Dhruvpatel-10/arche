@@ -71,6 +71,15 @@ SCHEMA_INTEGERS_OPTIONAL=(
 
 SCHEMA_ALPHA_OPTIONAL=(
     COLOR_BG_ALPHA        # Alpha suffix for rgba (default: D0)
+    NOTIF_BG_ALPHA        # Notification bg alpha — must be readable (default: D8)
+)
+
+# ─── Opacity variables (value: decimal 0.0–1.0 string) ───
+
+SCHEMA_OPACITY_OPTIONAL=(
+    KITTY_OPACITY         # Kitty background_opacity (default: 1.0)
+    BAR_OPACITY           # Waybar background opacity 0.0–1.0 (default: 0.62)
+    TOOLTIP_OPACITY       # Tooltip background opacity 0.0–1.0 (default: 0.95)
 )
 
 # ─── Appearance variables (value: non-empty string) ───

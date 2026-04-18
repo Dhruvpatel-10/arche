@@ -38,14 +38,12 @@ declare -A descriptions=(
     [02-security]="Firewall, SSH hardening, Tailscale, DNS, kernel hardening, USBGuard"
     [03-gpu]="NVIDIA open driver + CUDA (skipped if no NVIDIA GPU)"
     [04-audio]="PipeWire + WirePlumber audio stack"
-    [05-hyprland]="Hyprland compositor, SDDM greeter, app launcher, portals"
+    [05-kde]="Configure KDE (verify plasma installed, stow configs, fonts, colorscheme)"
     [06-shell]="Fish + atuin + fisher + starship"
-    [07-bar]="Waybar status bar"
-    [08-notifications]="Mako notification daemon"
-    [09-runtimes]="Node.js (fnm), Go, Rust, Bun, Docker"
-    [10-apps]="Desktop apps (browser, media, file manager, etc.)"
-    [11-stow]="Symlink all stow packages to \$HOME"
-    [12-appearance]="Fonts, icons, cursors, GTK/Qt theming"
+    [07-runtimes]="Node.js (fnm), Go, Rust, Bun, Docker"
+    [08-apps]="Desktop apps (browser, media, file manager, etc.)"
+    [09-stow]="Symlink all stow packages to \$HOME"
+    [10-appearance]="Fonts, icons, cursors, GTK/Qt theming"
 )
 
 # ─── Run all scripts in order ───
@@ -56,14 +54,12 @@ scripts=(
     02-security
     03-gpu
     04-audio
-    05-hyprland
+    05-kde
     06-shell
-    07-bar
-    08-notifications
-    09-runtimes
-    10-apps
-    11-stow
-    12-appearance
+    07-runtimes
+    08-apps
+    09-stow
+    10-appearance
 )
 
 auto_yes=false
@@ -105,8 +101,32 @@ for script in "${scripts[@]}"; do
         log_info "━━━ Running $script ━━━"
     fi
 
-    if bash "$script_path"; then
+    rc=0
+    bash "$script_path" || rc=$?
+
+    if [[ $rc -eq 0 ]]; then
         results+=("$script OK")
+    elif [[ $rc -eq 2 && "$script" == "00-preflight" ]]; then
+        # Kernel was upgraded — reboot required before continuing.
+        results+=("$script OK (reboot required)")
+        echo
+        log_warn "═══════════════════════════════════════════════════════════════"
+        log_warn "  Kernel was upgraded. Bootstrap is pausing — reboot required."
+        log_warn "  Re-run 'bash bootstrap.sh' after reboot; 00-preflight will be"
+        log_warn "  a fast no-op and bootstrap will continue with 01-base onward."
+        log_warn "═══════════════════════════════════════════════════════════════"
+        echo
+        printf "  Reboot now? [y/N] "
+        read -r choice
+        if [[ "$choice" =~ ^[yY]$ ]]; then
+            log_info "Rebooting..."
+            sudo systemctl reboot
+            # reboot terminates the script; exit for safety if it doesn't.
+            exit 0
+        else
+            log_info "Exiting. Reboot manually, then re-run bootstrap.sh."
+            exit 0
+        fi
     else
         results+=("$script FAIL")
         log_err "$script failed — continuing..."

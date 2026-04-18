@@ -19,23 +19,24 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `security.sh` | `02-security.sh` | Firewall, SSH, sandboxing, USB security |
 | `gpu-nvidia.sh` | `03-gpu.sh` | NVIDIA open kernel module, CUDA, VA-API |
 | `audio.sh` | `04-audio.sh` | Full PipeWire stack, TUI mixer |
-| `hyprland.sh` | `05-hyprland.sh` | Compositor, portals, Wayland utils, launcher |
+| `kde.sh` | `05-kde.sh` | KDE Plasma desktop, portals, SDDM, Wayland utils |
 | `shell.sh` | `06-shell.sh` | Fish, Starship, Kitty, tmux |
-| `bar.sh` | `07-bar.sh` | Waybar |
-| `notifications.sh` | `08-notifications.sh` | Mako |
-| `runtimes.sh` | `09-runtimes.sh` | Rust, Go, cmake, clang, Bun |
-| `apps.sh` | `10-apps.sh` | Neovim, Vivaldi, Nemo, mpv, Docker, Bluetooth |
-| `appearance.sh` | `12-appearance.sh` | Fonts, icons, cursors, GTK/Qt theming |
+| `runtimes.sh` | `07-runtimes.sh` | Rust, Go, cmake, clang, Bun |
+| `apps.sh` | `08-apps.sh` | Neovim, Vivaldi, Dolphin, mpv, Docker, Bluetooth |
+| `appearance.sh` | `10-appearance.sh` | Fonts, icons, cursors, GTK/Qt theming |
 
 ## Package Inventory
 
 ### base.sh — Core System (pacman: 24)
 - **Build tools:** base-devel, git, stow, just, curl, wget, unzip, p7zip
 - **Modern CLI:** eza (ls), bat (cat), ripgrep (grep), fd (find), fzf, zoxide (cd), dust (du), btop (top), nvtop (GPU), jq, yq, tealdeer (tldr), gum, lazygit, lazydocker
-- **System:** linux-headers, man-db, man-pages, amd-ucode, reflector, snapper, shellcheck
+- **System:** linux-headers, man-db, man-pages, amd-ucode, reflector, snapper
+- **Wayland CLI:** wl-clipboard
+- **Note:** `shellcheck` installed as static binary by `01-base.sh` (pacman version
+  pulls 56 Haskell packages for a 4 MB tool — upstream ships a static binary).
 
-### security.sh — Security (pacman: 7)
-- ufw, openssh, tailscale, gnome-keyring, firejail, usbguard, fail2ban
+### security.sh — Security (pacman: 6)
+- ufw, openssh, tailscale, firejail, usbguard, fail2ban
 
 ### gpu-nvidia.sh — NVIDIA GPU (pacman: 7)
 - nvidia-open-dkms, nvidia-utils, nvidia-settings, lib32-nvidia-utils
@@ -45,57 +46,54 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **PipeWire stack:** pipewire, pipewire-alsa, pipewire-jack, pipewire-pulse, wireplumber
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
-### hyprland.sh — Compositor (pacman: 17, AUR: 1)
-- **Core:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, uwsm
-- **Portals:** xdg-desktop-portal-hyprland
-- **Login:** SDDM (X11 greeter) + vendored eucalyptus-drop theme (see D013)
-- **Wayland utils:** hyprpaper, grim, slurp, satty, wl-clipboard, cliphist, wev, brightnessctl
-- **Launcher:** rofi-wayland
-- **Qt:** qt5-wayland, qt6-wayland, hyprpolkitagent
-- **AUR:** syshud (OSD overlay)
+### kde.sh — KDE Plasma Desktop (pacman: 0)
+- **Empty.** KDE is installed at Arch-install time via the `plasma` group + `sddm`
+  (archinstall or `pacstrap -K /mnt ... plasma sddm`).
+- `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `sddm` are present and
+  fails fast if not — then proceeds to stow KDE configs, disable Baloo, apply
+  fonts/icons/cursor/colorscheme.
+- Add a package here only if it's arche-specific AND not pulled in by plasma.
+- **Hyprland leftovers removed:** `cliphist` (Klipper replaces it),
+  `brightnessctl` (Powerdevil handles brightness keys natively).
 
 ### shell.sh — Shell (pacman: 5)
 - fish, atuin, starship, kitty, tmux
 - fisher (fish plugin manager) is installed from upstream curl by `06-shell.sh` — not from AUR. See D018.
 
-### bar.sh — Status Bar (pacman: 1)
-- waybar
-
-### notifications.sh — Notifications (pacman: 1)
-- mako
-
 ### runtimes.sh — Dev Runtimes (pacman: 5)
 - rust, go, cmake, clang, gdb
-- **Note:** fnm (Node) and Bun install via their own scripts in `09-runtimes.sh`, not pacman
+- **Note:** fnm (Node) and Bun install via their own scripts in `07-runtimes.sh`, not pacman
 
-### apps.sh — Applications (pacman: 20)
+### apps.sh — Applications (pacman: 23)
 - **Editor:** neovim
 - **Browser:** vivaldi
-- **Files:** nemo, syncthing
-- **Media:** mpv, imv, imagemagick, ffmpegthumbnailer
+- **Files:** dolphin, syncthing
+- **Media:** mpv, imagemagick, ffmpegthumbs, kdenlive
+- **Recording:** obs-studio, v4l2loopback-dkms
 - **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
-- **Desktop:** qbittorrent, zathura, zathura-pdf-mupdf
+- **Desktop:** qbittorrent, okular, gwenview, kdeconnect
 - **Bluetooth:** bluez, bluez-utils
 - **Docker:** docker, docker-rootless-extras, docker-buildx, docker-compose
 
 ### appearance.sh — Appearance (pacman: 5)
 - **Fonts:** ttf-ibm-plex (UI sans), ttf-meslo-nerd (primary mono), ttf-jetbrains-mono-nerd (fallback), noto-fonts-emoji
 - **Icons:** papirus-icon-theme
-- **Theming:** nwg-look
+- **Note:** nwg-look removed (was Hyprland-era) — kde-gtk-config (in kde.sh) handles GTK theming
 
 ## Totals
 
-- **Pacman:** ~99 packages across 11 files
-- **AUR:** 1 package (syshud)
+- **Pacman:** ~79 packages across 9 files (KDE stack assumed present from Arch install)
+- **AUR:** 0 packages
 
 ## Not Managed Here
 
 These are installed outside the package registry:
 - **arche-denoise** — custom binary in `tools/bin/`, deployed via systemd service
-- **arche-greeter** — retired; replaced by SDDM + SilentSDDM (see D013, which reverses D010)
-- **sddm-silent** (SilentSDDM theme) — vendored under `vendor/sddm-silent/` (not a package), installed via `cp` by `05-hyprland.sh`
+- **arche-greeter** — retired; replaced by SDDM + Breeze (see D013, D021)
+- **sddm-silent** (SilentSDDM theme) — deprecated (D021); KDE uses Breeze SDDM theme
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
 - **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
-- **fnm** — Node version manager (curl script in `09-runtimes.sh`)
-- **Bun** — JS runtime (official curl script in `09-runtimes.sh`)
+- **fnm** — Node version manager (curl script in `07-runtimes.sh`)
+- **Bun** — JS runtime (official curl script in `07-runtimes.sh`)
+- **shellcheck** — static binary from upstream GitHub release, installed to `/usr/local/bin/shellcheck` by `01-base.sh` (SHA256-pinned)
 - **LADSPA plugin** — removed; arche-denoise is now a single binary

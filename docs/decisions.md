@@ -5,6 +5,229 @@ Newest entries at the top.
 
 ---
 
+## D021 — KDE Plasma replaces Hyprland as desktop environment
+
+**Date:** 2026-04-16
+**Status:** Accepted
+**Reverses:** D008 (popup convention now uses KWin rules, not Hyprland windowrules)
+**Supersedes:** D009 (Rofi replaced by KRunner), D015 (hyprpaper replaced by Plasma Wallpaper), D019 (SwayOSD replaced by KDE OSD)
+
+Switching from a minimal tiling Wayland compositor (Hyprland) to a full desktop
+environment (KDE Plasma 6, Wayland session). KDE Plasma provides an integrated
+desktop with compositor, panel, notifications, launcher, lock screen, power
+management, OSD overlays, and wallpaper management out of the box — replacing
+eight separate tools that were individually configured and maintained.
+
+**What replaces what:**
+
+| Hyprland stack           | KDE Plasma equivalent      |
+|--------------------------|----------------------------|
+| Hyprland (compositor)    | KWin (compositor)          |
+| Waybar (status bar)      | KDE Panel                  |
+| Mako (notifications)     | KDE Notifications          |
+| Rofi (app launcher)      | KRunner                    |
+| hyprlock (lock screen)   | kscreenlocker              |
+| hypridle (idle/power)    | Powerdevil                 |
+| hyprpaper (wallpaper)    | Plasma Wallpaper           |
+| SwayOSD (volume/brightness OSD) | KDE OSD              |
+| grim + slurp + satty (screenshots) | Spectacle          |
+| xdg-desktop-portal-hyprland | xdg-desktop-portal-kde |
+| uwsm (session wrapper)  | Plasma session (native)    |
+
+**What stays unchanged (compositor-agnostic):**
+- Fish + Atuin + Fisher + Starship (shell stack)
+- Kitty (terminal)
+- Neovim / LazyVim (editor)
+- PipeWire + WirePlumber (audio)
+- Ember theme system (schema.sh, theme.sh, templates for kitty/btop/tmux/etc.)
+- NVIDIA driver stack (nvidia-open-dkms)
+- Security layer (ufw, sysctl, USBGuard, Tailscale, NextDNS)
+- arche-legion TUI (hardware management)
+- mpv, zathura, btop, tmux, vivaldi (applications)
+- GNU Stow convention, three-layer config split, package registry
+
+**SDDM:** Kept as login manager — SDDM is the native display manager for KDE Plasma.
+Switched from vendored SilentSDDM theme (glassmorphism, see D013) to the Breeze theme
+that ships with KDE Plasma. `vendor/sddm-silent/` is retained in git history but no
+longer deployed. SDDM config updated in `system/etc/sddm.conf.d/10-arche.conf`.
+
+**Stow changes:**
+- Removed: `stow/hypr/`, `stow/waybar/`, `stow/rofi/`, `stow/swayosd/`,
+  `stow/hyprland-preview-share-picker/`
+- Added: `stow/kde/` (KDE Plasma + KWin config, including KWin window rules)
+
+**Template changes:**
+- Removed: `templates/hypr/`, `templates/waybar/`, `templates/swayosd/`,
+  `templates/hyprland-preview-share-picker/`, `templates/rofi/`, `templates/mako/`
+- Added: `templates/kde/Ember.colors.tmpl` (KDE color scheme rendered and applied
+  via `plasma-apply-colorscheme`)
+- Remaining templates (kitty, btop, tmux, gtk, zathura, fish, glow, starship, mpv,
+  qt6ct, legion) are compositor-agnostic.
+
+**Package changes:**
+- `packages/hyprland.sh` renamed to `packages/kde.sh`
+- Hyprland-specific packages removed (hyprland, hyprlock, hypridle, hyprpaper,
+  hyprpolkitagent, xdg-desktop-portal-hyprland, uwsm, swayosd, mako, grim, slurp,
+  satty, rofi-wayland, waybar)
+- `packages/kde.sh` is intentionally empty — the `plasma` group + `sddm` are
+  installed at Arch-install time (via archinstall or pacstrap), not by bootstrap.
+  `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `sddm` are present and
+  fails fast if not.
+- Hyprland compositor-agnostic leftovers also removed: `cliphist` (Klipper
+  replaces it) and `brightnessctl` (Powerdevil handles brightness keys natively).
+- `wl-clipboard` moved from `packages/kde.sh` to `packages/base.sh` — it's a
+  general Wayland CLI, not KDE-specific.
+
+**Script changes:**
+- `scripts/05-hyprland.sh` renamed to `scripts/05-kde.sh`
+- SilentSDDM theme installation removed; SDDM configured with Breeze theme
+- `scripts/07-bar.sh` and `scripts/08-notifications.sh` deleted (KDE Panel and
+  KDE Notifications are built into Plasma). Subsequent scripts renumbered:
+  `09-runtimes`→`07`, `10-apps`→`08`, `11-stow`→`09`, `12-appearance`→`10`.
+- `packages/bar.sh` and `packages/notifications.sh` deleted.
+
+**Popup convention (D008 update):**
+- `kitty --class popup` still works for floating TUI windows
+- Window matching now uses a KWin window rule instead of Hyprland windowrules
+- Rule managed via `stow/kde/` or KDE System Settings
+
+**Why:**
+- Reduced maintenance burden — eight individually configured tools replaced by
+  one integrated desktop environment
+- Better multi-monitor support, drag-and-drop, system tray, and desktop integration
+- Native Qt6 desktop (already had Qt6 deps on system via Kvantum, qt6ct, etc.)
+- KDE Plasma 6 on Wayland is mature and performant as of 2026
+
+---
+
+## D020 — AGS v3 / Astal evaluated for future widget replacement
+
+**Date:** 2026-04-13
+**Status:** Deferred
+**Depends on:** D019 (current OSD stack works, no urgency)
+
+Evaluated AGS (Aylur's GTK Shell) v3 + Astal as a unified TypeScript framework
+to replace Waybar + SwayOSD + Mako with a single codebase.
+
+**What it is:**
+- AGS v3.1.2 (latest, Apr 2026) — CLI scaffolding + esbuild bundler for GJS
+- Astal — set of C/Vala GObject libraries for system bindings (battery, bluetooth,
+  network, tray, hyprland IPC, wireplumber, mpris, notifd, etc.)
+- Gnim — SolidJS-inspired reactive JSX layer for GJS (signals, effects, no vDOM)
+- Runtime: GJS (GNOME JavaScript, SpiderMonkey engine) + GTK4 + gtk4-layer-shell
+
+**Architecture:**
+- Write `.tsx` files with JSX → esbuild transpiles → GJS executes
+- Lowercase JSX tags = GTK4 intrinsics (`<window>`, `<box>`, `<label>`)
+- Uppercase = custom components
+- Reactivity: `createState`, `createBinding`, `createComputed`, `createEffect`
+- Layer shell windows via gtk4-layer-shell (same protocol Waybar uses)
+- `ags bundle` produces a self-contained Bash script with embedded JS
+- `ags run ./file.tsx` for development without bundling
+
+**What it replaces:**
+- Status bar (Waybar) — window anchoring, tray, workspaces, audio, network modules
+- Notifications (Mako) — `libastal-notifd` implements freedesktop notification spec
+- OSD overlays (SwayOSD) — custom popup windows with layer shell positioning
+- Proof: HyprPanel and Matshell are real-world AGS projects replacing all three
+
+**Animation capabilities:**
+- CSS transitions (limited set: opacity, background-color, color, margin, padding)
+- `Gtk.Revealer` for show/hide animations (slide, crossfade)
+- `Gtk.Stack` for animated child transitions
+- `Adw.Animation` / `Adw.SpringAnimation` (imperative, via libadwaita)
+- JS-driven frame-by-frame via `GLib.timeout_add` or `createPoll`
+- No built-in animation DSL — you compose from GTK4 primitives
+
+**Theming:**
+- GTK CSS (`.css` or `.scss` via dart-sass)
+- Runtime swap: `app.apply_css(newCss)` / `app.reset_css()`
+- No native shell variable reading — would still use envsubst templates or
+  JS-side env var reading to integrate with arche theme system
+- `ags inspect` opens GTK Inspector for live CSS debugging
+
+**Installation (Arch, AUR only):**
+- `aylurs-gtk-shell` (v3.1.2) — main package
+- `libastal-meta` (v1-8) — pulls all 17 Astal service libraries
+- All are `-git` AUR packages, no stable releases in official repos
+- Build deps: `go`, `meson`, `npm`
+- Runtime deps: `gjs`, `gtk4`, `gtk4-layer-shell`, `gobject-introspection`
+- Optional: `dart-sass` (SCSS), `blueprint-compiler`
+
+**Why deferred:**
+- AUR-only with 17+ packages, all `-git` — maintenance burden
+- Single-developer project (Aylur) — bus factor of 1
+- AUR packaging has had breakage (missing GIR typelibs, build chain issues)
+- Would require ~500-1000 lines of TypeScript to replicate current functionality
+- GJS runtime is heavier than native C tools (higher memory baseline)
+- Current stack (Waybar + SwayOSD + Mako) is working and just got consolidated
+- Bun `--compile` is NOT viable — GJS runtime required for GTK4 bindings
+
+**When to revisit:**
+- When the current stack hits a design/animation wall that can't be solved with CSS
+- When AGS packages land in `extra` (unlikely near-term) or packaging stabilizes
+- When there's a concrete UI vision that needs programmatic widget composition
+
+**Reference projects:**
+- AGS repo: github.com/aylur/ags
+- Astal repo: github.com/aylur/astal
+- HyprPanel: AUR `ags-hyprpanel-git`
+- Matshell: github.com/Neurarian/matshell
+
+---
+
+## D019 — SwayOSD replaces syshud as OSD overlay
+
+**Date:** 2026-04-13
+**Status:** Accepted
+
+Replaced syshud (AUR, passive PipeWire/backlight listener) with SwayOSD (pacman
+`extra`, active client-server model) for volume, brightness, caps/num lock OSD.
+
+**Why:**
+- syshud was too generic — plain rectangle, no icon, no mute indicator, no lock-key support
+- SwayOSD provides: volume/brightness bars with icons, mute state, caps/num lock indicators,
+  mic mute, segmented brightness, percentage labels
+- SwayOSD is in `extra` (not AUR) — better maintained, no PKGBUILD risk
+- Client-server model: `swayosd-client` both performs the action AND shows OSD,
+  eliminating the need for separate wpctl/brightnessctl calls in keybindings
+
+**Architecture:**
+- `swayosd-server` — daemon launched at compositor start (autostart.conf)
+- `swayosd-client` — keybinding trigger that sends commands to server
+- GTK4 layer-shell surface, namespace `swayosd` (overlay level 3)
+- Config: TOML at `~/.config/swayosd/config.toml` (behavior → stow)
+- CSS: GTK4 CSS at `~/.config/swayosd/style.css` (visual → template)
+
+**Files changed:**
+- `packages/hyprland.sh` — removed syshud from AUR_PKGS, added swayosd to PACMAN_PKGS
+- `stow/swayosd/.config/swayosd/config.toml` — new (server settings: margin, max vol, min brightness)
+- `templates/swayosd/style.css.tmpl` — new (glassmorphism pill, theme vars)
+- `stow/hypr/.config/hypr/media.conf` — keybindings now use swayosd-client
+- `stow/hypr/.config/hypr/autostart.conf` — `exec-once = swayosd-server`
+- `stow/hypr/.config/hypr/looknfeel.conf` — layerrules namespace `swayosd` (blur, xray)
+- `scripts/lib.sh` — theme reload: kill+restart swayosd-server
+
+**Keybinding changes:**
+- Volume: `wpctl` → `swayosd-client --output-volume raise/lower/mute-toggle`
+- Brightness: `brightnessctl` → `swayosd-client --brightness raise/lower`
+- Keyboard backlight: unchanged (brightnessctl, SwayOSD doesn't handle kbd devices)
+- New: Caps_Lock → `swayosd-client --caps-lock`, Num_Lock → `swayosd-client --num-lock`
+
+**CSS design:**
+- Frosted glass pill (border-radius: 999px)
+- Background: `alpha(COLOR_BG_ALT, 0.78)` — opaque enough to read over any content
+- Compositor blur via layerrules provides the frosted effect behind
+- Accent-colored icon, bold label, accent fill on progress bar
+- Drop shadow + inset highlight for depth
+
+**Removed:**
+- `stow/sys64/` — deleted (syshud stow package)
+- `templates/sys64/` — deleted (syshud CSS template)
+- syshud from AUR_PKGS (packages/hyprland.sh now has `AUR_PKGS=()`)
+
+---
+
 ## D018 — Fish restored, bash + ble.sh + bash-preexec removed
 
 **Date:** 2026-04-12
@@ -350,7 +573,7 @@ so paths remain user-agnostic without rewrites.
 - **Adding a second user:** `sudo useradd -m -G wheel,users <name>`,
   then from that user's session: `cd /opt/arche && just secondary-user`.
   The `secondary-user` recipe runs only stow + the shell setup script —
-  it skips the system-level scripts (00-05, 07-10, 12) because pacman packages
+  it skips the system-level scripts (00-05, 07-08, 10) because pacman packages
   and `/etc/` configs are already in place from the primary user's bootstrap.
 
 **Things explicitly NOT changed:**
@@ -651,7 +874,7 @@ Concrete mapping:
 | mpv        | mpv.conf, input.conf, scripts    | —                                |
 | hypr       | hyprland.conf (keybinds, rules)  | colors.conf.tmpl, hyprlock-colors.conf.tmpl |
 | waybar     | config.jsonc (modules, layout)   | style.css.tmpl                   |
-| syshud     | config.conf (layout, timeout)    | style.css.tmpl                   |
+| swayosd    | config.toml (server settings)    | style.css.tmpl                   |
 | mako       | —                                | config.tmpl                      |
 | rofi       | config.rasi (behavior)           | theme.rasi.tmpl                  |
 | yazi       | yazi.toml, keymap.toml           | theme.toml.tmpl                  |

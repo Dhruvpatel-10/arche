@@ -76,11 +76,12 @@ test_integration() {
     section "Integration: Rendered templates"
 
     local rendered=(
-        "$HOME/.config/hypr/colors.conf"
         "$HOME/.config/kitty/theme.conf"
-        "$HOME/.config/waybar/style.css"
-        "$HOME/.config/rofi/theme.rasi"
-        "$HOME/.config/mako/config"
+        "$HOME/.config/btop/arche.theme"
+        "$HOME/.config/tmux/colors.conf"
+        "$HOME/.config/gtk-4.0/gtk.css"
+        "$HOME/.config/zathura/zathurarc-colors"
+        "$HOME/.local/share/color-schemes/Ember.colors"
     )
     for f in "${rendered[@]}"; do
         if [[ -f "$f" ]]; then
@@ -110,15 +111,6 @@ test_integration() {
         local accent bg fg font_mono
         eval "$(source "$ARCHE/themes/active" && echo "accent=$COLOR_ACCENT bg=$COLOR_BG fg=$COLOR_FG font_mono=\"$FONT_MONO\"")"
 
-        # Spot-check: accent color in hypr/colors.conf
-        if [[ -f "$HOME/.config/hypr/colors.conf" ]]; then
-            if grep -qi "${accent#\#}" "$HOME/.config/hypr/colors.conf" 2>/dev/null; then
-                pass "colors.conf contains accent (${accent})"
-            else
-                fail "colors.conf missing accent color"
-            fi
-        fi
-
         # Spot-check: bg color in kitty/theme.conf
         if [[ -f "$HOME/.config/kitty/theme.conf" ]]; then
             if grep -qi "${bg}" "$HOME/.config/kitty/theme.conf" 2>/dev/null; then
@@ -128,21 +120,24 @@ test_integration() {
             fi
         fi
 
-        # Spot-check: font in rofi/theme.rasi
-        if [[ -f "$HOME/.config/rofi/theme.rasi" ]]; then
-            if grep -q "$font_mono" "$HOME/.config/rofi/theme.rasi" 2>/dev/null; then
-                pass "rofi theme.rasi contains font ($font_mono)"
+        # Spot-check: accent color in KDE color scheme (RGB triplet)
+        local kde_scheme="$HOME/.local/share/color-schemes/Ember.colors"
+        if [[ -f "$kde_scheme" ]]; then
+            local hex="${accent#\#}"
+            local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+            if grep -qF "${r},${g},${b}" "$kde_scheme" 2>/dev/null; then
+                pass "KDE Ember.colors contains accent RGB (${r},${g},${b})"
             else
-                fail "rofi theme.rasi missing mono font"
+                fail "KDE Ember.colors missing accent RGB"
             fi
         fi
 
-        # Spot-check: fg color in waybar/style.css
-        if [[ -f "$HOME/.config/waybar/style.css" ]]; then
-            if grep -qi "${fg}" "$HOME/.config/waybar/style.css" 2>/dev/null; then
-                pass "waybar style.css contains fg (${fg})"
+        # Spot-check: fg color in gtk-4.0/gtk.css
+        if [[ -f "$HOME/.config/gtk-4.0/gtk.css" ]]; then
+            if grep -qi "${fg}" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null; then
+                pass "gtk.css contains fg (${fg})"
             else
-                fail "waybar style.css missing fg color"
+                fail "gtk.css missing fg color"
             fi
         fi
     else

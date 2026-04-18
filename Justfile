@@ -45,7 +45,7 @@ secondary-user:
         echo "[✓] Linked $HOME/arche → /opt/arche"
     fi
     cd /opt/arche
-    bash scripts/11-stow.sh
+    bash scripts/09-stow.sh
     bash scripts/06-shell.sh
     echo ""
     echo "[✓] Secondary user setup complete."
@@ -79,47 +79,37 @@ gpu:
 audio:
     bash {{dotfiles}}/scripts/04-audio.sh
 
-# Set up Hyprland compositor
+# Set up KDE Plasma desktop
 [group: 'scripts']
-hyprland:
-    bash {{dotfiles}}/scripts/05-hyprland.sh
+kde:
+    bash {{dotfiles}}/scripts/05-kde.sh
 
 # Install and configure shell (fish + atuin + fisher + starship)
 [group: 'scripts']
 shell:
     bash {{dotfiles}}/scripts/06-shell.sh
 
-# Set up waybar
-[group: 'scripts']
-bar:
-    bash {{dotfiles}}/scripts/07-bar.sh
-
-# Set up notifications (mako)
-[group: 'scripts']
-notifications:
-    bash {{dotfiles}}/scripts/08-notifications.sh
-
 # Install runtime managers (fnm, rustup, etc.)
 [group: 'scripts']
 runtimes:
-    bash {{dotfiles}}/scripts/09-runtimes.sh
+    bash {{dotfiles}}/scripts/07-runtimes.sh
 
 # Install user applications
 [group: 'scripts']
 apps:
-    bash {{dotfiles}}/scripts/10-apps.sh
+    bash {{dotfiles}}/scripts/08-apps.sh
 
 # Stow all packages to $HOME
 [group: 'scripts']
 stow:
-    bash {{dotfiles}}/scripts/11-stow.sh
+    bash {{dotfiles}}/scripts/09-stow.sh
 
 # Set up fonts, icons, cursors, GTK/Qt theming
 [group: 'scripts']
 appearance:
-    bash {{dotfiles}}/scripts/12-appearance.sh
+    bash {{dotfiles}}/scripts/10-appearance.sh
 
-# Re-stow a single package (e.g. just restow bash)
+# Re-stow a single package (e.g. just restow fish)
 [group: 'utilities']
 restow pkg:
     stow -d {{dotfiles}}/stow -t $HOME --restow --no-folding {{pkg}}
@@ -155,7 +145,6 @@ render:
 [group: 'theme']
 reload:
     bash {{dotfiles}}/scripts/theme.sh apply
-    hyprctl reload 2>/dev/null || true
 
 # ─── Utilities ───
 

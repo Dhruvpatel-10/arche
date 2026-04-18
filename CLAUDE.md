@@ -2,7 +2,7 @@
 
 ## Who I Am
 - User: stark
-- Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland + Wayland
+- Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | KDE Plasma 6 + Wayland
 - Primary interface: Claude Code (terminal, TUI-first)
 - Shell: Fish + Atuin (Ctrl-R) + Fisher (plugins) | Prompt: Starship | Terminal: Kitty
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
@@ -44,7 +44,7 @@ Full architecture and decision records live in `docs/`.
 ├── scripts/
 │   ├── lib.sh                # shared primitives — all scripts source this
 │   ├── theme.sh              # theme engine: apply / switch / list
-│   └── 00-preflight.sh ... 11-stow.sh
+│   └── 00-preflight.sh ... 10-appearance.sh
 │
 ├── system/                   # system configs (/etc/) — symlinked by scripts, not stow
 │   ├── etc/
@@ -55,22 +55,21 @@ Full architecture and decision records live in `docs/`.
 │       └── snapper-pacman    # create pre/post btrfs snapshot pairs
 │
 ├── vendor/                   # third-party source shipped as-is (not built, not symlinked)
-│   └── sddm-silent/          # SilentSDDM theme for the SDDM greeter (glassmorphism)
+│   └── sddm-silent/          # SilentSDDM theme (deprecated — switched to Breeze, see D021)
 │
 ├── tools/                    # custom binaries
 │   └── bin/                  # pre-built binaries from external repos (symlinked to system)
-│       └── arche-legion      # Lenovo Vantage replacement (built externally)
+│       ├── arche-legion      # Lenovo Vantage replacement (built externally)
+│       ├── arche-denoise     # Rust CLI — file/pipe GPU noise suppression
+│       └── arche-denoise-mic # C daemon — PipeWire virtual mic (Maxine)
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
     ├── fish/                 # shell config (D018 — restored from D003)
     ├── kitty/                # terminal config
     ├── starship/             # prompt config
     ├── mpv/                  # media player
-    ├── hypr/                 # hyprland + hyprlock + hypridle
-    ├── waybar/               # status bar
+    ├── kde/                  # KDE Plasma + KWin config (D021)
     ├── nvim/                 # LazyVim + catppuccin
-    ├── rofi/                 # app launcher (Spotlight-style combi mode)
-    ├── syshud/               # OSD overlay
     ├── zathura/              # PDF viewer
     ├── btop/                 # system monitor
     ├── tmux/                 # terminal multiplexer
@@ -78,8 +77,7 @@ Full architecture and decision records live in `docs/`.
     ├── qt6ct/                # Qt6 config
     ├── pipewire/             # audio daemon
     ├── wireplumber/          # audio session manager
-    ├── vivaldi/              # browser config
-    └── hyprland-preview-share-picker/
+    └── vivaldi/              # browser config
 ```
 
 ---
@@ -164,7 +162,7 @@ install_group <file>    — source packages file, run pkg_install + aur_install
 ## scripts/ Conventions
 
 - Every script starts with: `source "$(dirname "$0")/lib.sh"`
-- Every script is independently runnable: `bash scripts/05-hyprland.sh`
+- Every script is independently runnable: `bash scripts/05-kde.sh`
 - bootstrap.sh runs them in numeric order, captures exit codes, prints summary
 - Scripts do exactly four things: install packages, stow config, enable services, verify
 - Bash only. No Python in scripts.
@@ -206,41 +204,39 @@ Every new script or config must have at least lint coverage. Add a test when add
 ## Popup Convention (Floating TUI Windows)
 
 Any TUI app that should open as a centered floating window uses kitty's `--class popup`.
-Three windowrules in `windows.conf` handle all popups — no per-app rules needed.
-
-```
-windowrule = float on, match:class ^popup$
-windowrule = size $popup_w $popup_h, match:class ^popup$
-windowrule = center on, match:class ^popup$
-```
+A KWin window rule matches `popup` on window class and applies: float, center, fixed size.
 
 **To launch a popup TUI from a keybinding:**
 ```
-bindd = SUPER CTRL, B, Bluetooth, exec, uwsm-app -- kitty --class popup -e bluetui
+kitty --class popup -e bluetui
 ```
 
-**To add a new popup:** just use `--class popup` in the keybinding. No window rule changes.
+**To add a new popup:** use `--class popup` in the keybinding. The KWin rule handles the rest.
 
-**Why `--class` not `--title`:** Hyprland's static effects (float, size, center) match against
-`initialClass`/`initialTitle`. The `match:title` regex was unreliable for static rules in
-testing on v0.54. `match:class` with an exact match (`^popup$`) works reliably.
-
-**Hyprland windowrule syntax (v0.54+):**
-- Use `float on`, `center on` — not `float 1` or `center 1`
-- Named block rules require `name = <name>` as the first key
-- `match:class` and `match:title` take RE2 regex
-- Static effects (float, size, center, move) are evaluated once at window open
+KWin window rules are managed via `stow/kde/` or KDE System Settings. No manual rule
+files needed for the popup convention -- a single KWin rule covers all `popup` class windows.
 
 ---
 
 ## Tools
 
-Pre-built binaries live in `tools/bin/`. Source code stays in external repos (`~/projects/system/arche-bin/`).
+Pre-built binaries live in `tools/bin/`. Source code stays in external repos under `~/projects/system/`.
 
 - `arche-legion` — Lenovo Vantage replacement (battery, fan, profile, camera, USB, Fn lock)
-  - **Deploy:** `05-hyprland.sh` symlinks to `~/.local/bin/arche/`
+- `arche-denoise` — Rust CLI: file/pipe GPU noise suppression (`clean`, `setup`, `status`)
+- `arche-denoise-mic` — C daemon: PipeWire virtual mic with Maxine GPU denoising
 
-**Update workflow:** build in the external repo, copy the new binary into `tools/bin/` — symlinks pick it up immediately.
+**Deploy:** symlinks at `system/usr/local/bin/arche/*` point into `tools/bin/`, auto-linked
+to `/usr/local/bin/arche/` by `link_system_all` in `00-preflight.sh`. `/etc/profile.d/arche.sh`
+and `/etc/fish/conf.d/arche.fish` (also in `system/`) prepend that directory to PATH for
+every user and every shell.
+
+**arche-denoise SDK:** installed system-wide at `/usr/local/share/arche/denoise/` via
+`sudo arche-denoise setup --system` (run by `08-apps.sh`). One SDK install, all users.
+
+**Update workflow:** build in the external repo, copy the new binary into `tools/bin/` — the
+symlink chain (`/usr/local/bin/arche/X → system/usr/local/bin/arche/X → tools/bin/X`) picks
+it up immediately.
 
 ---
 
@@ -251,12 +247,9 @@ ships assets that need to be installed into system paths `sddm` or other system
 users can reach (i.e. outside `/home/stark`, which is mode 700).
 
 - `vendor/sddm-silent/` — SilentSDDM (modern glassmorphism, by uiriansan).
-  Copied into `/usr/share/sddm/themes/silent/` by `05-hyprland.sh`. Pruned of
-  upstream `.mp4` video backgrounds, NixOS modules, docs, and install scripts.
-  Visual variant selected by editing the `ConfigFile=` line in
-  `metadata.desktop` (~13 prebuilt variants in `configs/`). Not templated —
-  the theme has 260+ config keys and visual signature comes from background
-  images, not colors. Upstream commit pinned in `.source`. See D013.
+  **Deprecated as of D021** — SDDM now uses the Breeze theme (ships with KDE Plasma).
+  The vendored tree is retained in git history but no longer deployed. See D013 for
+  original rationale, D021 for the KDE migration.
 
 **Update workflow:** `git clone` upstream to `/tmp`, copy changed files into
 `vendor/`, update `.source` with the new commit hash, commit.
@@ -276,10 +269,20 @@ The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
 
 ## bootstrap.sh Behaviour
 
-Assumes: repo is already cloned, user has sudo, running on Arch Linux.
-Does not: clone the repo, configure SSH keys, set up secrets.
-Runs: 00 through 12 in order. Each section prompts y/N/a(ll). Each script is independently idempotent.
+Assumes: repo is already cloned, user has sudo, running on Arch Linux, and the
+KDE Plasma stack (`plasma` group + `sddm`) is already installed from the Arch
+install step. `scripts/05-kde.sh` verifies this and fails fast if missing.
+Does not: clone the repo, install KDE, configure SSH keys, set up secrets.
+Runs: 00-preflight through 10-appearance in order. Each section prompts y/N/a(ll).
+Each script is independently idempotent.
 Ends with: `theme apply`, then a summary table.
+
+**Reboot gate.** `00-preflight.sh` runs `pacman -Syu`. If the upgrade replaces the
+running kernel (`/usr/lib/modules/$(uname -r)` no longer exists), preflight exits
+with code 2 and bootstrap pauses, prompting the user to reboot. After reboot,
+re-run `bash bootstrap.sh` — every step is idempotent, so preflight becomes a
+fast no-op and bootstrap continues with `01-base` onward on the new kernel.
+Pattern: run once → reboot if prompted → run again to finish.
 
 ---
 
@@ -296,7 +299,7 @@ test-all         → bash tests/run.sh all
 ```
 
 One target per component matching its script:
-preflight, base, security, gpu, audio, hyprland, shell, bar, notifications, runtimes, apps, stow
+preflight, base, security, gpu, audio, kde, shell, runtimes, apps, stow, appearance
 
 ---
 
@@ -319,11 +322,13 @@ preflight, base, security, gpu, audio, hyprland, shell, bar, notifications, runt
 fzf, eza, bat, ripgrep, fd, zoxide, lazygit, lazydocker,
 glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
-### Compositor Stack
-- Hyprland 0.54.2 via uwsm, SDDM + SilentSDDM (GUI login, see D013)
-- Waybar 0.15.0, Mako 1.10.0 (notifications), Rofi (app launcher, combi mode)
-- hyprpaper wallpaper, grim+slurp+satty screenshots
-- xdg-desktop-portal-hyprland, hyprlock, hypridle
+### Desktop Stack
+- KDE Plasma 6 (Wayland session), SDDM + Breeze theme (D021)
+- KWin compositor, KDE Panel (status bar), KDE Notifications
+- KRunner (app launcher), Spectacle (screenshots)
+- kscreenlocker (lock screen), Powerdevil (power/idle management)
+- KDE OSD (volume/brightness overlays), Plasma Wallpaper
+- xdg-desktop-portal-kde
 
 ### Lenovo Legion Pro 5 (16ARX8)
 - ideapad_laptop + lenovo_wmi_gamezone kernel modules (loaded)
@@ -359,18 +364,18 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - CPU: amd-ucode for microcode vulnerability patches
 - USB: USBGuard blocks unknown devices; usb-inspect for sandboxed inspection
 - Sandboxing: firejail for untrusted apps and AppImages
-- Secrets: API keys in ~/.bash/local.bash (not tracked in git)
+- Secrets: API keys in ~/.config/fish/local.fish (not tracked in git)
 
 ---
 
 ## Current State — All Components Built
 
 Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
-Scripts: all 12 numbered scripts (00-preflight through 11-stow)
-Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, bar, notifications, runtimes, apps, appearance)
+Scripts: all 10 numbered scripts (00-preflight through 10-appearance)
+Packages: 9 registry files (base, security, gpu-nvidia, audio, kde, shell, runtimes, apps, appearance)
 Themes: ember.sh (active), schema.sh (variable registry)
-Templates: 11 sets (kitty, hypr, waybar, syshud, rofi, gtk-4.0, btop, mako, tmux, hyprland-preview-share-picker, starship)
-Stow: 22 packages (see Repository Structure above)
+Templates: btop, fish, glow, gtk-3.0, gtk-4.0, kde, kitty, legion, mpv, qt6ct, starship, tmux, zathura
+Stow: see Repository Structure above
 System: pacman.conf, 3 pacman hooks, 2 system binaries
 
 See `docs/status.md` for full tracking.
@@ -397,8 +402,8 @@ See `docs/status.md` for the full table.
 10. When adding a new component, touch all required places: packages/, templates/ (if visual), stow/, scripts/.
 11. Every new script or config must have at least lint-level test coverage.
 12. Keep docs/ updated when making structural changes or decisions.
-13. When adding a new floating TUI popup, use `kitty --class popup -e <cmd>` — never add per-app window rules.
-14. Hyprland windowrules: use `float on` / `center on` (not `float 1`). Named blocks need `name =` first.
+13. When adding a new floating TUI popup, use `kitty --class popup -e <cmd>` — the KWin popup rule handles float/center/size.
+14. KWin window rules: manage via `stow/kde/` or KDE System Settings. Do not hardcode window rules in scripts.
 
 ---
 
@@ -412,3 +417,5 @@ See `docs/status.md` for the full table.
 - Do not hardcode /home/stark — use `$HOME` or `~`
 - Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is the pattern (gitignored)
 - Do not reference any external config repos — arche is self-contained
+- Do not reference Hyprland, hyprctl, hyprlock, hypridle, hyprpaper, or uwsm — KDE Plasma is the desktop (D021)
+- Do not reference Waybar, Mako, Rofi, or SwayOSD — KDE provides panel, notifications, launcher, and OSD natively

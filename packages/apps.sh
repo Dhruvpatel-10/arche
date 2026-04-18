@@ -1,5 +1,5 @@
 # Desktop applications — browsers, editors, tools.
-# Used by: scripts/10-apps.sh
+# Used by: scripts/08-apps.sh
 
 PACMAN_PKGS=(
     # Editor
@@ -9,14 +9,18 @@ PACMAN_PKGS=(
     vivaldi
 
     # File management
-    nemo                     # GTK file manager (Cinnamon, Wayland-native)
+    dolphin                  # KDE file manager
     syncthing
 
     # Media
     mpv
-    imv                      # image viewer
-    imagemagick
-    ffmpegthumbnailer
+    imagemagick              # CLI image manipulation
+    ffmpegthumbs             # Dolphin video thumbnail plugin
+    kdenlive                 # video editor (KDE native)
+
+    # Recording
+    obs-studio                   # screen recording / streaming
+    v4l2loopback-dkms            # virtual camera support
 
     # Utilities
     fastfetch
@@ -29,8 +33,9 @@ PACMAN_PKGS=(
 
     # Desktop apps
     qbittorrent
-    zathura                  # PDF viewer (minimal, vim-style)
-    zathura-pdf-mupdf        # PDF/EPUB backend (fast MuPDF renderer)
+    okular                   # PDF/EPUB viewer + annotation (KDE native)
+    gwenview                 # image viewer (KDE native)
+    kdeconnect               # phone integration (clipboard, files, notifications)
 
     # Bluetooth
     bluez

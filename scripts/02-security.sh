@@ -118,7 +118,7 @@ fi
 log_section "Fail2ban (Brute-Force Protection)"
 
 if command -v fail2ban-server &>/dev/null; then
-    local jail_local="/etc/fail2ban/jail.local"
+    jail_local="/etc/fail2ban/jail.local"
     if [[ ! -f "$jail_local" ]]; then
         log_info "Configuring fail2ban sshd jail..."
         sudo tee "$jail_local" > /dev/null <<'F2B'
@@ -355,7 +355,6 @@ log_info "SSH keys:  copy your ed25519 pubkey to this machine if needed"
 # (hardware rate-limited to ~32 attempts before lockout).
 
 echo ""
-local luks_parts
 luks_parts=$(lsblk -nro NAME,FSTYPE | awk '$2 == "crypto_LUKS" {print "/dev/" $1}')
 
 if [[ -z "$luks_parts" ]]; then

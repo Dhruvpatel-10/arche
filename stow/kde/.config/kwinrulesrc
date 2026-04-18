@@ -1,0 +1,44 @@
+[General]
+count=3
+rules=arche-popup,arche-imv,arche-zathura
+
+[arche-popup]
+Description=Arche floating popup (kitty --class popup)
+wmclass=popup
+wmclassmatch=1
+above=true
+aboverule=2
+types=1
+clientmachine=localhost
+floating=true
+floatingrule=2
+size=900,620
+sizerule=2
+placement=6
+placementrule=2
+
+[arche-imv]
+Description=Image viewer (imv)
+wmclass=imv
+wmclassmatch=1
+types=1
+clientmachine=localhost
+floating=true
+floatingrule=2
+size=1100,800
+sizerule=2
+placement=6
+placementrule=2
+
+[arche-zathura]
+Description=PDF viewer (Zathura)
+wmclass=org.pwmt.zathura
+wmclassmatch=1
+types=1
+clientmachine=localhost
+floating=true
+floatingrule=2
+size=1000,800
+sizerule=2
+placement=6
+placementrule=2

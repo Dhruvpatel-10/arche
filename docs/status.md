@@ -2,7 +2,7 @@
 
 Tracks what's built, what's planned, and what's blocked.
 
-Last updated: 2026-04-03
+Last updated: 2026-04-18
 
 ## Infrastructure
 
@@ -24,12 +24,13 @@ Last updated: 2026-04-03
 | `kitty`                        | Done    | Terminal config + theme template           |
 | `starship`                     | Done    | Prompt config                              |
 | `mpv`                          | Done    | Media player                               |
-| `hypr`                         | Done    | Full Hyprland config                       |
-| `waybar`                       | Done    | Status bar config                          |
-| `rofi`                         | Done    | App launcher config (Spotlight-style)      |
+| `kde`                          | Done    | KDE Plasma + KWin config (D021)            |
+| ~~`hypr`~~                     | Removed | Replaced by KDE Plasma (D021)              |
+| ~~`waybar`~~                   | Removed | Replaced by KDE Panel (D021)               |
+| ~~`rofi`~~                     | Removed | Replaced by KRunner (D021)                 |
 | `nvim`                         | Done    | LazyVim + catppuccin                       |
 | `gtk`                          | Done    | Fully templated (no stow — all visual)     |
-| `syshud`                       | Done    | OSD overlay (behavior config + CSS template) |
+| ~~`swayosd`~~                  | Removed | Replaced by KDE OSD (D021)                   |
 | `btop`                         | Done    | System monitor config                      |
 | `tmux`                         | Done    | Terminal multiplexer config                |
 | `kvantum`                      | Done    | Qt style engine (Ember theme)              |
@@ -38,8 +39,9 @@ Last updated: 2026-04-03
 | `wireplumber`                  | Done    | Audio session manager config               |
 | `vivaldi`                      | Done    | Browser flags                              |
 | `paru`                         | Done    | AUR helper security config                 |
-| `hyprland-preview-share-picker`| Done    | Screenshot/share picker UI                 |
+| ~~`hyprland-preview-share-picker`~~ | Removed | Replaced by Spectacle (D021)          |
 | `zathura`                      | Done    | PDF viewer (Ember themed, vim-style)       |
+| ~~`cliphist`~~                 | Removed | Klipper replaces cliphist (D021)           |
 
 ## Package Registry
 
@@ -49,10 +51,8 @@ Last updated: 2026-04-03
 | `packages/security.sh`     | Done   |
 | `packages/gpu-nvidia.sh`   | Done   |
 | `packages/audio.sh`        | Done   |
-| `packages/hyprland.sh`     | Done   |
+| `packages/kde.sh`          | Done   | Empty — plasma group installed at Arch-install time |
 | `packages/shell.sh`        | Done   |
-| `packages/bar.sh`          | Done   |
-| `packages/notifications.sh`| Done   | mako |
 | `packages/runtimes.sh`     | Done   |
 | `packages/apps.sh`         | Done   |
 | `packages/appearance.sh`   | Done   |
@@ -61,32 +61,34 @@ Last updated: 2026-04-03
 
 | Template                                              | Renders to                                       | Status |
 |-------------------------------------------------------|--------------------------------------------------|--------|
-| `templates/kitty/theme.conf.tmpl`                     | `~/.config/kitty/theme.conf`                     | Done   |
-| `templates/hypr/colors.conf.tmpl`                     | `~/.config/hypr/colors.conf`                     | Done   |
-| `templates/hypr/hyprlock-colors.conf.tmpl`            | `~/.config/hypr/hyprlock-colors.conf`            | Done   |
-| `templates/waybar/style.css.tmpl`                     | `~/.config/waybar/style.css`                     | Done   |
-| `templates/syshud/style.css.tmpl`                     | `~/.config/sys64/hud/style.css`                  | Done   |
-| `templates/rofi/theme.rasi.tmpl`                      | `~/.config/rofi/theme.rasi`                      | Done   |
-| `templates/gtk-4.0/gtk.css.tmpl`                      | `~/.config/gtk-4.0/gtk.css`                      | Done   |
 | `templates/btop/arche.theme.tmpl`                     | `~/.config/btop/arche.theme`                     | Done   |
-| `templates/mako/config.tmpl`                          | `~/.config/mako/config`                          | Done   |
+| `templates/fish/conf.d/theme.fish.tmpl`               | `~/.config/fish/conf.d/theme.fish`               | Done   |
+| `templates/glow/style.json.tmpl`                      | `~/.config/glow/style.json`                      | Done   |
+| `templates/gtk-3.0/settings.ini.tmpl`                 | `~/.config/gtk-3.0/settings.ini`                 | Done   |
+| `templates/gtk-4.0/gtk.css.tmpl`                      | `~/.config/gtk-4.0/gtk.css`                      | Done   |
+| `templates/gtk-4.0/settings.ini.tmpl`                 | `~/.config/gtk-4.0/settings.ini`                 | Done   |
+| `templates/kde/Ember.colors.tmpl`                     | `~/.local/share/color-schemes/Ember.colors`      | Done   |
+| `templates/kitty/fonts.conf.tmpl`                     | `~/.config/kitty/fonts.conf`                     | Done   |
+| `templates/kitty/theme.conf.tmpl`                     | `~/.config/kitty/theme.conf`                     | Done   |
+| `templates/legion/colors.toml.tmpl`                   | `~/.config/legion/colors.toml`                   | Done   |
+| `templates/mpv/font-opts.conf.tmpl`                   | `~/.config/mpv/font-opts.conf`                   | Done   |
+| `templates/qt6ct/qt6ct.conf.tmpl`                     | `~/.config/qt6ct/qt6ct.conf`                     | Done   |
+| `templates/starship/starship.toml.tmpl`               | `~/.config/starship/starship.toml`               | Done   |
 | `templates/tmux/colors.conf.tmpl`                     | `~/.config/tmux/colors.conf`                     | Done   |
-| `templates/hyprland-preview-share-picker/style.css.tmpl` | `~/.config/hyprland-preview-share-picker/style.css` | Done |
-| `templates/zathura/zathurarc-colors.tmpl`                | `~/.config/zathura/zathurarc-colors`                | Done |
-| `templates/gtk-3.0/settings.ini.tmpl`                    | `~/.config/gtk-3.0/settings.ini`                    | Done |
-| `templates/gtk-4.0/settings.ini.tmpl`                    | `~/.config/gtk-4.0/settings.ini`                    | Done |
-| `templates/hypr/envs.conf.tmpl`                          | `~/.config/hypr/envs.conf`                          | Done |
-| `templates/hypr/hyprlock-fonts.conf.tmpl`                | `~/.config/hypr/hyprlock-fonts.conf`                | Done |
-| `templates/kitty/fonts.conf.tmpl`                        | `~/.config/kitty/fonts.conf`                        | Done |
-| `templates/mpv/fonts.conf.tmpl`                          | `~/.config/mpv/fonts.conf`                          | Done |
-| `templates/qt6ct/qt6ct.conf.tmpl`                        | `~/.config/qt6ct/qt6ct.conf`                        | Done |
+| `templates/zathura/zathurarc-colors.tmpl`             | `~/.config/zathura/zathurarc-colors`             | Done   |
+| ~~`templates/hypr/*`~~                                | —                                                | Removed (D021) |
+| ~~`templates/waybar/style.css.tmpl`~~                 | —                                                | Removed (D021) |
+| ~~`templates/swayosd/style.css.tmpl`~~                | —                                                | Removed (D021) |
+| ~~`templates/rofi/theme.rasi.tmpl`~~                  | —                                                | Removed (D021) |
+| ~~`templates/mako/config.tmpl`~~                      | —                                                | Removed (D021) |
+| ~~`templates/hyprland-preview-share-picker/*`~~       | —                                                | Removed (D021) |
 
 ## Tools
 
 | Binary                       | Source                  | Deploy                        | Status |
 |------------------------------|-------------------------|-------------------------------|--------|
 | `arche-legion`               | `tools/bin/` (pre-built)  | `~/.local/bin/arche/` (symlink) | Done   |
-| `sddm-silent`                | `vendor/` (SilentSDDM, glassmorphism) | `/usr/share/sddm/themes/silent/` (cp) | Done |
+| ~~`sddm-silent`~~            | `vendor/` (deprecated, D021) | ~~`/usr/share/sddm/themes/silent/`~~ | Removed (D021) |
 
 ## System Configs
 
@@ -114,14 +116,12 @@ Last updated: 2026-04-03
 | `scripts/02-security.sh`       | Done   |
 | `scripts/03-gpu.sh`            | Done   |
 | `scripts/04-audio.sh`          | Done   |
-| `scripts/05-hyprland.sh`       | Done   |
+| `scripts/05-kde.sh`            | Done   |
 | `scripts/06-shell.sh`          | Done   |
-| `scripts/07-bar.sh`            | Done   |
-| `scripts/08-notifications.sh`  | Done   |
-| `scripts/09-runtimes.sh`       | Done   |
-| `scripts/10-apps.sh`           | Done   |
-| `scripts/11-stow.sh`           | Done   |
-| `scripts/12-appearance.sh`     | Done   |
+| `scripts/07-runtimes.sh`       | Done   |
+| `scripts/08-apps.sh`           | Done   |
+| `scripts/09-stow.sh`           | Done   |
+| `scripts/10-appearance.sh`     | Done   |
 
 ## Known Issues
 
@@ -138,7 +138,7 @@ Last updated: 2026-04-03
 | ID  | Issue                    | Resolution                           |
 |-----|--------------------------|--------------------------------------|
 | X1  | nftables vs ufw conflict | nftables disabled, UFW sole manager  |
-| G1  | Hyprland not in dotfiles | Full config in stow/hypr             |
+| G1  | Hyprland not in dotfiles | Replaced by KDE Plasma (D021)        |
 | G10 | sshd not tracked         | Managed by 02-security.sh            |
 | X4  | Legacy config migration   | All configs migrated, clean slate    |
 | G3  | MPV sub-font SF Pro      | Changed to IBM Plex Sans             |
