@@ -23,7 +23,7 @@ if [[ -n "$fish_path" ]]; then
     current_shell="$(getent passwd "$USER" | cut -d: -f7)"
     if [[ "$current_shell" != "$fish_path" ]]; then
         log_info "Changing default shell to fish..."
-        chsh -s "$fish_path"
+        sudo chsh -s "$fish_path" "$USER"
         log_ok "Default shell set to fish"
     else
         log_warn "Fish already default shell"
