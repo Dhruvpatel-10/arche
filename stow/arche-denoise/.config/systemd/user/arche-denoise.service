@@ -2,11 +2,11 @@
 Description=Arche GPU noise suppression (Maxine denoiser)
 After=pipewire.service pipewire-session-manager.service
 BindsTo=pipewire.service
-ConditionPathExists=/usr/local/share/arche/denoise/lib/libnv_audiofx.so
+ConditionPathExists=/usr/local/share/arche/denoise/nvafx/lib/libnv_audiofx.so
 
 [Service]
 Type=simple
-Environment=LD_LIBRARY_PATH=/usr/local/share/arche/denoise/lib
+Environment=LD_LIBRARY_PATH=/usr/local/share/arche/denoise/nvafx/lib
 ExecStart=/usr/local/bin/arche/arche-denoise-mic
 Restart=on-failure
 RestartSec=3
