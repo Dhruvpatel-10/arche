@@ -226,9 +226,28 @@ and `fallback_uki` at `/boot/EFI/Linux/arch-linux.efi` and
 `/boot/EFI/Linux/arch-linux-fallback.efi`. systemd-boot auto-discovers both
 and labels them correctly in the menu (if ever shown). The kernel cmdline
 lives in `/etc/kernel/cmdline` — `rw quiet splash loglevel=3 rootflags=subvol=@
-zswap.enabled=0` — and is embedded in each UKI at bake time. Legacy
-`/boot/loader/entries/*.conf` are archived to `*.arche-bak` by `12-boot.sh`
-(not deleted — reversible).
+zswap.enabled=0 nvidia_drm.modeset=1 nvidia_drm.fbdev=1` — and is embedded
+in each UKI at bake time. Legacy `/boot/loader/entries/*.conf` are archived
+to `*.arche-bak` by `12-boot.sh` (not deleted — reversible).
+
+**Why `nvidia_drm.modeset=1` and `nvidia_drm.fbdev=1` are explicit on the
+cmdline even though `modinfo` reports both as module defaults.** First boot
+after TPM2 enrollment the splash was black — user typed the PIN blind and
+it worked. Journal showed `simpledrm` initializing fb0 at t=0, Plymouth
+starting at t+1s, then `nvidia_drm` hotswapping fb0 at t+2s
+(`fbcon: nvidia-drmdrmfb (fb0) is primary device`). Plymouth had already
+opened `/dev/dri/card0` pointing at the now-unregistered simpledrm; its
+framebuffer handle went stale and all subsequent draws went nowhere. The
+password agent kept working — hence invisible-but-functional PIN entry.
+The Arch linux kernel ships a patch that suppresses simpledrm registration
+when it sees `nvidia_drm.modeset=1` parsed **from the cmdline specifically**;
+the module's own default of `1` is checked too late (after simpledrm has
+already bound). Being explicit on the cmdline short-circuits the handoff
+entirely — simpledrm never binds, Plymouth opens the nvidia DRM device on
+first try, splash is visible. `fbdev=1` gives plymouthd a persistent NVIDIA
+fbdev to draw into (belt-and-braces; nvidia-open 580+ needs it for reliable
+early-KMS splashes). Both flags are set in `system/etc/kernel/cmdline`;
+`scripts/03-gpu.sh` guards against regression.
 
 **TPM2 enrollment is a separate, explicit step.** `12-boot.sh` prepares the
 boot chain but **does not** touch LUKS keyslots. The user runs

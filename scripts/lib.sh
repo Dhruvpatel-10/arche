@@ -44,7 +44,12 @@ link_system_file() {
         return 1
     fi
 
-    if [[ "$(readlink -f "$dst")" == "$(readlink -f "$src")" ]]; then
+    # Resolve to the canonical path so the installed symlink targets
+    # /opt/arche/… directly, not a per-user /home/<user>/arche symlink
+    # (home dirs are mode 700 — services like sddm can't traverse them).
+    src="$(readlink -f "$src")"
+
+    if [[ "$(readlink -f "$dst")" == "$src" ]]; then
         log_warn "Already linked: $dst"
         return 0
     fi

@@ -33,6 +33,39 @@ log_ok "Internet reachable"
 link_system_all
 svc_enable snapper-cleanup.timer
 
+# ─── Refresh pacman databases ───
+# link_system_all may have swapped in a new /etc/pacman.conf that enables
+# extra repos ([multilib]) whose database hasn't been downloaded yet.
+# Every subsequent `pacman -S` fails with "could not find database" until
+# we sync. Must happen before reflector install / mirror rank / -Syu.
+log_info "Syncing pacman databases (covers newly-enabled repos from pacman.conf)..."
+sudo pacman -Sy
+log_ok "Databases in sync"
+
+# ─── Crypttab safety (D024 pre-req) ───
+# link_system_all puts the mkinitcpio HOOKS drop-in (base systemd … sd-encrypt …)
+# in place. Any subsequent mkinitcpio -P — from pacman -Syu below, a kernel
+# upgrade, or a pacman hook — builds an initramfs that expects
+# /etc/crypttab.initramfs to exist. Without it, sd-encrypt has no device to
+# unlock → unbootable UKI. Seed it here if missing; 12-boot.sh will happily
+# overwrite later with the same content (idempotent).
+if [[ ! -f /etc/crypttab.initramfs ]]; then
+    _luks=$(lsblk -lnpo NAME,FSTYPE | awk '$2=="crypto_LUKS"{print $1; exit}')
+    if [[ -n "$_luks" ]]; then
+        _uuid=$(sudo blkid -s UUID -o value "$_luks")
+        if [[ -n "$_uuid" ]]; then
+            log_info "Seeding /etc/crypttab.initramfs (root=$_luks, UUID=$_uuid)..."
+            echo "root UUID=${_uuid} - tpm2-device=auto" | sudo tee /etc/crypttab.initramfs >/dev/null
+            sudo chmod 600 /etc/crypttab.initramfs
+            log_ok "crypttab.initramfs seeded (TPM2 will be enrolled later via 'just tpm-enroll')"
+        else
+            log_warn "Found $_luks but couldn't read UUID — 12-boot.sh will fix this"
+        fi
+    else
+        log_warn "No LUKS2 partition detected — sd-encrypt hook will be a no-op"
+    fi
+fi
+
 # ─── Disable btrfs qgroups on snapshotted subvolumes ───
 # snapper create-config silently enables btrfs quota at FS level, even when
 # the snapper config sets QGROUP="". Once on, btrfs-cleaner has to recompute

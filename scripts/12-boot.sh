@@ -89,9 +89,17 @@ ERR_HEX="#b88a9a"    # dusty rose — error dots
 BG_HEX="none"        # transparent; Window.SetBackground fills behind
 
 # Wordmark: ARCHE in IBM Plex Sans Medium, letter-spaced, flat.
+# Use the explicit file path — fontconfig family-name resolution via
+# -font "IBM Plex Sans" is flaky under ImageMagick's `label:` pseudo-image;
+# the TTF path always works and is pinned by ttf-ibm-plex's Arch layout.
 log_info "Rendering ARCHE wordmark..."
+wordmark_font="/usr/share/fonts/TTF/IBMPlexSans-Medium.ttf"
+if [[ ! -f "$wordmark_font" ]]; then
+    log_err "Expected font not found: $wordmark_font (ttf-ibm-plex layout may have changed)"
+    exit 1
+fi
 $IM -background "$BG_HEX" -fill "$FG_HEX" \
-    -font "IBM-Plex-Sans-Medium" -pointsize 96 \
+    -font "$wordmark_font" -pointsize 96 \
     -kerning 18 \
     label:"ARCHE" "$tmp/title.png"
 
