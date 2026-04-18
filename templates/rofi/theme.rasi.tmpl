@@ -2,19 +2,16 @@
 
 * {
     /* ─── Palette ─── */
-    bg:             #13151ccc;
-    bg-solid:       ${COLOR_BG};
-    bg-alt:         ${COLOR_BG_ALT};
-    bg-surface:     ${COLOR_BG_SURFACE};
-    bg-hover:       #1d202966;
-    fg:             ${COLOR_FG};
-    fg-muted:       ${COLOR_FG_MUTED};
-    fg-dim:         ${COLOR_OVERLAY0};
-    accent:         ${COLOR_ACCENT};
-    accent-alt:     ${COLOR_ACCENT_ALT};
-    border-col:     ${COLOR_SURFACE1};
-    critical:       ${COLOR_CRITICAL};
-    none:           transparent;
+    bg-modal:      #0b0d14ea;
+    bg-wash:       #c9943e1c;
+    border-soft:   #cdc8bc1a;
+    fg:            ${COLOR_FG};
+    fg-muted:      ${COLOR_FG_MUTED};
+    fg-dim:        #cdc8bc55;
+    accent:        ${COLOR_ACCENT};
+    accent-alt:    ${COLOR_ACCENT_ALT};
+    critical:      ${COLOR_CRITICAL};
+    none:          transparent;
 
     /* ─── Typography ─── */
     font:                "${FONT_SANS} 13";
@@ -22,70 +19,105 @@
     background-color:    @none;
 }
 
-/* ━━━ Window ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ━━━ Window ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * Fullscreen + transparent so the layer-shell surface receives clicks
+ * everywhere — prerequisite for `click-to-exit` to fire outside the modal.
+ */
 
 window {
-    width:               680px;
-    location:            center;
-    anchor:              center;
+    fullscreen:          true;
     transparency:        "real";
-    background-color:    @bg;
+    background-color:    transparent;
+    padding:             0;
+    border:              0;
+    border-radius:       0;
+    children:            [ outerbox ];
+}
+
+outerbox {
+    orientation:         vertical;
+    background-color:    transparent;
+    spacing:             0;
+    children:            [ vspacer-top, midrow, vspacer-bot ];
+}
+
+midrow {
+    orientation:         horizontal;
+    background-color:    transparent;
+    spacing:             0;
+    children:            [ hspacer-l, modal, hspacer-r ];
+}
+
+vspacer-top, vspacer-bot, hspacer-l, hspacer-r {
+    background-color:    transparent;
+    expand:              true;
+}
+
+modal {
+    expand:              false;
+    background-color:    @bg-modal;
     border:              1px;
-    border-color:        @border-col;
-    border-radius:       16px;
+    border-color:        @border-soft;
+    border-radius:       14px;
+    children:            [ mainbox ];
 }
 
 /* ━━━ Layout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 mainbox {
-    children:            [ inputbar, listview, mode-switcher ];
+    width:               640px;
     spacing:             0;
+    background-color:    transparent;
+    children:            [ inputbar, listview, mode-switcher ];
 }
 
-/* ━━━ Search bar ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ━━━ Search bar ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * The native `prompt` widget surfaces rofi's mode label (Apps/Run/Files/…)
+ * or the -dmenu -p flag (Clipboard/Delete/Emoji…). One widget, two purposes,
+ * zero bolted-on chrome.
+ */
 
 inputbar {
-    padding:             16px 24px;
-    spacing:             12px;
-    children:            [ textbox-icon, entry ];
+    padding:             20px 26px 18px 26px;
+    spacing:             14px;
+    children:            [ prompt, entry ];
 }
 
-/* Search icon (magnifying glass via Unicode) */
-textbox-icon {
-    str:                 "";
+prompt {
+    enabled:             true;
     expand:              false;
     text-color:          @accent;
-    font:                "${FONT_MONO} 16";
-    vertical-align:      0.5;
+    font:                "${FONT_SANS} Medium 10";
+    vertical-align:      0.55;
+    padding:             0 4px 0 0;
 }
 
 entry {
-    font:                "${FONT_SANS} 14";
+    font:                "${FONT_SANS} 15";
     text-color:          @fg;
-    placeholder:         "Search apps, files, commands...";
+    placeholder:         "Search";
     placeholder-color:   @fg-dim;
     cursor-color:        @accent;
-    cursor-width:        2px;
+    cursor-width:        1px;
     vertical-align:      0.5;
 }
 
 /* ━━━ Results ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 listview {
-    lines:               8;
+    lines:               7;
     columns:             1;
     fixed-height:        false;
     scrollbar:           false;
-    padding:             4px 8px;
-    spacing:             2px;
-    border:              1px 0 0 0;
-    border-color:        @border-col;
+    padding:             4px 12px 12px 12px;
+    spacing:             1px;
+    border:              0;
 }
 
 element {
-    padding:             10px 16px;
+    padding:             10px 14px;
     spacing:             14px;
-    border-radius:       10px;
+    border-radius:       8px;
     cursor:              pointer;
 }
 
@@ -104,29 +136,21 @@ element alternate.urgent {
     text-color:          @critical;
 }
 
-element selected.normal {
-    background-color:    @bg-hover;
-    text-color:          @accent;
-    border:              0 0 0 3px;
-    border-color:        @accent;
-}
-
+element selected.normal,
 element selected.active {
-    background-color:    @bg-hover;
-    text-color:          @accent;
-    border:              0 0 0 3px;
-    border-color:        @accent;
+    background-color:    @bg-wash;
+    text-color:          @fg;
+    border:              0;
 }
 
 element selected.urgent {
-    background-color:    @bg-hover;
+    background-color:    @bg-wash;
     text-color:          @critical;
-    border:              0 0 0 3px;
-    border-color:        @critical;
+    border:              0;
 }
 
 element-icon {
-    size:                24px;
+    size:                22px;
     vertical-align:      0.5;
     cursor:              inherit;
 }
@@ -137,37 +161,41 @@ element-text {
     highlight:           bold ${COLOR_ACCENT};
 }
 
-/* ━━━ Mode switcher ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ━━━ Mode switcher ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * Single-effect active state: color shift only. No background, no underline,
+ * no weight stacking. The typographic rhythm carries the hierarchy.
+ */
 
 mode-switcher {
-    padding:             8px 16px;
-    spacing:             4px;
+    padding:             12px 22px;
+    spacing:             22px;
     border:              1px 0 0 0;
-    border-color:        @border-col;
+    border-color:        @border-soft;
 }
 
 button {
-    padding:             6px 16px;
-    border-radius:       8px;
+    padding:             2px 2px;
+    horizontal-align:    0.5;
     text-color:          @fg-dim;
     font:                "${FONT_SANS} 10";
     cursor:              pointer;
+    background-color:    transparent;
+    border:              0;
 }
 
 button selected {
-    background-color:    @bg-hover;
     text-color:          @accent;
-    font:                "${FONT_SANS} Bold 10";
-    border:              0 0 2px 0;
-    border-color:        @accent;
+    font:                "${FONT_SANS} Medium 10";
+    background-color:    transparent;
+    border:              0;
 }
 
 /* ━━━ Messages ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 message {
-    padding:             12px 24px;
+    padding:             10px 24px;
     border:              1px 0 0 0;
-    border-color:        @border-col;
+    border-color:        @border-soft;
 }
 
 textbox {
@@ -177,8 +205,8 @@ textbox {
 /* ━━━ Scrollbar ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 scrollbar {
-    handle-width:        3px;
-    handle-color:        @border-col;
-    border-radius:       3px;
+    handle-width:        2px;
+    handle-color:        @fg-dim;
+    border-radius:       2px;
     margin:              4px 0;
 }

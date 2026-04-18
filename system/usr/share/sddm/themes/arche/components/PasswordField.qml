@@ -12,14 +12,12 @@ Rectangle {
     property color fgMuted: "#817c72"
     property string fontFamily: "IBM Plex Sans"
     property string placeholder: "Password"
-    property int radius: 14
     property bool busy: false
 
     signal submitted()
 
     implicitWidth: 360
     implicitHeight: 48
-    radius: root.radius
     color: surfaceColor
     border.color: input.activeFocus ? accentColor : borderColor
     border.width: input.activeFocus ? 2 : 1

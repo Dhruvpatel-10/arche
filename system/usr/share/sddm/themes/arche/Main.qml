@@ -4,8 +4,11 @@ import "components"
 
 Rectangle {
     id: root
-    width: 1920
-    height: 1080
+    // SDDM loads the theme into a per-screen Window. Bind to the containing
+    // Window so each monitor's instance matches its own dimensions; fall
+    // back to Screen if the Window isn't yet ready.
+    width: Window.window ? Window.window.width : Screen.width
+    height: Window.window ? Window.window.height : Screen.height
     color: config.bgColor
 
     LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft
@@ -83,110 +86,116 @@ Rectangle {
     }
 
     // ─── Center stack: users + greeting + password ───
+    // Single flat Column — every child uses `anchors.horizontalCenter: parent.horizontalCenter`
+    // so the whole stack lines up on one axis regardless of screen size.
     Column {
         id: centerStack
         anchors.centerIn: parent
-        width: Math.min(parent.width - 80, 1000)
-        spacing: 44
+        spacing: 36
 
-        // User row (horizontal, scrollable if many)
-        Flickable {
-            id: userFlick
-            width: parent.width
+        // User row — a fixed-width Item so the Flickable has a known width to
+        // center its Row inside. Using a Column child with intrinsic width
+        // leaves the Row left-aligned inside a wide Flickable.
+        Item {
+            id: userArea
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.min(root.width - 80, 1100)
             height: 180
-            contentWidth: userRow.implicitWidth
-            contentHeight: userRow.implicitHeight
-            clip: true
-            flickableDirection: Flickable.HorizontalFlick
-            boundsBehavior: Flickable.StopAtBounds
 
-            Row {
-                id: userRow
-                height: parent.height
-                spacing: 28
-                anchors.horizontalCenter: userRow.implicitWidth < userFlick.width
-                                          ? parent.horizontalCenter : undefined
+            Flickable {
+                id: userFlick
+                anchors.fill: parent
+                contentWidth: userRow.implicitWidth
+                contentHeight: userRow.implicitHeight
+                clip: true
+                flickableDirection: Flickable.HorizontalFlick
+                boundsBehavior: Flickable.StopAtBounds
 
-                Repeater {
-                    id: userRepeater
-                    model: userModel
+                Row {
+                    id: userRow
+                    spacing: 28
+                    // Center inside the Flickable when content fits, left-align when it overflows.
+                    x: userRow.implicitWidth < userFlick.width
+                       ? (userFlick.width - userRow.implicitWidth) / 2
+                       : 0
+                    y: (userFlick.height - userRow.implicitHeight) / 2
 
-                    delegate: UserCard {
-                        userName: model.name
-                        realName: (model.realName !== undefined && model.realName.length > 0) ? model.realName : model.name
-                        selected: index === root.selectedUserIndex
-                        accentColor: config.accentColor
-                        surfaceColor: config.surfaceColor
-                        borderColor: config.borderColor
-                        fgColor: config.fgColor
-                        fgMuted: config.fgMuted
-                        fontFamily: config.fontFamily
-                        avatarSize: parseInt(config.avatarSize) || 112
+                    Repeater {
+                        id: userRepeater
+                        model: userModel
 
-                        Component.onCompleted: {
-                            if (index === root.selectedUserIndex) {
+                        delegate: UserCard {
+                            userName: model.name
+                            realName: (model.realName !== undefined && model.realName.length > 0) ? model.realName : model.name
+                            selected: index === root.selectedUserIndex
+                            accentColor: config.accentColor
+                            surfaceColor: config.surfaceColor
+                            borderColor: config.borderColor
+                            fgColor: config.fgColor
+                            fgMuted: config.fgMuted
+                            fontFamily: config.fontFamily
+                            avatarSize: parseInt(config.avatarSize) || 112
+
+                            Component.onCompleted: {
+                                if (index === root.selectedUserIndex) {
+                                    root.selectedUserName = userName
+                                    root.selectedRealName = realName
+                                }
+                            }
+
+                            onClicked: {
+                                root.selectedUserIndex = index
                                 root.selectedUserName = userName
                                 root.selectedRealName = realName
+                                passwordField.clearPassword()
+                                passwordField.forceFocus()
+                                errorText.text = ""
                             }
-                        }
-
-                        onClicked: {
-                            root.selectedUserIndex = index
-                            root.selectedUserName = userName
-                            root.selectedRealName = realName
-                            passwordField.clearPassword()
-                            passwordField.forceFocus()
-                            errorText.text = ""
                         }
                     }
                 }
             }
         }
 
-        Column {
+        Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 18
+            text: root.selectedRealName.length > 0
+                  ? "Welcome back, " + root.selectedRealName
+                  : (root.selectedUserName.length > 0 ? "Welcome back, " + root.selectedUserName : "")
+            color: config.fgMuted
+            font.family: config.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.Normal
+            opacity: 0.85
+            visible: text.length > 0
+        }
 
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: root.selectedRealName.length > 0
-                      ? "Welcome back, " + root.selectedRealName
-                      : (root.selectedUserName.length > 0 ? "Welcome back, " + root.selectedUserName : "")
-                color: config.fgMuted
-                font.family: config.fontFamily
-                font.pixelSize: 13
-                font.weight: Font.Normal
-                opacity: 0.85
-                visible: text.length > 0
-            }
+        PasswordField {
+            id: passwordField
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 380
+            accentColor: config.accentColor
+            surfaceColor: config.surfaceColor
+            borderColor: config.borderColor
+            fgColor: config.fgColor
+            fgMuted: config.fgMuted
+            fontFamily: config.fontFamily
+            placeholder: "Enter password"
+            busy: root.busy
 
-            PasswordField {
-                id: passwordField
-                width: 380
-                accentColor: config.accentColor
-                surfaceColor: config.surfaceColor
-                borderColor: config.borderColor
-                fgColor: config.fgColor
-                fgMuted: config.fgMuted
-                fontFamily: config.fontFamily
-                placeholder: "Enter password"
-                radius: parseInt(config.radius) || 14
-                busy: root.busy
+            onSubmitted: root.attemptLogin()
+        }
 
-                onSubmitted: root.attemptLogin()
-            }
-
-            Text {
-                id: errorText
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: ""
-                color: config.errorColor
-                font.family: config.fontFamily
-                font.pixelSize: 12
-                font.weight: Font.Medium
-                opacity: text.length > 0 ? 1.0 : 0.0
-                Behavior on opacity { NumberAnimation { duration: 180 } }
-            }
+        Text {
+            id: errorText
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: ""
+            color: config.errorColor
+            font.family: config.fontFamily
+            font.pixelSize: 12
+            font.weight: Font.Medium
+            opacity: text.length > 0 ? 1.0 : 0.0
+            Behavior on opacity { NumberAnimation { duration: 180 } }
         }
     }
 
