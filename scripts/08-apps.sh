@@ -5,9 +5,11 @@ source "$(dirname "$0")/lib.sh"
 log_info "Installing applications..."
 install_group "$ARCHE/packages/apps.sh"
 
-# ─── Docker (rootless) ───
-# Rootless docker runs the daemon as your user — no docker group needed.
-# The docker group grants root-equivalent access; rootless avoids that entirely.
+# ─── Docker ───
+# Rootless is preferred (daemon runs as your user, no docker group needed),
+# but `dockerd-rootless-setuptool.sh` is no longer packaged by Arch since
+# Docker 29. If the user has fetched it manually from upstream, we'll use it;
+# otherwise fall back to system docker (requires sudo to run `docker ...`).
 
 svc_enable docker
 
@@ -19,18 +21,21 @@ if ! systemctl --user is-active docker &>/dev/null; then
         systemctl --user start docker
         log_ok "Rootless docker active — no docker group needed"
     else
-        log_warn "dockerd-rootless-setuptool.sh not found — install docker-rootless-extras"
-        log_info "Falling back to system docker (requires sudo)"
+        log_warn "dockerd-rootless-setuptool.sh not found (not packaged since Docker 29)"
+        log_info "Using system docker. For rootless, fetch the setuptool from upstream:"
+        log_info "  https://github.com/moby/moby/blob/master/contrib/dockerd-rootless-setuptool.sh"
     fi
 else
     log_warn "Rootless docker already running"
 fi
 
-# Remove user from docker group if present (no longer needed with rootless)
+# Remove user from docker group if present (rootless doesn't need it; for
+# system docker the user should authenticate via sudo rather than join the
+# docker group, which grants root-equivalent access).
 if groups "$USER" 2>/dev/null | grep -q docker; then
-    log_info "Removing $USER from docker group (rootless doesn't need it)..."
+    log_info "Removing $USER from docker group (use sudo for system docker)..."
     sudo gpasswd -d "$USER" docker 2>/dev/null
-    log_ok "Removed from docker group — using rootless instead"
+    log_ok "Removed from docker group"
 fi
 
 # Enable Syncthing user service

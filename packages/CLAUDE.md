@@ -75,7 +75,9 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
 - **Desktop:** qbittorrent, okular, gwenview, kdeconnect
 - **Bluetooth:** bluez, bluez-utils
-- **Docker:** docker, docker-rootless-extras, docker-buildx, docker-compose
+- **Docker:** docker, docker-buildx, docker-compose, rootlesskit, slirp4netns
+  (rootless setuptool is no longer packaged as of Docker 29 — fetch from
+  upstream if rootless is needed)
 
 ### appearance.sh — Appearance (pacman: 5)
 - **Fonts:** ttf-ibm-plex (UI sans), ttf-meslo-nerd (primary mono), ttf-jetbrains-mono-nerd (fallback), noto-fonts-emoji

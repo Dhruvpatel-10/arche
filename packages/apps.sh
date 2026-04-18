@@ -41,11 +41,18 @@ PACMAN_PKGS=(
     bluez
     bluez-utils
 
-    # Docker (rootless — no docker group needed)
+    # Docker
+    # Rootless is preferred (no docker group = no root-equivalent access), but
+    # Arch dropped `docker-rootless-extras` with Docker 29 — the upstream
+    # `dockerd-rootless-setuptool.sh` is no longer packaged. Install the real
+    # runtime deps (rootlesskit, slirp4netns) so a manual rootless setup works
+    # if the user fetches the setuptool from upstream. Otherwise 08-apps.sh
+    # falls back to system docker.
     docker
-    docker-rootless-extras
     docker-buildx
     docker-compose
+    rootlesskit              # fake-root impl for rootless containers
+    slirp4netns              # user-mode networking for rootless containers
 )
 
 AUR_PKGS=()
