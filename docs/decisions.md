@@ -5,6 +5,83 @@ Newest entries at the top.
 
 ---
 
+## D022 — plasma-login-manager replaces SDDM
+
+**Date:** 2026-04-18
+**Status:** Accepted
+**Amends:** D021 (SDDM was kept as login manager; now retired)
+**Supersedes:** D013 (SilentSDDM theming — obsolete, theme system no longer applies)
+
+Switched the display manager from SDDM to `plasma-login-manager`, the
+KDE-native greeter introduced in Plasma 6.6. As of Arch's Plasma 6.6.4-1
+package drop, `plasma-login-manager` is a member of the `plasma` group and a
+direct dependency of `plasma-meta` — so on any fresh install of KDE on Arch,
+it comes in automatically and provides the `display-manager.service` alias.
+SDDM is no longer pulled in by the plasma group.
+
+**What actually runs on this machine:**
+- `plasmalogin.service` — active, enabled, aliased to `display-manager.service`
+- `sddm.service` — was installed and enabled, now disabled and uninstalled
+
+**Why:**
+- KDE upstream's own replacement — written against the KDE frameworks, uses
+  KWin for the greeter session instead of shipping a parallel Qt login stack.
+  Smaller surface, fewer moving parts.
+- Comes in with the plasma group by default — no explicit package to manage,
+  one less thing to install at Arch-install time.
+- Configuration is via a standard KCM (`systemsettings kcm_plasmalogin`),
+  consistent with every other KDE config surface. No bespoke theme.conf or
+  INI file tree like SDDM required.
+- Removes the last reason `vendor/sddm-silent/` existed — the theming problem
+  D013 was solving does not apply to plasma-login-manager.
+
+**What we lose vs SDDM:**
+- SDDM's theme ecosystem (breeze, maldives, maya, third-party QML themes) is
+  not compatible. plasma-login-manager has a single look — Plasma's own
+  greeter, styled by the active Plasma look-and-feel package. For arche this
+  is fine; D021 had already committed to Breeze and dropped SilentSDDM.
+- Configuration is KCM-driven (writes kconfig under the `sddm` system user's
+  home via PAM/dbus helpers), not a drop-in `/etc/sddm.conf.d/*.conf`. We no
+  longer ship a repo-owned config file for the login manager — defaults are
+  correct, and any tweaks (user list, autologin) go through KCM.
+
+**Files touched:**
+- `scripts/05-kde.sh` — prereq check now asserts `plasma-login-manager`
+  instead of `sddm`; `svc_enable plasmalogin` replaces `svc_enable sddm`;
+  cleanup path added for `sddm.service`, stale SDDM themes, and the stale
+  `/etc/sddm.conf.d/10-arche.conf` symlink.
+- `packages/kde.sh` — header comment updated; still empty (plasma group
+  provides plasma-login-manager).
+- `system/etc/sddm.conf.d/10-arche.conf` — deleted. The enclosing
+  `system/etc/sddm.conf.d/` directory is gone with it.
+- `install.sh` — KDE prereq check asserts `plasma-login-manager` instead of
+  `sddm`.
+- `tests/test_gate.sh` — KDE prereq gate checks `plasma-login-manager`.
+- `tests/test_integration.sh` — service-enabled check swaps `sddm` →
+  `plasmalogin`.
+- `helpers/migrate-to-opt.sh` — comment no longer calls out the `sddm` user
+  specifically (the traversal rationale is the same for any system user).
+- Docs — `CLAUDE.md`, `docs/architecture.md`, `docs/status.md`, `README.md`,
+  `packages/CLAUDE.md` updated to reflect plasma-login-manager as the greeter.
+
+**System-side cleanup (one-time, on already-installed machines):**
+```
+sudo systemctl disable --now sddm.service      # usually already disabled by Arch's upgrade
+sudo systemctl enable --now plasmalogin.service
+paru -Rns sddm sddm-kcm                        # sddm-kcm is the SDDM settings module, now orphaned
+sudo rm -f /etc/sddm.conf.d/10-arche.conf
+sudo rmdir /etc/sddm.conf.d 2>/dev/null || true
+```
+All of these are also idempotently handled by `scripts/05-kde.sh` on the next
+bootstrap pass, except for the `paru -Rns` (package removal stays manual per
+arche convention — see `packages/CLAUDE.md`).
+
+**vendor/sddm-silent/ final status:** retained in git history only. Not
+linked, not deployed, not referenced by any script. Safe to delete in a
+future commit if disk hygiene matters.
+
+---
+
 ## D021 — KDE Plasma replaces Hyprland as desktop environment
 
 **Date:** 2026-04-16
@@ -46,10 +123,14 @@ eight separate tools that were individually configured and maintained.
 - mpv, zathura, btop, tmux, vivaldi (applications)
 - GNU Stow convention, three-layer config split, package registry
 
-**SDDM:** Kept as login manager — SDDM is the native display manager for KDE Plasma.
-Switched from vendored SilentSDDM theme (glassmorphism, see D013) to the Breeze theme
-that ships with KDE Plasma. `vendor/sddm-silent/` is retained in git history but no
-longer deployed. SDDM config updated in `system/etc/sddm.conf.d/10-arche.conf`.
+**SDDM:** Kept as login manager at the time of D021 — SDDM was the native
+display manager for KDE Plasma. Switched from vendored SilentSDDM theme
+(glassmorphism, see D013) to the Breeze theme that ships with KDE Plasma.
+`vendor/sddm-silent/` is retained in git history but no longer deployed.
+**Update (D022):** SDDM itself has since been retired in favour of
+`plasma-login-manager`, the KDE-native greeter introduced in Plasma 6.6.
+The `system/etc/sddm.conf.d/10-arche.conf` this decision referenced no
+longer exists — see D022 for details.
 
 **Stow changes:**
 - Removed: `stow/hypr/`, `stow/waybar/`, `stow/rofi/`, `stow/swayosd/`,
@@ -69,10 +150,10 @@ longer deployed. SDDM config updated in `system/etc/sddm.conf.d/10-arche.conf`.
 - Hyprland-specific packages removed (hyprland, hyprlock, hypridle, hyprpaper,
   hyprpolkitagent, xdg-desktop-portal-hyprland, uwsm, swayosd, mako, grim, slurp,
   satty, rofi-wayland, waybar)
-- `packages/kde.sh` is intentionally empty — the `plasma` group + `sddm` are
-  installed at Arch-install time (via archinstall or pacstrap), not by bootstrap.
-  `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `sddm` are present and
-  fails fast if not.
+- `packages/kde.sh` is intentionally empty — the `plasma` group is installed
+  at Arch-install time (via archinstall or pacstrap), not by bootstrap.
+  `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, and (since D022)
+  `plasma-login-manager` are present and fails fast if not.
 - Hyprland compositor-agnostic leftovers also removed: `cliphist` (Klipper
   replaces it) and `brightnessctl` (Powerdevil handles brightness keys natively).
 - `wl-clipboard` moved from `packages/kde.sh` to `packages/base.sh` — it's a
@@ -80,7 +161,10 @@ longer deployed. SDDM config updated in `system/etc/sddm.conf.d/10-arche.conf`.
 
 **Script changes:**
 - `scripts/05-hyprland.sh` renamed to `scripts/05-kde.sh`
-- SilentSDDM theme installation removed; SDDM configured with Breeze theme
+- SilentSDDM theme installation removed; at the time of D021 SDDM was
+  configured with Breeze. D022 later retired SDDM entirely in favour of
+  `plasma-login-manager` — the SDDM-related lines in this script have since
+  been rewritten accordingly.
 - `scripts/07-bar.sh` and `scripts/08-notifications.sh` deleted (KDE Panel and
   KDE Notifications are built into Plasma). Subsequent scripts renumbered:
   `09-runtimes`→`07`, `10-apps`→`08`, `11-stow`→`09`, `12-appearance`→`10`.

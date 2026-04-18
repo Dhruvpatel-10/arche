@@ -19,7 +19,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `security.sh` | `02-security.sh` | Firewall, SSH, sandboxing, USB security |
 | `gpu-nvidia.sh` | `03-gpu.sh` | NVIDIA open kernel module, CUDA, VA-API |
 | `audio.sh` | `04-audio.sh` | Full PipeWire stack, TUI mixer |
-| `kde.sh` | `05-kde.sh` | KDE Plasma desktop, portals, SDDM, Wayland utils |
+| `kde.sh` | `05-kde.sh` | KDE Plasma desktop, portals, plasma-login-manager, Wayland utils |
 | `shell.sh` | `06-shell.sh` | Fish, Starship, Kitty, tmux |
 | `runtimes.sh` | `07-runtimes.sh` | Rust, Go, cmake, clang, Bun |
 | `apps.sh` | `08-apps.sh` | Neovim, Vivaldi, Dolphin, mpv, Docker, Bluetooth |
@@ -47,11 +47,13 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
 ### kde.sh — KDE Plasma Desktop (pacman: 0)
-- **Empty.** KDE is installed at Arch-install time via the `plasma` group + `sddm`
-  (archinstall or `pacstrap -K /mnt ... plasma sddm`).
-- `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `sddm` are present and
-  fails fast if not — then proceeds to stow KDE configs, disable Baloo, apply
-  fonts/icons/cursor/colorscheme.
+- **Empty.** KDE is installed at Arch-install time via the `plasma` group
+  (archinstall or `pacstrap -K /mnt ... plasma`). As of Plasma 6.6 the group
+  pulls in `plasma-login-manager` — the KDE-native replacement for SDDM, see
+  D022 — so no separate display-manager package is needed.
+- `scripts/05-kde.sh` verifies `plasma-desktop`, `kwin`, `plasma-login-manager`
+  are present and fails fast if not — then proceeds to stow KDE configs,
+  disable Baloo, apply fonts/icons/cursor/colorscheme.
 - Add a package here only if it's arche-specific AND not pulled in by plasma.
 - **Hyprland leftovers removed:** `cliphist` (Klipper replaces it),
   `brightnessctl` (Powerdevil handles brightness keys natively).
@@ -82,15 +84,15 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 
 ## Totals
 
-- **Pacman:** ~79 packages across 9 files (KDE stack assumed present from Arch install)
+- **Pacman:** ~79 packages across 9 files (KDE stack — including plasma-login-manager — assumed present from Arch install)
 - **AUR:** 0 packages
 
 ## Not Managed Here
 
 These are installed outside the package registry:
 - **arche-denoise** — custom binary in `tools/bin/`, deployed via systemd service
-- **arche-greeter** — retired; replaced by SDDM + Breeze (see D013, D021)
-- **sddm-silent** (SilentSDDM theme) — deprecated (D021); KDE uses Breeze SDDM theme
+- **arche-greeter** — retired; SDDM (D013, D021) then plasma-login-manager (D022) replaced it
+- **sddm-silent** (SilentSDDM theme) — obsolete (D021/D022); SDDM itself has been retired in favour of plasma-login-manager
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
 - **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
 - **fnm** — Node version manager (curl script in `07-runtimes.sh`)

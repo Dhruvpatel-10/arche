@@ -7,8 +7,8 @@
 #   pacman packages and writing /etc/ configs is system-wide, so duplicating
 #   the repo into each home is wasted disk and a synchronisation hazard.
 #   /opt/arche lives outside any user's home, is reachable by every user, and
-#   /opt itself is mode 755 so the `sddm` system user (and any other system
-#   user) can traverse it.
+#   /opt itself is mode 755 so any system user (e.g. the login manager) can
+#   traverse it.
 #
 # What this script does:
 #   1. Moves /home/<user>/arche to /opt/arche (one-way; safe to re-run)

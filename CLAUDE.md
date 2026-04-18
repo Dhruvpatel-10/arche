@@ -55,7 +55,7 @@ Full architecture and decision records live in `docs/`.
 │       └── snapper-pacman    # create pre/post btrfs snapshot pairs
 │
 ├── vendor/                   # third-party source shipped as-is (not built, not symlinked)
-│   └── sddm-silent/          # SilentSDDM theme (deprecated — switched to Breeze, see D021)
+│   └── sddm-silent/          # SilentSDDM theme (deprecated — D021 switched to Breeze, D022 retired SDDM entirely)
 │
 ├── tools/                    # custom binaries
 │   └── bin/                  # pre-built binaries from external repos (symlinked to system)
@@ -243,13 +243,15 @@ it up immediately.
 ## Vendored Third-Party (vendor/)
 
 Third-party source shipped as-is — not built, not symlinked. Used when upstream
-ships assets that need to be installed into system paths `sddm` or other system
-users can reach (i.e. outside `/home/stark`, which is mode 700).
+ships assets that need to be installed into system paths that system users can
+reach (i.e. outside `/home/stark`, which is mode 700).
 
 - `vendor/sddm-silent/` — SilentSDDM (modern glassmorphism, by uiriansan).
-  **Deprecated as of D021** — SDDM now uses the Breeze theme (ships with KDE Plasma).
-  The vendored tree is retained in git history but no longer deployed. See D013 for
-  original rationale, D021 for the KDE migration.
+  **Deprecated as of D021, obsolete as of D022** — D021 switched SDDM to the
+  Breeze theme, D022 retired SDDM entirely in favour of the KDE-native
+  plasma-login-manager (introduced in Plasma 6.6). The vendored tree is
+  retained in git history only. See D013 for original rationale, D021 for the
+  KDE migration, D022 for the login manager swap.
 
 **Update workflow:** `git clone` upstream to `/tmp`, copy changed files into
 `vendor/`, update `.source` with the new commit hash, commit.
@@ -270,8 +272,9 @@ The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
 ## bootstrap.sh Behaviour
 
 Assumes: repo is already cloned, user has sudo, running on Arch Linux, and the
-KDE Plasma stack (`plasma` group + `sddm`) is already installed from the Arch
-install step. `scripts/05-kde.sh` verifies this and fails fast if missing.
+KDE Plasma stack (`plasma` group, which pulls in `plasma-login-manager`) is
+already installed from the Arch install step. `scripts/05-kde.sh` verifies
+this and fails fast if missing.
 Does not: clone the repo, install KDE, configure SSH keys, set up secrets.
 Runs: 00-preflight through 10-appearance in order. Each section prompts y/N/a(ll).
 Each script is independently idempotent.
@@ -323,7 +326,7 @@ fzf, eza, bat, ripgrep, fd, zoxide, lazygit, lazydocker,
 glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ### Desktop Stack
-- KDE Plasma 6 (Wayland session), SDDM + Breeze theme (D021)
+- KDE Plasma 6 (Wayland session), Plasma Login Manager (D022)
 - KWin compositor, KDE Panel (status bar), KDE Notifications
 - KRunner (app launcher), Spectacle (screenshots)
 - kscreenlocker (lock screen), Powerdevil (power/idle management)

@@ -148,7 +148,7 @@ test_integration() {
 
     section "Integration: Services"
 
-    local services=(sddm pipewire wireplumber ufw systemd-resolved)
+    local services=(plasmalogin pipewire wireplumber ufw systemd-resolved)
     for svc in "${services[@]}"; do
         if systemctl is-enabled "$svc" &>/dev/null; then
             pass "$svc enabled"

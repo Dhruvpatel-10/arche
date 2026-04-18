@@ -88,7 +88,7 @@ Last updated: 2026-04-18
 | Binary                       | Source                  | Deploy                        | Status |
 |------------------------------|-------------------------|-------------------------------|--------|
 | `arche-legion`               | `tools/bin/` (pre-built)  | `~/.local/bin/arche/` (symlink) | Done   |
-| ~~`sddm-silent`~~            | `vendor/` (deprecated, D021) | ~~`/usr/share/sddm/themes/silent/`~~ | Removed (D021) |
+| ~~`sddm-silent`~~            | `vendor/` (obsolete, D021/D022) | ~~`/usr/share/sddm/themes/silent/`~~ | Obsolete (D022: SDDM retired) |
 
 ## System Configs
 
@@ -102,7 +102,7 @@ Last updated: 2026-04-18
 | `system/usr/local/bin/snapper-pacman`   | `/usr/local/bin/snapper-pacman` | Done   |
 | `system/usr/local/bin/usb-inspect`     | `/usr/local/bin/usb-inspect`    | Done   |
 | `system/etc/snapper/configs/root`        | `/etc/snapper/configs/root`     | Done   |
-| `system/etc/sddm.conf.d/10-arche.conf`  | `/etc/sddm.conf.d/10-arche.conf` | Done  |
+| ~~`system/etc/sddm.conf.d/10-arche.conf`~~ | ~~`/etc/sddm.conf.d/10-arche.conf`~~ | Removed (D022: SDDM retired) |
 | `system/etc/systemd/resolved.conf`      | `/etc/systemd/resolved.conf`    | Done   |
 | `system/etc/sysctl.d/99-arche-hardening.conf` | `/etc/sysctl.d/`          | Done   |
 | `system/etc/systemd/logind.conf.d/99-arche.conf` | `/etc/systemd/logind.conf.d/` | Done |

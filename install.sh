@@ -2,9 +2,10 @@
 # install.sh — one-liner bootstrap for arche
 # Usage: curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/install.sh | bash
 #
-# Prerequisite: Arch must have been installed with the `plasma` group + `sddm`
-# (via archinstall or pacstrap). This script verifies that before doing
-# anything destructive.
+# Prerequisite: Arch must have been installed with the `plasma` group (via
+# archinstall or pacstrap). The plasma group pulls in plasma-login-manager
+# (the KDE-native display manager; see D022). This script verifies that
+# before doing anything destructive.
 #
 # Clones the repo to /opt/arche so multiple human users on the same machine
 # share one source of truth (see docs/decisions.md D014). Creates a per-user
@@ -32,11 +33,11 @@ ping -c 1 -W 3 archlinux.org &>/dev/null || err "No internet"
 
 # KDE prereq — arche configures KDE but does not install it.
 missing=()
-for pkg in plasma-desktop kwin sddm; do
+for pkg in plasma-desktop kwin plasma-login-manager; do
     pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
 done
 if [[ ${#missing[@]} -gt 0 ]]; then
-    err "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma sddm"
+    err "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma"
 fi
 
 # ─── Clone or Update ───

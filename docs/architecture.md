@@ -40,7 +40,7 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   └── 00-preflight.sh ... 10-appearance.sh
 │
 ├── vendor/                 # third-party source shipped as-is (see D013)
-│   └── sddm-silent/        # SilentSDDM theme (deprecated — D021, now using Breeze)
+│   └── sddm-silent/        # SilentSDDM theme (obsolete — D021 switched SDDM to Breeze; D022 retired SDDM entirely)
 │
 ├── tools/                  # custom binaries
 │   └── bin/                # pre-built binaries from external repos
@@ -144,7 +144,7 @@ Does not: clone repo, configure SSH, set up secrets.
 | Layer        | Tool                                         |
 |--------------|----------------------------------------------|
 | OS           | Arch Linux (btrfs, Limine bootloader)        |
-| Desktop      | KDE Plasma 6 (Wayland), SDDM + Breeze (D021) |
+| Desktop      | KDE Plasma 6 (Wayland), plasma-login-manager (D022) |
 | Compositor   | KWin                                         |
 | Shell        | fish + atuin + fisher + starship (D018 — restored from D003) |
 | Terminal     | Kitty                                        |

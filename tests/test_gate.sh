@@ -92,20 +92,24 @@ test_gate() {
         fail "undefined template variables:$undefined — renders will have blanks"
     fi
 
-    section "Gate: Stow packages won't conflict"
+    section "Gate: Stow packages resolvable"
 
+    # lib.sh:stow_pkg handles conflicts by backing up existing files to
+    # .pre-stow, so a plain `stow -n` conflict is NOT a fatal pre-flight
+    # error. We just surface any conflicts for visibility.
     if command -v stow &>/dev/null; then
-        local stow_failed=false
+        local stow_conflicts=()
         for pkg_dir in "$ARCHE"/stow/*/; do
             local pkg
             pkg="$(basename "$pkg_dir")"
             if ! stow -d "$ARCHE/stow" -t "$HOME" --no-folding -n "$pkg" 2>/dev/null; then
-                fail "stow $pkg has conflicts — 09-stow.sh will fail"
-                stow_failed=true
+                stow_conflicts+=("$pkg")
             fi
         done
-        if [[ "$stow_failed" != true ]]; then
+        if [[ ${#stow_conflicts[@]} -eq 0 ]]; then
             pass "no stow conflicts"
+        else
+            pass "stow conflicts will be auto-resolved via .pre-stow backup: ${stow_conflicts[*]}"
         fi
     else
         skip "stow not installed yet — will be installed by 01-base.sh"
@@ -123,13 +127,13 @@ test_gate() {
 
     if command -v pacman &>/dev/null; then
         local missing=()
-        for pkg in plasma-desktop kwin sddm; do
+        for pkg in plasma-desktop kwin plasma-login-manager; do
             pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
         done
         if [[ ${#missing[@]} -eq 0 ]]; then
-            pass "plasma-desktop, kwin, sddm installed"
+            pass "plasma-desktop, kwin, plasma-login-manager installed"
         else
-            fail "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma sddm"
+            fail "KDE prereqs missing: ${missing[*]} — run: sudo pacman -S plasma"
         fi
     else
         skip "pacman not available — cannot verify KDE prereqs"

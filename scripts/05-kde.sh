@@ -1,54 +1,63 @@
 #!/usr/bin/env bash
-# 05-kde.sh — KDE Plasma desktop + SDDM greeter
+# 05-kde.sh — KDE Plasma desktop + Plasma Login Manager greeter
 source "$(dirname "$0")/lib.sh"
 
 log_info "Setting up KDE Plasma..."
 
 # ─── Prereq: KDE must be installed at Arch install time ───
-# packages/kde.sh is intentionally empty; the plasma group + sddm are assumed
-# to have been installed via archinstall or pacstrap during the Arch install.
+# packages/kde.sh is intentionally empty; the plasma group is assumed to have
+# been installed via archinstall or pacstrap during the Arch install. The
+# plasma group pulls in plasma-login-manager (the KDE-native display manager
+# introduced in Plasma 6.6 as the replacement for SDDM — see D022).
 
 missing=()
-for pkg in plasma-desktop kwin sddm; do
+for pkg in plasma-desktop kwin plasma-login-manager; do
     pacman -Qq "$pkg" &>/dev/null || missing+=("$pkg")
 done
 if [[ ${#missing[@]} -gt 0 ]]; then
     log_err "KDE prereqs missing: ${missing[*]}"
-    log_info "Install them during Arch install (pacstrap -K /mnt ... plasma sddm)"
-    log_info "Or on a running system: sudo pacman -S plasma sddm"
+    log_info "Install them during Arch install (pacstrap -K /mnt ... plasma)"
+    log_info "Or on a running system: sudo pacman -S plasma"
     exit 1
 fi
-log_ok "KDE prereqs present (plasma-desktop, kwin, sddm)"
+log_ok "KDE prereqs present (plasma-desktop, kwin, plasma-login-manager)"
 
 install_group "$ARCHE/packages/kde.sh"
 
-# ─── SDDM Login Manager ───
+# ─── Plasma Login Manager ───
 
-# Disable legacy greetd stack if present (migrated away — see D013).
-for legacy in greetd.service greetd-regreet.service; do
+# Disable legacy greeter stacks if present.
+# - greetd + regreet: pre-KDE greeter (see D013, retired)
+# - sddm: superseded by plasma-login-manager in Plasma 6.6 (see D022)
+for legacy in greetd.service greetd-regreet.service sddm.service; do
     if systemctl is-enabled "$legacy" &>/dev/null; then
         log_info "Disabling legacy $legacy..."
         sudo systemctl disable --now "$legacy" 2>/dev/null || true
     fi
 done
 
-# Remove vendored SilentSDDM theme if present (was used with Hyprland).
-# KDE uses Breeze SDDM theme by default via sddm-kcm.
-if [[ -d /usr/share/sddm/themes/silent ]]; then
-    log_info "Removing legacy SilentSDDM theme..."
-    sudo rm -rf /usr/share/sddm/themes/silent
-    log_ok "Legacy SilentSDDM theme removed"
+# Remove leftover SDDM theme trees if present (SilentSDDM from D013,
+# eucalyptus-drop from an earlier attempt). plasma-login-manager does not
+# use /usr/share/sddm/themes/.
+for theme in silent eucalyptus-drop; do
+    if [[ -d "/usr/share/sddm/themes/$theme" ]]; then
+        log_info "Removing legacy SDDM theme: $theme..."
+        sudo rm -rf "/usr/share/sddm/themes/$theme"
+        log_ok "Legacy SDDM theme removed: $theme"
+    fi
+done
+
+# Remove stale /etc/sddm.conf.d/10-arche.conf symlink if present
+# (left over from pre-D022 installs; target no longer exists in the repo).
+if [[ -L /etc/sddm.conf.d/10-arche.conf ]]; then
+    log_info "Removing stale SDDM config symlink..."
+    sudo rm -f /etc/sddm.conf.d/10-arche.conf
+    sudo rmdir /etc/sddm.conf.d 2>/dev/null || true
+    log_ok "Stale SDDM config removed"
 fi
 
-# Clean up legacy eucalyptus-drop if present.
-if [[ -d /usr/share/sddm/themes/eucalyptus-drop ]]; then
-    log_info "Removing legacy eucalyptus-drop theme..."
-    sudo rm -rf /usr/share/sddm/themes/eucalyptus-drop
-    log_ok "Legacy theme removed"
-fi
-
-# Enable SDDM.
-svc_enable sddm
+# Enable plasmalogin (Plasma Login Manager).
+svc_enable plasmalogin
 
 # ─── Stow Configs ───
 

@@ -4,8 +4,9 @@ Personal Arch Linux dotfiles. Clone, run, get a fully configured KDE Plasma desk
 
 ## Quick Start
 
-Install Arch with the **`plasma` group** and **`sddm`** already in pacstrap
-(archinstall handles this if you pick the KDE profile). Then:
+Install Arch with the **`plasma` group** already in pacstrap (archinstall
+handles this if you pick the KDE profile). As of Plasma 6.6 the group pulls
+in `plasma-login-manager`, the KDE-native display manager — see D022. Then:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/install.sh | bash
@@ -28,8 +29,9 @@ hardcodes `~/arche` keeps working. See `docs/decisions.md` D014 for the full
 reasoning. To add a second user later, see [Multi-user setup](#multi-user-setup).
 
 Bootstrap only **configures** KDE — it never installs it. `scripts/05-kde.sh`
-verifies `plasma-desktop`, `kwin`, and `sddm` are present and aborts with
-clear instructions if they're missing. See `docs/decisions.md` D021.
+verifies `plasma-desktop`, `kwin`, and `plasma-login-manager` are present and
+aborts with clear instructions if they're missing. See `docs/decisions.md`
+D021 and D022.
 
 ## Multi-user setup
 
@@ -72,7 +74,7 @@ versions, so each user opts in via `just runtimes` if they want them.
 | Theme         | Ember (warm amber on deep charcoal)       |
 | GPU           | NVIDIA open-dkms                          |
 | Audio         | PipeWire full stack                       |
-| Login         | SDDM + Breeze                             |
+| Login         | Plasma Login Manager (D022)               |
 
 ## Structure
 
@@ -146,8 +148,8 @@ switch, and USB charging.
 
 ## Requirements
 
-- Arch Linux (fresh install) with `plasma` + `sddm` installed via pacstrap
-  or archinstall
+- Arch Linux (fresh install) with `plasma` installed via pacstrap or
+  archinstall (pulls in `plasma-login-manager` as of Plasma 6.6)
 - `git` and `sudo`
 - Internet connection
 
