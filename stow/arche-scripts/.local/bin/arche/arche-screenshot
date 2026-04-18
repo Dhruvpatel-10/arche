@@ -4,12 +4,11 @@
 set -euo pipefail
 
 # Prevent double execution — exit if already running
-LOCKFILE="/tmp/arche-screenshot.lock"
-if [[ -f "$LOCKFILE" ]] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
+SCREENSHOT_LOCK="${XDG_RUNTIME_DIR:-/tmp}/arche-screenshot.lock"
+if [[ -f "$SCREENSHOT_LOCK" ]] && kill -0 "$(cat "$SCREENSHOT_LOCK")" 2>/dev/null; then
     exit 0
 fi
-echo $$ > "$LOCKFILE"
-trap 'rm -f "$LOCKFILE"' EXIT
+echo $$ > "$SCREENSHOT_LOCK"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 dir="$HOME/Pictures/Screenshots"
@@ -21,8 +20,12 @@ f="$dir/$(date +%Y%m%d_%H%M%S).png"
 freeze_pid=$!
 sleep 0.1
 
-# Guaranteed cleanup — no orphaned freeze on cancel or error
-cleanup() { kill "$freeze_pid" 2>/dev/null; wait "$freeze_pid" 2>/dev/null || true; }
+# Single EXIT trap — cleans both freeze process and lockfile, on any path.
+cleanup() {
+    kill "$freeze_pid" 2>/dev/null
+    wait "$freeze_pid" 2>/dev/null || true
+    rm -f "$SCREENSHOT_LOCK"
+}
 trap cleanup EXIT
 
 # Region select on frozen frame
@@ -41,19 +44,26 @@ grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
 cleanup
 trap - EXIT
 
-# Copy to clipboard
-wl-copy -t image/png < "$f"
+# Copy to clipboard — setsid -f detaches wl-copy into its own session so it
+# survives after this script (and its systemd scope) exit. Without this, the
+# wl-copy daemon that holds the clipboard selection gets reaped along with
+# the script, and the image silently disappears from the clipboard.
+setsid -f wl-copy --type image/png < "$f"
 
-# Notification with "Edit" action
-action=$(notify-send -i "$f" \
-    -a "Screenshot" \
-    -A "edit=Edit" \
-    "Screenshot copied" \
-    "$(basename "$f")")
-
-if [[ "$action" == "edit" ]]; then
-    satty --filename "$f" \
-        --output-filename "$f" \
-        --copy-command "wl-copy -t image/png" \
-        2>/dev/null
-fi
+# Notify + handle Edit action in a detached subshell. notify-send -A blocks
+# until the user clicks an action (or the notification times out) — we don't
+# want this script to hang around waiting, both to keep things clean and so
+# repeated screenshots don't pile up stale processes.
+setsid -f bash -c '
+    action=$(notify-send -i "$1" \
+        -a "Screenshot" \
+        -A "edit=Edit" \
+        "Screenshot copied" \
+        "$(basename "$1")")
+    if [[ "$action" == "edit" ]]; then
+        satty --filename "$1" \
+            --output-filename "$1" \
+            --copy-command "wl-copy --type image/png" \
+            2>/dev/null
+    fi
+' _ "$f" </dev/null >/dev/null 2>&1
