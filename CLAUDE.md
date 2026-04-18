@@ -426,5 +426,6 @@ See `docs/status.md` for the full table.
 - Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is the pattern (gitignored)
 - Do not reference KDE Plasma, KWin, KRunner, Plasma Login Manager, Spectacle, kscreenlocker, Powerdevil, Klipper, kde-gtk-config — removed in D023, Hyprland is the desktop
 - Do not reference Waybar, Mako, SwayOSD, syshud — Quickshell (arche-shell) replaces bar/notifications/OSD in one layer (D023)
+- Do not install dunst — its user unit is `Type=dbus` with `BusName=org.freedesktop.Notifications`, so D-Bus auto-activates it and races Quickshell's `NotificationServer` (`Notifs.qml`) for the name, leaving every toast rendered in dunst's default blue-bubble style (D023)
 - Do not reference plasma-login-manager — SDDM is the greeter (D023 reverts D022)
 - Do not vendor SilentSDDM or any SDDM theme — default Breeze ships with sddm and is what we use (D023)
