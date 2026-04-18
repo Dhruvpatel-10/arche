@@ -48,12 +48,13 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **PipeWire stack:** pipewire, pipewire-alsa, pipewire-jack, pipewire-pulse, wireplumber
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
-### hyprland.sh — Hyprland Desktop (pacman: ~18)
+### hyprland.sh — Hyprland Desktop (pacman: ~19, AUR: 0)
 - **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland
 - **Login manager:** sddm, qt6-svg, qt5-wayland, qt6-wayland (default Breeze theme — see D023)
 - **Wayland utils:** awww (wallpaper — swww successor), grim, slurp, satty (screenshots), cliphist (clipboard)
 - **Input / backlight:** brightnessctl, wev
 - **Launcher:** rofi-wayland
+- **Picker runtime:** gtk4-layer-shell (arche-share-picker dep — binary is in tools/bin/, D027; gtk4 pulled transitively)
 
 ### panel.sh — Quickshell Panel (pacman: 2)
 - **Shell runtime:** quickshell (QML-based Wayland layer shell)

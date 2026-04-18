@@ -58,7 +58,8 @@ Full architecture and decision records live in `docs/`.
 │   └── bin/                  # pre-built binaries from external repos (symlinked to system)
 │       ├── arche-legion      # Lenovo Vantage replacement (built externally)
 │       ├── arche-denoise     # Rust CLI — file/pipe GPU noise suppression
-│       └── arche-denoise-mic # C daemon — PipeWire virtual mic (Maxine)
+│       ├── arche-denoise-mic # C daemon — PipeWire virtual mic (Maxine)
+│       └── arche-share-picker # GTK4 screen-share source picker (xdph custom_picker_binary)
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
     ├── fish/                 # shell config (D018 — restored from D003)
@@ -68,7 +69,6 @@ Full architecture and decision records live in `docs/`.
     ├── hypr/                 # Hyprland compositor config (D023 — restored from D021)
     ├── rofi/                 # Spotlight-style app launcher
     ├── cliphist/             # clipboard history
-    ├── hyprland-preview-share-picker/  # screen-share source picker
     ├── arche-scripts/        # user scripts (wallpaper, popup, powermenu, etc.)
     ├── nvim/                 # LazyVim + catppuccin
     ├── btop/                 # system monitor
@@ -226,6 +226,7 @@ Pre-built binaries live in `tools/bin/`. Source code stays in external repos und
 - `arche-legion` — Lenovo Vantage replacement (battery, fan, profile, camera, USB, Fn lock)
 - `arche-denoise` — Rust CLI: file/pipe GPU noise suppression (`clean`, `setup`, `status`)
 - `arche-denoise-mic` — C daemon: PipeWire virtual mic with Maxine GPU denoising
+- `arche-share-picker` — GTK4 screen-share source picker; xdph's `custom_picker_binary` (D027)
 
 **Deploy:** symlinks at `system/usr/local/bin/arche/*` point into `tools/bin/`, auto-linked
 to `/usr/local/bin/arche/` by `link_system_all` in `00-preflight.sh`. `/etc/profile.d/arche.sh`
@@ -380,7 +381,7 @@ Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
 Scripts: 13 numbered scripts (00-preflight through 12-boot)
 Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, panel, runtimes, apps, appearance, boot)
 Themes: ember.sh (active), schema.sh (variable registry)
-Templates: btop, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, qt6ct, rofi, starship, tmux
+Templates: btop, fish, glow, gtk-3.0, gtk-4.0, hypr, arche-share-picker, kitty, legion, mpv, qt6ct, rofi, starship, tmux
 Stow: see Repository Structure above
 System: pacman.conf, 3 pacman hooks, 3 system binaries, sddm.conf.d/10-arche.conf
 

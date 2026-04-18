@@ -33,6 +33,9 @@ PACMAN_PKGS=(
 
     # App launcher
     rofi-wayland             # Spotlight-style launcher (combi mode)
+
+    # Screen-share source picker runtime deps (arche-share-picker is a tools/ binary — D027)
+    gtk4-layer-shell         # GTK4 layer-shell binding used by arche-share-picker
 )
 
 AUR_PKGS=()

@@ -31,7 +31,6 @@ svc_enable sddm
 stow_pkg hypr
 stow_pkg rofi
 stow_pkg cliphist
-stow_pkg hyprland-preview-share-picker
 
 # ─── Deploy arche-legion binary (symlink so updates propagate) ───
 mkdir -p "$HOME/.local/bin/arche"

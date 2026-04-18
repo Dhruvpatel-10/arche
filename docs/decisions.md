@@ -5,6 +5,38 @@ Newest entries at the top.
 
 ---
 
+## D027 — arche-share-picker replaces hyprland-preview-share-picker
+
+**Date:** 2026-04-19
+**Status:** Accepted
+**Supersedes:** D023 (which chose hyprland-preview-share-picker-git from AUR)
+
+Replaced the AUR-only screen-share source picker with `arche-share-picker`, a
+custom binary built in Rust and shipped via the `tools/bin/` convention.
+
+**Why:**
+- Zero AUR dependencies: `hyprland-preview-share-picker-git` was the sole AUR
+  package in the entire stack; removing it makes the full install pacman-only.
+- Fully pacman-tractable runtime: only `gtk4` (already a transitive dep) and
+  `gtk4-layer-shell` (added to `packages/hyprland.sh`).
+- Ember-themed via the template engine: `templates/arche-share-picker/style.css.tmpl`
+  is rendered by `theme.sh apply` exactly like every other visual component.
+- Strong typing and tests are owned in the external source repo
+  (`~/projects/system/arche-share-picker/`) — builds stay out of arche proper.
+- Binary deployed via the standard `tools/bin/` → `system/usr/local/bin/arche/`
+  symlink chain, picked up automatically by `link_system_all` in `00-preflight.sh`.
+
+**What changed:**
+- `tools/bin/arche-share-picker` — pre-built binary (1.3 MB).
+- `system/usr/local/bin/arche/arche-share-picker` — symlink into tools/bin/.
+- `templates/arche-share-picker/style.css.tmpl` — Ember-themed GTK4 CSS.
+- `stow/hypr/.config/hypr/xdph.conf` — `custom_picker_binary = arche-share-picker`.
+- `packages/hyprland.sh` — AUR_PKGS emptied; `gtk4-layer-shell` added to PACMAN_PKGS.
+- `stow/hyprland-preview-share-picker/` — deleted (no stow config needed).
+- `templates/hyprland-preview-share-picker/` — deleted (replaced by arche-share-picker template).
+
+---
+
 ## D026 — `awww` replaces `hyprpaper` as the wallpaper daemon
 
 **Date:** 2026-04-18
