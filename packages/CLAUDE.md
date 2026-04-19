@@ -59,8 +59,8 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 ### panel.sh — Quickshell Panel (pacman: 2)
 - **Shell runtime:** quickshell (QML-based Wayland layer shell)
 - **Service backend:** networkmanager (nmcli, used by Quickshell's Net service)
-- **Note:** The QML source (arche-shell) is cloned by `07-panel.sh` from
-  <https://github.com/Dhruvpatel-10/quickshell>, not installed via pacman.
+- **Note:** The QML source lives at `/opt/arche/shell/` and is symlinked to
+  `~/.config/quickshell/` by `07-panel.sh`. Not installed via pacman. See D029.
 
 ### shell.sh — Shell (pacman: 5)
 - fish, atuin, starship, kitty, tmux
@@ -103,8 +103,8 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 These are installed outside the package registry:
 - **arche-denoise** — custom binary in `tools/bin/`, deployed via systemd service
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
-- **arche-shell** — QML source, cloned from GitHub to `~/projects/system/arche-shell/`
-  by `07-panel.sh` (D023); `~/.config/quickshell/` is a symlink to that clone
+- **Quickshell panel source** — QML under `/opt/arche/shell/`, symlinked to
+  `~/.config/quickshell/` by `07-panel.sh` (D029; supersedes D023)
 - **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
 - **fnm** — Node version manager (curl script in `08-runtimes.sh`)
 - **Bun** — JS runtime (official curl script in `08-runtimes.sh`)

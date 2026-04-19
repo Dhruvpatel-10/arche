@@ -5,6 +5,60 @@ Newest entries at the top.
 
 ---
 
+## D029 — Vendor Quickshell source into `/opt/arche/shell/`
+
+**Date:** 2026-04-19
+**Status:** Accepted
+**Supersedes:** D023's external-repo arrangement (the rest of D023 — "Hyprland restored, Quickshell replaces KDE+Waybar" — still stands)
+
+The QML source for the Quickshell panel (bar, control-center, notifications,
+toasts, OSD, clipboard picker, calendar, services) used to live in a separate
+GitHub repo and was cloned per-user to `~/projects/system/arche-shell/` by
+`07-panel.sh`, with `~/.config/quickshell/` symlinked to that clone.
+
+Moved it into `/opt/arche/shell/`, versioned alongside the rest of the repo.
+`07-panel.sh` now just symlinks `~/.config/quickshell/ → /opt/arche/shell/` for
+every user — no clone, no `git pull`, no drift.
+
+**Why:**
+- **Per-user clones drifted.** A second user (leanscale) got a stale checkout
+  because local work on stark's clone was never pushed upstream. Every user
+  edit required a push/pull dance across machines.
+- **No real reason to be external.** The panel is tightly coupled to the hypr
+  keybinds, theme tokens, and `arche-popup`/`arche-screenshot` scripts that
+  already live in `/opt/arche`. Cross-repo commits to change a keybind and the
+  corresponding panel button were already awkward.
+- **`/opt/arche` is already the shared workspace.** Mode `drwxrwsr-x stark:users`
+  with the setgid bit — anyone in `users` can edit. Tools binaries, system
+  hooks, and profile drop-ins all live here; the shell source fits the same
+  pattern.
+- **Hot-reload still works.** Quickshell watches file mtimes — ownership and
+  path don't matter. Editing `/opt/arche/shell/components/Bar.qml` hot-reloads
+  the bar instantly for every user whose quickshell points at it.
+
+**What changed:**
+- `/opt/arche/shell/` — populated with the QML source (components/, osd/,
+  services/, theme/, docs/, shell.qml, etc.). `.git` stripped; now tracked
+  directly by the arche repo.
+- `scripts/07-panel.sh` — clone/pull logic removed; just symlinks
+  `~/.config/quickshell/ → $ARCHE/shell/`.
+- `CLAUDE.md` — "External Shell" section renamed to "Quickshell Panel Source
+  (`shell/`)"; Desktop Stack bullet updated; Repository Structure gains a
+  `shell/` entry.
+
+**Migration for existing users:** first `07-panel.sh` run repoints the symlink
+from the old clone to `/opt/arche/shell/`. `~/projects/system/arche-shell/`
+and the `Dhruvpatel-10/quickshell` GitHub repo are now orphaned — safe to
+archive or delete whenever the user wants. Nothing in the arche repo
+references them anymore.
+
+**Trade-off accepted:** the original GitHub repo's commit history is not
+preserved inside `/opt/arche`. It's still at
+<https://github.com/Dhruvpatel-10/quickshell> if needed; future history
+accrues in the arche repo.
+
+---
+
 ## D028 — revert to `hyprland-preview-share-picker` (AUR)
 
 **Date:** 2026-04-19

@@ -61,6 +61,9 @@ Full architecture and decision records live in `docs/`.
 │       ├── arche-denoise     # Rust CLI — file/pipe GPU noise suppression
 │       └── arche-denoise-mic # C daemon — PipeWire virtual mic (Maxine)
 │
+├── shell/                    # Quickshell panel QML (bar + control-center + OSD + toasts)
+│                             # Symlinked to ~/.config/quickshell/ by 07-panel.sh. See D029.
+│
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
     ├── fish/                 # shell config (D018 — restored from D003)
     ├── kitty/                # terminal config
@@ -243,13 +246,13 @@ it up immediately.
 
 ---
 
-## External Shell (arche-shell / Quickshell)
+## Quickshell Panel Source (`shell/`)
 
-The Quickshell panel source (bar + control-center + notifications) is NOT vendored —
-it lives in its own repo at <https://github.com/Dhruvpatel-10/quickshell> and is
-cloned to `~/projects/system/arche-shell/` by `scripts/07-panel.sh`. That script
-symlinks `~/.config/quickshell/` → the clone, so hot-reload on file save just works
-when iterating. See D023.
+The Quickshell panel source (bar + control-center + notifications + OSD + clipboard
+picker + calendar) lives at `/opt/arche/shell/`, versioned with the rest of the repo.
+`scripts/07-panel.sh` symlinks `~/.config/quickshell/` → `/opt/arche/shell/` for every
+user — one source of truth, no per-user clone. Hot-reload on file save still works
+(quickshell watches file mtimes). See D029 (supersedes D023's external-repo bit).
 
 ---
 
@@ -333,8 +336,8 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ### Desktop Stack
 - Hyprland (Wayland compositor), uwsm session wrapper, SDDM (Breeze theme)
-- Quickshell panel (bar + control-center + notifications + toasts) — external
-  `arche-shell` repo cloned by `07-panel.sh`. See D023.
+- Quickshell panel (bar + control-center + notifications + toasts + OSD) — QML source
+  at `/opt/arche/shell/`, symlinked to `~/.config/quickshell/` by `07-panel.sh`. See D029.
 - rofi-wayland (app launcher), grim + slurp + satty (screenshots)
 - hyprlock (lock screen), hypridle (idle management), hyprsunset (night light)
 - awww (wallpaper — successor to swww), cliphist (clipboard history), hyprpolkitagent (auth)

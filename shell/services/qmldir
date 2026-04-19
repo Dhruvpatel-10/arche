@@ -1,0 +1,6 @@
+singleton Brightness     1.0 Brightness.qml
+singleton Bt             1.0 Bt.qml
+singleton Net            1.0 Net.qml
+singleton SystemStats    1.0 SystemStats.qml
+singleton Uptime         1.0 Uptime.qml
+singleton IdleInhibitor  1.0 IdleInhibitor.qml

@@ -97,11 +97,11 @@ Last updated: 2026-04-18
 | `arche-denoise`      | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 | `arche-denoise-mic`  | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 
-## External Shell
+## Quickshell Panel Source
 
-| Repo         | Clone location                     | Symlink target          | Status |
-|--------------|------------------------------------|-------------------------|--------|
-| `arche-shell` (Dhruvpatel-10/quickshell) | `~/projects/system/arche-shell/` | `~/.config/quickshell/` | Done (D023) |
+| Source                  | Symlink target          | Status |
+|-------------------------|-------------------------|--------|
+| `/opt/arche/shell/`     | `~/.config/quickshell/` | Done (D029, supersedes D023) |
 
 ## System Configs
 

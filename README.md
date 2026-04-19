@@ -30,9 +30,9 @@ reasoning. To add a second user later, see [Multi-user setup](#multi-user-setup)
 
 `scripts/05-hyprland.sh` installs Hyprland, SDDM (default Breeze theme), rofi,
 and the Wayland utility stack. `scripts/07-panel.sh` installs Quickshell and
-clones the arche-shell repo (the QML source for the bar + control-center +
-notifications) into `~/projects/system/arche-shell/`. See `docs/decisions.md`
-D023.
+symlinks `~/.config/quickshell/` to `/opt/arche/shell/` — the QML source for
+the bar, control-center, notifications, and OSD lives there, versioned with
+the rest of the repo. See `docs/decisions.md` D029 (supersedes D023).
 
 ## Multi-user setup
 
