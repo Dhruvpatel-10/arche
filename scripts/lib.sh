@@ -49,9 +49,19 @@ link_system_file() {
     # (home dirs are mode 700 — services like sddm can't traverse them).
     src="$(readlink -f "$src")"
 
-    if [[ "$(readlink -f "$dst")" == "$src" ]]; then
-        log_warn "Already linked: $dst"
-        return 0
+    # If an existing link's *literal* target goes through /home/, it's stale
+    # (installed from a ~/arche clone before this was fixed) — force recreate.
+    if [[ -L "$dst" ]]; then
+        local literal
+        literal="$(readlink "$dst")"
+        if [[ "$literal" == "$src" ]]; then
+            log_warn "Already linked: $dst"
+            return 0
+        fi
+        if [[ "$literal" == /home/* ]]; then
+            log_info "Repointing stale symlink via /home/: $dst"
+            sudo rm -f "$dst"
+        fi
     fi
 
     if [[ -f "$dst" && ! -L "$dst" ]]; then
