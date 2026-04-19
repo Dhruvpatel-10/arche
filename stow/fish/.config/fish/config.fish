@@ -36,7 +36,6 @@ abbr -a myipv6 'curl -s ipv6.icanhazip.com'
 alias ll 'ls -alF'
 alias la 'ls -A'
 alias ff "fzf --preview 'bat --style=numbers --color=always {}'"
-alias decompress 'tar -xzf'
 alias printaienv "printenv | grep -E 'GEMINI|OPENAI|GROQ|ANTHROPIC'"
 
 # ─── Machine-specific overrides (gitignored) ───
