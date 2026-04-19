@@ -142,46 +142,15 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Encrypted DNS — NextDNS + Cloudflare fallback, DNS-over-TLS, DNSSEC
+# 6. Encrypted DNS — NextDNS primary + Cloudflare/Google fallback, DoT, DNSSEC
 # ─────────────────────────────────────────────────────────────────────────────
-# Primary:  NextDNS over TLS (port 853) — filtering + analytics
-# Fallback: Cloudflare over TLS — kicks in if NextDNS is unreachable
-# DNSSEC:   allow-downgrade — validates when available, doesn't break captive portals
-# Config:   system/etc/systemd/resolved.conf is a *template* (contains NEXTDNS_ID).
-#           We render it to /etc/systemd/resolved.conf as a real file. The symlink
-#           created by link_system_all in preflight is unlinked first — writing
-#           through it with `tee` would clobber the repo template with the real ID.
+# Render + apply lives in scripts/dns.sh so `just dns` and bootstrap
+# share one implementation. Re-run after changing the NextDNS profile:
+#     just dns
 # ─────────────────────────────────────────────────────────────────────────────
 
-log_section "Encrypted DNS (NextDNS + Cloudflare fallback)"
-
-if [[ -z "${NEXTDNS_ID:-}" ]]; then
-    log_err "NEXTDNS_ID not set — create secrets.sh from secrets.sh.example"
-    log_err "Refusing to continue: /etc/systemd/resolved.conf would be left with a placeholder"
-    exit 1
-fi
-
-# Unlink the preflight symlink first so `tee` creates a fresh file
-# instead of writing the rendered content back through the symlink
-# into the repo template.
-if [[ -L /etc/systemd/resolved.conf ]]; then
-    sudo rm /etc/systemd/resolved.conf
-fi
-sed "s/NEXTDNS_ID/${NEXTDNS_ID}/g" "$ARCHE/system/etc/systemd/resolved.conf" \
-    | sudo tee /etc/systemd/resolved.conf > /dev/null
-sudo chmod 644 /etc/systemd/resolved.conf
-log_ok "Rendered /etc/systemd/resolved.conf with NextDNS ID"
-
-# Point /etc/resolv.conf to systemd-resolved stub
-if [[ "$(readlink -f /etc/resolv.conf)" != "/run/systemd/resolve/stub-resolv.conf" ]]; then
-    sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
-    log_ok "resolv.conf → systemd-resolved stub"
-else
-    log_warn "resolv.conf already using resolved stub"
-fi
-
+bash "$ARCHE/scripts/dns.sh"
 svc_enable systemd-resolved
-log_info "Primary: NextDNS (DoT) → Fallback: Cloudflare (DoT) → DNSSEC validation on"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. Kernel Hardening — sysctl

@@ -26,3 +26,9 @@ backup:
 [group: 'utilities']
 sddm-preview:
     sddm-greeter-qt6 --test-mode --theme {{dotfiles}}/system/usr/share/sddm/themes/arche
+
+# Re-render /etc/systemd/resolved.conf from the template + secrets.sh,
+# restart systemd-resolved, flush caches. Same flow bootstrap uses.
+[group: 'utilities']
+dns:
+    bash {{dotfiles}}/scripts/dns.sh
