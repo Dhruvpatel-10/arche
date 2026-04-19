@@ -2,7 +2,7 @@
 Type=Application
 Name=Slack
 Comment=Team messaging
-Exec=arche-webapp https://app.slack.com
+Exec=arche-webapp https://app.slack.com/client/TF7GEHYHZ/
 Icon=slack
 Terminal=false
 Categories=Network;Chat;
