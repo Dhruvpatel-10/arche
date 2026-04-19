@@ -2,15 +2,17 @@ import QtQuick
 import QtQuick.Controls
 import "../.."
 
-// Right-hand preview pane. Shows the full content of the currently-selected
+// Right-hand preview pane. Shows the full content of the selected
 // entry: decoded image (cache: false so same-id redecodes refresh) for
-// binary, full text for anything else. Three empty states — no selection,
-// image still decoding, and no entries at all — so the pane never looks
-// broken.
+// binary, full text for anything else. Three empty states — no
+// selection, image still decoding, and no entries at all — so the pane
+// never looks broken.
 Rectangle {
     id: root
 
-    readonly property var entry: Clipboard.selected
+    // Fed by ClipboardPicker from PickerDialog.selected; may be null
+    // when the list is empty or filtered to nothing.
+    property var entry: null
 
     color: Qt.rgba(0, 0, 0, 0.22)
     radius: 10

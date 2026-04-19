@@ -5,18 +5,16 @@ import Quickshell.Io
 
 // Clipboard — data layer for the picker surface.
 //
-// Owns the parsed view of `cliphist list`, search state, on-demand decoding
-// to a tmp cache (images → file, text → in-memory), and the copy/delete
-// actions. Every UI surface reads through this singleton; nothing here
-// knows about geometry, keys, or widgets.
+// Owns the parsed view of `cliphist list`, on-demand decoding to a tmp
+// cache (images → file, text → in-memory), and the copy/delete
+// actions. Query + selection state lives in the picker base
+// (PickerDialog), so this singleton is concerned only with the data —
+// nothing here knows about geometry, keys, or widgets.
 QtObject {
     id: root
 
     // ─── Public state ──────────────────────────────────────────────────
-
-    property bool   open:          false
-    property string query:         ""
-    property int    selectedIndex: 0
+    property bool open: false
 
     // Parsed rows. Each entry:
     //   id            cliphist numeric id (string)
@@ -29,60 +27,55 @@ QtObject {
     //   decodedText   full text once decoded, else null
     property var entries: []
 
-    readonly property var filtered: query.length === 0
-        ? entries
-        : entries.filter(e => e.preview.toLowerCase()
-                                       .includes(query.toLowerCase()))
-
-    readonly property var selected:
-        (filtered.length > 0 && selectedIndex >= 0
-                             && selectedIndex < filtered.length)
-            ? filtered[selectedIndex] : null
-
     // Images are decoded into $XDG_RUNTIME_DIR/arche-shell/clipboard/<id>.<ext>.
     // Runtime dir is user-specific and auto-cleaned on logout.
     readonly property string cacheDir:
         (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/arche-shell/clipboard"
 
     // ─── Lifecycle ─────────────────────────────────────────────────────
-
     function show()   { open = true  }
     function hide()   { open = false }
     function toggle() { open = !open }
 
     onOpenChanged: if (open) refresh()
-    onSelectedChanged: _ensureDecoded(selected)
 
     // ─── Actions ───────────────────────────────────────────────────────
+    function refresh() { _list.running = true }
 
-    function refresh() {
-        query = ""
-        selectedIndex = 0
-        _list.running = true
-    }
-
-    function pick(index) {
-        const e = _at(index); if (!e) return
+    function pick(entry) {
+        if (!entry) return
         _copy.command = ["sh", "-c",
-            "cliphist decode " + _shq(e.id) + " | wl-copy"]
+            "cliphist decode " + _shq(entry.id) + " | wl-copy"]
         _copy.running = true
         hide()
     }
 
-    function remove(index) {
-        const e = _at(index); if (!e) return
+    function remove(entry) {
+        if (!entry) return
         // cliphist delete reads "<id>\t<preview>" lines from stdin and
         // removes matching rows. Awk filters the list on exact id match.
         _delete.command = ["sh", "-c",
-            "cliphist list | awk -F'\\t' -v id=" + _shq(e.id)
+            "cliphist list | awk -F'\\t' -v id=" + _shq(entry.id)
             + " '$1==id{print}' | cliphist delete"]
         _delete.running = true
     }
 
     function clearAll() { _wipe.running = true }
 
-    // ─── Parsing ───────────────────────────────────────────────────────
+    // Called by the picker as the user navigates, so the preview pane
+    // gets the decoded payload by the time the selection lands.
+    function ensureDecoded(entry) {
+        if (!entry) return
+        if (entry.isImage) {
+            if (entry.imagePath) return
+            _decodeImage(entry)
+        } else {
+            if (entry.decodedText !== null) return
+            _decodeText(entry)
+        }
+    }
 
+    // ─── Parsing ───────────────────────────────────────────────────────
     function _parseList(text) {
         const out = []
         const rows = text.split("\n")
@@ -110,18 +103,6 @@ QtObject {
     }
 
     // ─── On-demand decode ──────────────────────────────────────────────
-
-    function _ensureDecoded(e) {
-        if (!e) return
-        if (e.isImage) {
-            if (e.imagePath) return
-            _decodeImage(e)
-        } else {
-            if (e.decodedText !== null) return
-            _decodeText(e)
-        }
-    }
-
     function _decodeImage(e) {
         if (_decodeImg.running) return   // coalesce rapid nav; next select re-tries
         const path = cacheDir + "/" + e.id + "." + e.ext
@@ -145,11 +126,6 @@ QtObject {
             x.id === id ? Object.assign({}, x, fields) : x)
     }
 
-    function _at(i) {
-        if (i < 0 || i >= filtered.length) return null
-        return filtered[i]
-    }
-
     function _shq(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
 
     // ─── IPC ───────────────────────────────────────────────────────────
@@ -164,14 +140,10 @@ QtObject {
 
     // ─── Processes ─────────────────────────────────────────────────────
     // Declared last so every function above is in scope when signals fire.
-
     property Process _list: Process {
         command: ["cliphist", "list"]
         stdout: StdioCollector {
-            onStreamFinished: {
-                root.entries = root._parseList(text)
-                root._ensureDecoded(root.selected)
-            }
+            onStreamFinished: root.entries = root._parseList(text)
         }
     }
 
@@ -181,18 +153,14 @@ QtObject {
         onExited: (code) => {
             if (code === 0)
                 root._updateEntry(targetId, { imagePath: targetPath })
-            // If selection changed during decode, start the newly-needed one.
-            root._ensureDecoded(root.selected)
         }
     }
 
     property Process _decodeTxt: Process {
         property string targetId: ""
         stdout: StdioCollector {
-            onStreamFinished: {
+            onStreamFinished:
                 root._updateEntry(_decodeTxt.targetId, { decodedText: text })
-                root._ensureDecoded(root.selected)
-            }
         }
     }
 
