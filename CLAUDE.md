@@ -20,7 +20,8 @@ Full architecture and decision records live in `docs/`.
 ```
 /opt/arche/                   # canonical location, ~/arche symlinks here per user
 ├── bootstrap.sh              # orchestrator — runs all scripts in order
-├── Justfile                  # day-to-day interface: just <target>
+├── Justfile                  # day-to-day interface entry — imports just/*.just
+├── just/                     # modular Just targets (user, scripts, theme, test, util)
 ├── CLAUDE.md                 # this file
 │
 ├── docs/                     # architecture, decisions, component status
@@ -290,20 +291,24 @@ Pattern: run once → reboot if prompted → run again to finish.
 
 ---
 
-## Justfile Targets (minimum required)
+## Justfile Layout
 
-```
-install          → bash bootstrap.sh
-theme target     → bash scripts/theme.sh {{target}}
-switch theme     → bash scripts/theme.sh switch {{theme}}
-themes           → bash scripts/theme.sh list
-test             → bash tests/run.sh lint
-test-stow        → bash tests/run.sh stow
-test-all         → bash tests/run.sh all
-```
+Top-level `Justfile` is slim — it sets `dotfiles := justfile_directory()`, imports
+the modules under `just/`, and defines the single top-level `install` target. All
+other targets live in the imported modules but remain at the top level in the
+CLI (no namespace prefix). Run `just` or `just --list` to see the grouped list.
 
-One target per component matching its script:
-preflight, base, security, gpu, audio, hyprland, shell, panel, runtimes, apps, stow, appearance, boot
+| File              | Group        | Targets                                                                       |
+|-------------------|--------------|-------------------------------------------------------------------------------|
+| `Justfile`        | bootstrap    | `install`                                                                     |
+| `just/user.just`  | helpers      | `ssh-setup`, `multi-user-init`, `tpm-enroll`, `secondary-user`                |
+| `just/scripts.just` | scripts    | `preflight`, `base`, `security`, `gpu`, `audio`, `hyprland`, `shell`, `panel`, `panel-restart`, `runtimes`, `apps`, `stow`, `appearance`, `boot` |
+| `just/theme.just` | theme        | `theme`, `switch`, `themes`, `render`, `reload`                               |
+| `just/test.just`  | test         | `test`, `test-stow`, `gate`, `test-all`                                       |
+| `just/util.just`  | utilities    | `restow`, `relink`, `backup`, `sddm-preview`                                  |
+
+Component scripts map 1:1 to targets: `just <component>` runs the matching
+`scripts/NN-<component>.sh` (e.g. `just hyprland` → `scripts/05-hyprland.sh`).
 
 ---
 
