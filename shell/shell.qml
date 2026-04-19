@@ -15,6 +15,7 @@ ShellRoot {
     CalendarPanel {}
     ToastLayer {}
     ClipboardPicker {}
+    PowerMenuDialog {}
 
     // Per-screen OSD overlay.
     Variants {
