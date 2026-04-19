@@ -8,9 +8,8 @@ import "./powermenu"
 PickerDialog {
     id: picker
 
-    pickerName:  "powermenu"
-    prompt:      "Power"
-    placeholder: "Search"
+    pickerName: "powermenu"
+    prompt:     "Power"
 
     open:       PowerMenu.open
     items:      PowerMenu.actions

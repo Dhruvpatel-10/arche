@@ -14,6 +14,12 @@ Rectangle {
     // when the list is empty or filtered to nothing.
     property var entry: null
 
+    // Total entries in the clipboard (not filtered). Passed down by
+    // ClipboardPicker so this component doesn't need to reach into
+    // the Clipboard singleton itself — keeps the preview pane pure
+    // view, re-usable with any future entry source.
+    property int entryCount: 0
+
     color: Qt.rgba(0, 0, 0, 0.22)
     radius: 10
     clip: true
@@ -57,7 +63,7 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         visible: !root.entry
-        text: Clipboard.entries.length === 0
+        text: root.entryCount === 0
             ? "Nothing copied yet"
             : "Preview"
         color: Theme.fgDim

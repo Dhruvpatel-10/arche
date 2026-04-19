@@ -10,7 +10,6 @@ PickerDialog {
 
     pickerName:  "clipboard"
     prompt:      "Clipboard"
-    placeholder: "Search"
 
     open:       Clipboard.open
     items:      Clipboard.entries
@@ -44,6 +43,7 @@ PickerDialog {
     }
 
     rightPane: Preview {
-        entry: picker.selected
+        entry:      picker.selected
+        entryCount: Clipboard.entries.length
     }
 }

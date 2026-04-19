@@ -3,4 +3,5 @@ singleton Ui 1.0 Ui.qml
 singleton Notifs 1.0 Notifs.qml
 singleton Clipboard 1.0 Clipboard.qml
 singleton PowerMenu 1.0 PowerMenu.qml
+singleton Launcher 1.0 Launcher.qml
 Shortcuts 1.0 Shortcuts.qml

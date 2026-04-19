@@ -32,6 +32,13 @@ QtObject {
     readonly property string cacheDir:
         (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/arche-shell/clipboard"
 
+    // Hard cap on rows materialized into the picker. cliphist can hit
+    // ~2k entries for heavy users; ScriptModel's O(n·m) diff starts
+    // to stutter at 60fps long before then. 500 is more than anyone
+    // browses visually — if you need to find something older, text
+    // search is the answer, not a mile-long list.
+    readonly property int _maxEntries: 500
+
     // ─── Lifecycle ─────────────────────────────────────────────────────
     function show()   { open = true  }
     function hide()   { open = false }
@@ -98,6 +105,7 @@ QtObject {
                 imagePath: null,
                 decodedText: null
             })
+            if (out.length >= _maxEntries) break
         }
         return out
     }

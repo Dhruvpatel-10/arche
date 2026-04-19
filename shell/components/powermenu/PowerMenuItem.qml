@@ -1,30 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
 import "../.."
+import "../picker"
 
-// PowerMenuItem — single row in the power menu list. Glyph + label.
-// The base picker's ListView assigns ListView.isCurrentItem — bind
-// `selected` from that on the consumer side to get the accent tint.
-Rectangle {
+// PowerMenuItem — single row in the power menu list: glyph + label.
+// Row chrome (selection tint, hover, click) comes from PickerItemBase;
+// this file supplies only the two columns of content.
+PickerItemBase {
     id: root
 
-    required property var  action
-    required property bool selected
-
-    signal activated()
-
-    implicitHeight: 48
-    radius: 8
-    color: selected
-        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11)
-        : "transparent"
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.activated()
-    }
+    required property var action
 
     RowLayout {
         anchors {
@@ -47,6 +32,7 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
+            elide: LayoutMirroring.enabled ? Text.ElideLeft : Text.ElideRight
             text:  root.action.label
             color: Theme.fg
             font {

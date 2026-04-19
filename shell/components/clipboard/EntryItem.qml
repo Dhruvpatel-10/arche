@@ -1,33 +1,18 @@
 import QtQuick
 import QtQuick.Layouts
 import "../.."
+import "../picker"
 
-// Single row in the entry list. Images show a type glyph + "Image" label +
-// dimension/size badge; text rows show the preview line truncated.
-Rectangle {
+// Single row in the entry list. Images show a type glyph + "Image"
+// label + dimension/size badge; text rows show the preview line
+// truncated. Right-click removes (PickerItemBase handles the button
+// wiring via `rightClickRemoves`).
+PickerItemBase {
     id: root
 
-    required property var  entry
-    required property bool selected
+    required property var entry
 
-    signal activated()
-    signal removed()
-
-    implicitHeight: 48
-    radius: 8
-    color: selected
-        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11)
-        : "transparent"
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: (m) => m.button === Qt.RightButton
-            ? root.removed()
-            : root.activated()
-    }
+    rightClickRemoves: true
 
     RowLayout {
         anchors {
@@ -47,7 +32,7 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            elide: Text.ElideRight
+            elide: LayoutMirroring.enabled ? Text.ElideLeft : Text.ElideRight
             text: root.entry.isImage ? "Image" : root.entry.preview
             color: Theme.fg
             font { family: Theme.fontSans; pixelSize: Theme.fontBody }

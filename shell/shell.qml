@@ -16,6 +16,7 @@ ShellRoot {
     ToastLayer {}
     ClipboardPicker {}
     PowerMenuDialog {}
+    LauncherDialog {}
 
     // Per-screen OSD overlay.
     Variants {

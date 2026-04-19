@@ -20,7 +20,7 @@ QtObject {
     //   icon  — Nerd-Font glyph (MesloLGS NF)
     //   cmd   — argv list passed to Process.command
     readonly property var actions: [
-        { id: "lock",     label: "Lock",     icon: "",  cmd: ["loginctl", "lock-session"] },
+        { id: "lock",     label: "Lock",     icon: "󰌾",  cmd: ["loginctl", "lock-session"] },
         { id: "sleep",    label: "Sleep",    icon: "󰒲",  cmd: ["systemctl", "suspend"]     },
         { id: "logout",   label: "Logout",   icon: "󰈆",  cmd: ["uwsm", "stop"]             },
         { id: "reboot",   label: "Reboot",   icon: "󰜉",  cmd: ["systemctl", "reboot"]      },

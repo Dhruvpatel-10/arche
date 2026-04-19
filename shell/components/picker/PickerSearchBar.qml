@@ -15,6 +15,7 @@ Item {
     property alias  text:        field.text
     property string prompt:      ""
     property string placeholder: "Search"
+    property bool   loading:     false
 
     implicitHeight: 60
 
@@ -39,12 +40,42 @@ Item {
         }
     }
 
+    // Loading spinner — small ring to the right of the input. Only
+    // draws + animates while the bar is actually visible and loading,
+    // so a closed picker never burns frames on a hidden spinner.
+    Rectangle {
+        id: spinner
+        anchors.right:          parent.right
+        anchors.rightMargin:    24
+        anchors.verticalCenter: parent.verticalCenter
+        width:  12
+        height: 12
+        radius: 6
+        color:  "transparent"
+        border.color: Theme.fgMuted
+        border.width: 2
+        opacity: 0.7
+        visible: root.loading
+        RotationAnimator on rotation {
+            from: 0; to: 360; duration: 900; loops: Animation.Infinite
+            running: spinner.visible
+        }
+        // Arc effect via a small bright cap.
+        Rectangle {
+            width: 4; height: 4; radius: 2
+            color: Theme.accent
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: -1
+        }
+    }
+
     TextInput {
         id: field
         anchors.left:           label.visible ? label.right : parent.left
         anchors.leftMargin:     label.visible ? 14 : 24
-        anchors.right:          parent.right
-        anchors.rightMargin:    24
+        anchors.right:          spinner.left
+        anchors.rightMargin:    12
         anchors.verticalCenter: parent.verticalCenter
         color:          Theme.fg
         selectionColor: Theme.accent
@@ -63,7 +94,13 @@ Item {
             case Qt.Key_Down:   root.navigate(+1);  e.accepted = true; break
             case Qt.Key_Up:     root.navigate(-1);  e.accepted = true; break
             case Qt.Key_Return:
-            case Qt.Key_Enter:  root.accept();      e.accepted = true; break
+            case Qt.Key_Enter:
+                // While an IME is composing (CJK/etc), Enter commits
+                // the preedit — don't steal it to accept the picker.
+                // Once composition is committed, the next Enter lands
+                // here with inputMethodComposing === false.
+                if (field.inputMethodComposing) break
+                root.accept();      e.accepted = true; break
             case Qt.Key_Delete: root.removeReq();   e.accepted = true; break
             case Qt.Key_J:
                 if (e.modifiers & Qt.ControlModifier) {
