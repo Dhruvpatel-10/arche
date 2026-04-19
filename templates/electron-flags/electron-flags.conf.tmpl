@@ -1,0 +1,7 @@
+# Generated — do not edit. Edit templates/electron-flags/electron-flags.conf.tmpl and run: just theme
+# Arch Linux Electron wrapper reads this. Enables Wayland + Ozone for native rendering.
+# Dark mode comes from xdg-desktop-portal via gsettings color-scheme (applied by theme engine).
+# Flat output: ~/.config/electron-flags.conf
+
+--enable-features=UseOzonePlatform,WaylandWindowDecorations
+--ozone-platform-hint=auto

@@ -76,8 +76,6 @@ Full architecture and decision records live in `docs/`.
     ├── nvim/                 # LazyVim + catppuccin
     ├── btop/                 # system monitor
     ├── tmux/                 # terminal multiplexer
-    ├── kvantum/              # Qt style engine
-    ├── qt6ct/                # Qt6 config
     ├── pipewire/             # audio daemon
     ├── wireplumber/          # audio session manager
     └── vivaldi/              # browser config
@@ -341,7 +339,7 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - rofi-wayland (app launcher), grim + slurp + satty (screenshots)
 - hyprlock (lock screen), hypridle (idle management), hyprsunset (night light)
 - awww (wallpaper — successor to swww), cliphist (clipboard history), hyprpolkitagent (auth)
-- xdg-desktop-portal-hyprland
+- xdg-desktop-portal-hyprland + xdg-desktop-portal-gtk (the Hyprland portal only implements Screenshot/ScreenCast/GlobalShortcuts — Settings/FileChooser/etc fall through to portal-gtk, which also bridges gsettings `color-scheme` → xdg `color-scheme` D-Bus property for Electron/Chromium/Vivaldi)
 
 ### Lenovo Legion Pro 5 (16ARX8)
 - ideapad_laptop + lenovo_wmi_gamezone kernel modules (loaded)
@@ -389,7 +387,7 @@ Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
 Scripts: 13 numbered scripts (00-preflight through 12-boot)
 Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, panel, runtimes, apps, appearance, boot)
 Themes: ember.sh (active), schema.sh (variable registry)
-Templates: btop, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, qt6ct, rofi, starship, tmux
+Templates: btop, electron-flags, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, rofi, starship, tmux
 Stow: see Repository Structure above
 System: pacman.conf, 3 pacman hooks, 3 system binaries, sddm.conf.d/10-arche.conf
 

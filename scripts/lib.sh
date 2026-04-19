@@ -429,6 +429,8 @@ theme_render() {
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
         _envsubst_vars+=" \${${var}_NOHASH} \${${var}_RGBA} \${${var}_RGB}"
     done
+    # Expand $HOME in templates that need absolute paths (qt5ct/qt6ct color_scheme_path)
+    _envsubst_vars+=" \${HOME}"
 
     local components=("$@")
 
@@ -454,7 +456,17 @@ theme_render() {
             # output path:   ~/.config/kitty/theme.conf
             local rel="${tmpl#"$tmpl_dir"/}"
             local rel_noext="${rel%.tmpl}"
-            output="$HOME/.config/$component/$rel_noext"
+
+            # Flat components render straight to ~/.config/<file> (not inside a subdir),
+            # for configs that live at the top of ~/.config/ (e.g. electron-flags.conf).
+            case "$component" in
+                electron-flags)
+                    output="$HOME/.config/$rel_noext"
+                    ;;
+                *)
+                    output="$HOME/.config/$component/$rel_noext"
+                    ;;
+            esac
 
             mkdir -p "$(dirname "$output")"
             envsubst "$_envsubst_vars" < "$tmpl" > "${output}.tmp" && mv "${output}.tmp" "$output"
@@ -463,6 +475,34 @@ theme_render() {
 
         # Reload the component
         _theme_reload "$component"
+    done
+
+    # After rendering, propagate palette to gsettings-based consumers (libadwaita + xdg-portal).
+    _theme_apply_gsettings
+}
+
+# Propagate theme to gsettings — libadwaita (Nautilus, Loupe) and xdg-desktop-portal
+# (Electron apps) both read color-scheme from here. Idempotent.
+_theme_apply_gsettings() {
+    command -v gsettings &>/dev/null || return 0
+    # gsettings fails silently without a DBus session (bootstrap run as root, CI, etc.)
+    [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}${XDG_RUNTIME_DIR:-}" ]] || return 0
+
+    local -A desired=(
+        [color-scheme]="'prefer-dark'"
+        [gtk-theme]="'${GTK_THEME:-Adwaita-dark}'"
+        [icon-theme]="'${ICON_THEME:-Papirus-Dark}'"
+        [cursor-theme]="'${CURSOR_THEME:-Adwaita}'"
+        [cursor-size]="${CURSOR_SIZE:-24}"
+        [font-name]="'${FONT_SANS:-Sans} ${FONT_SIZE_NORMAL:-10}'"
+    )
+    local key current
+    for key in "${!desired[@]}"; do
+        current="$(gsettings get org.gnome.desktop.interface "$key" 2>/dev/null || echo "")"
+        if [[ "$current" != "${desired[$key]}" ]]; then
+            gsettings set org.gnome.desktop.interface "$key" "${desired[$key]}" 2>/dev/null \
+                && log_ok "gsettings $key = ${desired[$key]}"
+        fi
     done
 }
 
@@ -474,31 +514,20 @@ _theme_reload() {
                 kill -SIGUSR1 $(pgrep -x kitty) 2>/dev/null && log_ok "Reloaded Kitty"
             fi
             ;;
-        kde|plasma)
-            # Color scheme rendered to ~/.config/kde/ by theme_render;
-            # copy to where KDE reads custom schemes and apply
-            local src="$HOME/.config/kde/Ember.colors"
-            local dest="$HOME/.local/share/color-schemes/Ember.colors"
-            if [[ -f "$src" ]]; then
-                mkdir -p "$(dirname "$dest")"
-                cp "$src" "$dest"
-                if command -v plasma-apply-colorscheme &>/dev/null; then
-                    plasma-apply-colorscheme Ember 2>/dev/null && log_ok "Applied KDE color scheme: Ember"
-                else
-                    log_ok "KDE color scheme copied — apply on next login"
-                fi
-            else
-                log_warn "KDE color scheme not found at $src"
-            fi
-            ;;
         starship)
             log_ok "Starship updates instantly"
             ;;
         fish)
             log_ok "Fish theme picks up on next shell launch"
             ;;
+        gtk-3.0)
+            log_ok "GTK3 picks up changes on next app launch"
+            ;;
         gtk-4.0)
             log_ok "GTK4 picks up changes on next app launch"
+            ;;
+        electron-flags)
+            log_ok "Electron apps pick up flags on next launch"
             ;;
         legion)
             log_ok "Legion picks up theme on next launch"

@@ -11,6 +11,9 @@ PACMAN_PKGS=(
     # Icons
     papirus-icon-theme        # Clean icon theme for GTK apps
 
+    # GTK themes
+    gnome-themes-extra        # provides real Adwaita-dark GTK3 theme files (not in gtk+3 default)
+
     # GTK theming tool (Hyprland stack — no KDE to handle GTK config)
     nwg-look                  # GTK3/4 theme configurator
 )

@@ -173,6 +173,8 @@ test_lint() {
             echo "${var}_RGBA"
             echo "${var}_RGB"
         done
+        # System env vars theme_render explicitly passes through envsubst
+        echo "HOME"
     )
 
     local tmpl_vars

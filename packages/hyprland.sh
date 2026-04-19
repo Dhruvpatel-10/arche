@@ -11,6 +11,8 @@ PACMAN_PKGS=(
     hyprpolkitagent          # native polkit auth agent (Qt/QML)
     uwsm                     # Hyprland session wrapper (systemd-managed)
     xdg-desktop-portal-hyprland
+    xdg-desktop-portal-gtk   # Settings + FileChooser portals; bridges gsettings
+                             # color-scheme → D-Bus for Electron/Chromium/Vivaldi
 
     # Login manager (default Breeze theme — see D023)
     sddm

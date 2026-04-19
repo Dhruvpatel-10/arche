@@ -49,7 +49,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
 ### hyprland.sh — Hyprland Desktop (pacman: ~18, AUR: 1)
-- **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland
+- **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk (Settings + FileChooser — brings dark-mode signal to Electron/Chromium/Vivaldi)
 - **Login manager:** sddm, qt6-svg, qt5-wayland, qt6-wayland (default Breeze theme — see D023)
 - **Wayland utils:** awww (wallpaper — swww successor), grim, slurp, satty (screenshots), cliphist (clipboard)
 - **Input / backlight:** brightnessctl, wev
@@ -74,7 +74,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Editor:** neovim
 - **Browser:** vivaldi
 - **Files:** nautilus, syncthing
-- **Media:** mpv, imagemagick, okular (PDF), gwenview (images), kdenlive (video)
+- **Media:** mpv, imagemagick, papers (PDF/EPUB, libadwaita), loupe (images, libadwaita), kdenlive (video)
 - **Recording:** obs-studio, v4l2loopback-dkms
 - **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
 - **Desktop:** qbittorrent, kdeconnect
@@ -83,10 +83,12 @@ Data-only files declaring what to install. No logic, no functions, no side effec
   (rootless setuptool is no longer packaged as of Docker 29 — fetch from
   upstream if rootless is needed)
 
-### appearance.sh — Appearance (pacman: 6)
+### appearance.sh — Appearance (pacman: 7)
 - **Fonts:** ttf-ibm-plex (UI sans), ttf-meslo-nerd (primary mono), ttf-jetbrains-mono-nerd (fallback), noto-fonts-emoji
 - **Icons:** papirus-icon-theme
+- **GTK themes:** gnome-themes-extra (provides Adwaita-dark GTK3 theme files — not in base gtk3)
 - **GTK tool:** nwg-look (GTK3/4 configurator — there is no KDE to set GTK theming on Hyprland, D023)
+- **Qt:** nothing. We dropped all Qt apps (okular → papers, gwenview → loupe) so no Qt theming is needed. If a Qt app is added later, install qt6ct + set `QT_QPA_PLATFORMTHEME` then.
 
 ### boot.sh — Pre-boot UI + TPM2 (pacman: 2)
 - **Plymouth:** plymouth (script-module splash — custom `arche` theme lives in `tools/plymouth/arche/`)

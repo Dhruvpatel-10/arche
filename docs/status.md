@@ -33,8 +33,9 @@ Last updated: 2026-04-18
 | `gtk`                                | Done    | Fully templated (no stow — all visual)          |
 | `btop`                               | Done    | System monitor config                           |
 | `tmux`                               | Done    | Terminal multiplexer config                     |
-| `kvantum`                            | Done    | Qt style engine (Ember theme)                   |
-| `qt6ct`                              | Done    | Qt6 color palette (config is templated)         |
+| `electron-flags`                     | Done    | Electron Wayland/Ozone flags — flat template |
+| ~~`kvantum`~~                        | Removed | Qt style engine dropped — we no longer use any Qt apps |
+| ~~`qt5ct`/`qt6ct`/`kdeglobals`~~     | Removed | Qt theming dropped entirely — we replaced all Qt apps with GTK4/libadwaita equivalents (okular → papers, gwenview → loupe) |
 | `pipewire`                           | Done    | Audio daemon config                             |
 | `wireplumber`                        | Done    | Audio session manager config                    |
 | `vivaldi`                            | Done    | Browser flags                                   |
@@ -149,8 +150,8 @@ Last updated: 2026-04-18
 |-----|-----------------------------------------------|----------|---------|
 | G4  | MPV shaders present but not activated         | Low      | Open    |
 | J8  | Orphan packages not cleaned                   | Low      | Open    |
-| T1  | Qt6ct Ember.conf has hardcoded colors (needs template) | Medium | Open |
-| T2  | Kvantum Ember.kvconfig has hardcoded colors (needs template) | Medium | Open |
+| ~~T1~~ | ~~Qt6ct Ember.conf has hardcoded colors~~ | — | Resolved — Qt theming removed entirely (no Qt apps left) |
+| ~~T2~~ | ~~Kvantum Ember.kvconfig has hardcoded colors~~ | — | Resolved — Qt theming removed entirely |
 | T3  | CSS templates hardcode font-size/border-radius instead of using theme vars | Low | Open |
 | Q1  | Quickshell theme values duplicate schema.sh (should be rendered from templates/active eventually — D023 follow-up) | Medium | Open |
 | B1  | 95-boot-cleanup.hook prunes old kernels but not stale UKIs in /boot/EFI/Linux — D024 follow-up | Low | Open |

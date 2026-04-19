@@ -15,8 +15,8 @@ PACMAN_PKGS=(
     # Media
     mpv
     imagemagick              # CLI image manipulation
-    okular                   # PDF/EPUB viewer + annotation
-    gwenview                 # image viewer
+    papers                   # GTK4/libadwaita PDF/EPUB/DjVu viewer (modern Evince successor)
+    loupe                    # GTK4/libadwaita image viewer
     kdenlive                 # video editor
 
     # Recording
