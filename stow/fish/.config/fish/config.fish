@@ -43,3 +43,7 @@ alias printaienv "printenv | grep -E 'GEMINI|OPENAI|GROQ|ANTHROPIC'"
 
 set -l local_config $__fish_config_dir/local.fish
 test -f $local_config; and source $local_config
+
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH
