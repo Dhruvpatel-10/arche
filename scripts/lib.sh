@@ -510,8 +510,12 @@ _theme_reload() {
     local component="$1"
     case "$component" in
         kitty)
-            if pgrep -x kitty &>/dev/null; then
-                kill -SIGUSR1 $(pgrep -x kitty) 2>/dev/null && log_ok "Reloaded Kitty"
+            # Scope to current user — stray kitty PIDs from other users would EPERM the
+            # kill, bubble up a non-zero return through the function, and trip set -e.
+            if pids=$(pgrep -x -u "$USER" kitty 2>/dev/null); then
+                # shellcheck disable=SC2086
+                kill -SIGUSR1 $pids 2>/dev/null || true
+                log_ok "Reloaded Kitty"
             fi
             ;;
         starship)
