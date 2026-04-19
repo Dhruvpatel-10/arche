@@ -39,6 +39,10 @@ PACMAN_PKGS=(
     # Bluetooth
     bluez
     bluez-utils
+    bluetui                  # TUI for pairing/managing bluetooth (Super+Ctrl+B)
+
+    # Network TUI
+    impala                   # TUI for WiFi (Super+Ctrl+W)
 
     # Docker
     # Rootless is preferred (no docker group = no root-equivalent access), but
