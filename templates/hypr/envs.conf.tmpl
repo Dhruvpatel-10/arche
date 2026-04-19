@@ -9,3 +9,10 @@ exec-once = hyprctl setcursor ${CURSOR_THEME} ${CURSOR_SIZE}
 # ─── Toolkit ───
 
 env = GDK_SCALE,2
+
+# Route Qt apps through qt6ct so icon + style lookups follow the XDG
+# theme (~/.config/qt6ct/qt6ct.conf points at Papirus-Dark + adw-gtk).
+# Without this Qt falls back to hicolor and QIcon::fromTheme misses any
+# icon not shipped by hicolor — breaks Quickshell iconPath for Slack,
+# YouTube, Vivaldi, etc.
+env = QT_QPA_PLATFORMTHEME,qt6ct
