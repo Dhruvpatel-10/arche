@@ -35,6 +35,7 @@ PACMAN_PKGS=(
     # Desktop apps
     qbittorrent
     kdeconnect               # phone integration
+    kio-extras               # KIO workers (tags, recentdocuments, mtp, …) — kdeconnectd resolves clipboard URLs through KIO
 
     # Bluetooth
     bluez
