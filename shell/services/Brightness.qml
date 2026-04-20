@@ -53,6 +53,12 @@ QtObject {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: root.query.running = true
+        // Re-entry guard: brightnessctl normally returns in <10ms, but if
+        // the previous invocation is still in flight skip this tick rather
+        // than stomp `running` on the active Process.
+        onTriggered: {
+            if (root.query.running) return
+            root.query.running = true
+        }
     }
 }

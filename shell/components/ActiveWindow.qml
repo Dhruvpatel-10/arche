@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell.Hyprland
-import ".."
+import "../theme"
 
 // ActiveWindow — focused-toplevel title, truncated. Reads directly from
 // Hyprland.activeToplevel; updates automatically as focus changes. Shows
@@ -11,7 +11,7 @@ import ".."
 // Kept narrow so it never fights the clock for center space.
 Item {
     id: root
-    property int maxTextWidth: 220
+    property int maxTextWidth: Sizing.px(220)
 
     readonly property var _tl: Hyprland.activeToplevel
     readonly property string _cls: {
@@ -35,33 +35,34 @@ Item {
     Row {
         id: row
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        spacing: Spacing.sm
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: root._cls.length > 0
             text: root._cls
-            color: Theme.fg
+            color: Colors.fg
             font {
-                family: Theme.fontSans
-                pixelSize: Theme.fontCaption
+                family: Typography.fontSans
+                pixelSize: Typography.fontCaption
                 weight: Font.DemiBold
             }
             elide: Text.ElideRight
         }
         Rectangle {
             visible: root._cls.length > 0 && root._title !== "Desktop"
-            width: 1; height: 10
-            color: Theme.border
+            width: Shape.borderThin
+            height: Sizing.px(10)
+            color: Colors.border
             anchors.verticalCenter: parent.verticalCenter
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root._title
-            color: Theme.fgMuted
+            color: Colors.fgMuted
             font {
-                family: Theme.fontSans
-                pixelSize: Theme.fontCaption
+                family: Typography.fontSans
+                pixelSize: Typography.fontCaption
                 weight: Font.Medium
             }
             elide: Text.ElideRight

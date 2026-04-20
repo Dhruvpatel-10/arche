@@ -1,81 +1,164 @@
 import QtQuick
 import Quickshell.Services.Mpris
-import ".."
+import "../theme"
 
+// MediaCard — compact "now playing" tile for the control center drawer.
+//
+// Player selection is an explicit multi-step binding, not a chained
+// `.find() ?? values[0] ?? null`. Two reasons:
+//   1) `Mpris.players` is a QML model; its `.values` proxy changes on
+//      every player add/remove. The binding re-evaluates on that signal,
+//      so we always resolve against the *current* list — no cached refs.
+//   2) Explicit iteration makes it obvious that null is the intended
+//      empty state (no players at all), which drives `visible` below.
+//
+// Pitfall #12: never cache `MprisPlayer` references across model resets.
+// The binding below is derived, not cached — each re-evaluation hands
+// back a fresh reference from the live model.
 Rectangle {
     id: root
-    readonly property MprisPlayer player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
 
-    implicitHeight: 72
-    color: Theme.bgAlt
-    radius: Theme.radiusTile
+    readonly property MprisPlayer player: {
+        const list = Mpris.players?.values
+        if (!list || list.length === 0) return null
+        for (let i = 0; i < list.length; i++)
+            if (list[i].isPlaying) return list[i]
+        return list[0]
+    }
+
+    implicitHeight: Sizing.px(72)
+    color: Colors.bgAlt
+    radius: Shape.radiusTile
     visible: player !== null
+    clip: true
+
+    // Nudge MPRIS players that don't emit positionChanged on a schedule.
+    // Quickshell's MprisPlayer docs sanction calling `positionChanged()` as
+    // a manual poll — Quickshell then re-reads `player.position` off the
+    // bus. Without this, VLC / mpv / some browsers stop updating position
+    // between metadata changes and the progress bar freezes. Cheap: one
+    // D-Bus round-trip per second while a player is actively playing.
+    Timer {
+        interval: 1000
+        running: root.visible && (root.player?.isPlaying ?? false)
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.player?.positionChanged()
+    }
 
     Row {
-        anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-        spacing: 12
+        anchors {
+            fill: parent
+            leftMargin: Spacing.md
+            rightMargin: Spacing.md
+        }
+        spacing: Spacing.md
 
-        Image {
-            width: 52; height: 52
+        // Album art with placeholder fallback while loading / missing.
+        // Wrapper Rectangle owns the radius + clip so the art rounds to
+        // the same corner as the placeholder — otherwise Ready art drew
+        // sharp corners against a rounded surface.
+        Rectangle {
+            id: art
+            width: Sizing.px(52)
+            height: Sizing.px(52)
             anchors.verticalCenter: parent.verticalCenter
-            source: root.player?.trackArtUrl ?? ""
-            fillMode: Image.PreserveAspectCrop
-            smooth: true
-            asynchronous: true
-            Rectangle {
-                visible: parent.status !== Image.Ready
+            color: Colors.tileBg
+            radius: Shape.radiusSm
+            clip: true
+
+            Image {
+                id: artImg
                 anchors.fill: parent
-                color: Theme.tileBg
-                radius: 6
+                source: root.player?.trackArtUrl ?? ""
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                asynchronous: true
+                visible: status === Image.Ready
             }
-            layer.enabled: true
         }
 
+        // Title + artist column. Width computed so the controls row on
+        // the right never wraps: total - art - margins - controls.
         Column {
-            width: parent.width - 52 - 12 - 108 - 12
+            width: parent.width - art.width - controls.width - Spacing.md * 2
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: Spacing.xs
+
             Text {
                 text: root.player?.trackTitle ?? "Nothing playing"
-                color: Theme.fg
-                font { family: Theme.fontSans; pixelSize: Theme.fontSize; weight: Font.DemiBold }
+                color: Colors.fg
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontBody
+                    weight: Font.DemiBold
+                }
                 elide: Text.ElideRight
                 width: parent.width
             }
             Text {
                 text: root.player?.trackArtist ?? ""
-                color: Theme.fgMuted
-                font { family: Theme.fontSans; pixelSize: Theme.fontSizeSmall }
+                color: Colors.fgMuted
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontCaption
+                }
                 elide: Text.ElideRight
                 width: parent.width
             }
         }
 
+        // Transport controls. Height matches the largest child so the
+        // row's verticalCenter aligns with the play button.
         Row {
-            width: 108
-            height: 40   // match the largest child so verticalCenter has room
+            id: controls
+            width: Sizing.px(108)
+            height: Sizing.px(40)
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
+            spacing: Spacing.xs
 
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                icon: "\uf048"; iconSize: 11
+                icon: "\uf048"
+                iconSize: Sizing.fpx(11)
                 onClicked: root.player?.previous()
             }
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 40; height: 40; radius: 20
-                color: Theme.fg
-                iconColor: Theme.bgAlt
+                width: Sizing.px(40)
+                height: Sizing.px(40)
+                radius: width / 2
+                color: Colors.fg
+                iconColor: Colors.bgAlt
                 icon: root.player?.isPlaying ? "\uf04c" : "\uf04b"
-                iconSize: 14
+                iconSize: Sizing.fpx(14)
                 onClicked: root.player?.togglePlaying()
             }
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                icon: "\uf051"; iconSize: 11
+                icon: "\uf051"
+                iconSize: Sizing.fpx(11)
                 onClicked: root.player?.next()
             }
+        }
+    }
+
+    // Thin progress strip along the bottom edge. Hidden when the player
+    // doesn't report position / length so it doesn't hang at 0 for
+    // streams or ad-hoc sources.
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: Sizing.px(2)
+        color: Colors.border
+        opacity: Effects.opacitySubtle
+        visible: (root.player?.length ?? 0) > 0
+
+        Rectangle {
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            width: parent.width * Math.max(0, Math.min(1,
+                (root.player?.position ?? 0) / (root.player?.length ?? 1)))
+            color: Colors.accent
+            Behavior on width { Anim { type: "fast" } }
         }
     }
 }

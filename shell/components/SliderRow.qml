@@ -1,7 +1,10 @@
 import QtQuick
 import QtQuick.Controls
-import ".."
+import "../theme"
 
+// SliderRow — icon + horizontal slider + percent readout. Scroll over the
+// slider to step the value; right-click forwards `rightClicked()` so the
+// caller can open a companion tool (wiremix, etc.).
 Item {
     id: root
     property string icon: ""
@@ -11,28 +14,30 @@ Item {
     signal moved(real v)
     signal rightClicked()
 
-    implicitHeight: 36
+    implicitHeight: Sizing.px(36)
 
     Row {
         anchors.fill: parent
-        spacing: 12
+        spacing: Spacing.md
 
         Rectangle {
-            width: 28; height: 28; radius: 14
+            width: Sizing.px(28)
+            height: Sizing.px(28)
+            radius: width / 2
             color: "transparent"
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 anchors.centerIn: parent
                 text: root.icon
-                color: Theme.fg
-                font { family: Theme.fontMono; pixelSize: Theme.fontTitle }
+                color: Colors.fg
+                font { family: Typography.fontMono; pixelSize: Typography.fontTitle }
             }
         }
 
         Slider {
             id: slider
-            width: parent.width - 28 - 48 - 12 * 2
-            height: 28
+            width: parent.width - Sizing.px(28) - Sizing.px(48) - Spacing.md * 2
+            height: Sizing.px(28)
             anchors.verticalCenter: parent.verticalCenter
             from: 0; to: 1
             value: root.value
@@ -42,24 +47,29 @@ Item {
                 x: slider.leftPadding
                 y: slider.topPadding + slider.availableHeight / 2 - height / 2
                 width: slider.availableWidth
-                height: 18
-                radius: 9
-                color: Theme.bgAlt
+                height: Sizing.px(18)
+                radius: height / 2
+                color: Colors.bgAlt
                 Rectangle {
                     width: slider.visualPosition * parent.width
                     height: parent.height
-                    radius: 9
-                    color: Theme.fg
+                    radius: parent.radius
+                    color: Colors.fg
                 }
             }
             handle: Item {}
 
+            // Wheel scrolls the value. Intentionally does NOT write
+            // `slider.value` imperatively — that would break the
+            // `value: root.value` binding and the thumb would stop
+            // following external mutations (OSD, wiremix, volume keys).
+            // We only emit `root.moved(next)`; the parent updates
+            // `root.value`, which re-flows through the binding.
             WheelHandler {
                 acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                 onWheel: event => {
                     const delta = event.angleDelta.y > 0 ? root.scrollStep : -root.scrollStep
                     const next = Math.max(0, Math.min(1, slider.value + delta))
-                    slider.value = next
                     root.moved(next)
                 }
             }
@@ -71,11 +81,15 @@ Item {
         }
 
         Text {
-            width: 48
+            width: Sizing.px(48)
             anchors.verticalCenter: parent.verticalCenter
             text: root.percent + "%"
-            color: Theme.fg
-            font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.Medium }
+            color: Colors.fg
+            font {
+                family: Typography.fontSans
+                pixelSize: Typography.fontBody
+                weight: Font.Medium
+            }
             horizontalAlignment: Text.AlignRight
         }
     }

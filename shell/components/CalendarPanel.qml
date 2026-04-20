@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import ".."
 import "../theme"
@@ -8,7 +9,8 @@ import "../theme"
 //   * StyledWindow + scrim
 //   * Open/close slide animation (offsetScale)
 //   * Ticking clock
-//   * Multi-monitor dismiss on focus change
+//   * Multi-monitor: bind `screen` to focused monitor (drawer follows focus)
+//   * Keyboard focus + Escape dismissal
 //   * viewMonth / viewYear / selectedDate state + nav helpers
 //   * Fade swap animation on month change
 //
@@ -27,9 +29,25 @@ StyledWindow {
         Anim { type: "spatial" }
     }
 
+    // Multi-monitor: render on the currently-focused monitor. Same
+    // pattern as PickerDialog/ControlCenter — resolve the Hyprland
+    // monitor to the matching ShellScreen by name.
+    screen: {
+        const fm = Hyprland.focusedMonitor
+        if (!fm) return null
+        const list = Quickshell.screens
+        for (let i = 0; i < list.length; i++)
+            if (list[i].name === fm.name) return list[i]
+        return null
+    }
+
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     exclusiveZone: 0
+
+    // OnDemand keyboard focus: the FocusScope below grabs focus and
+    // handles Escape dismissal.
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     // ─── View state ────────────────────────────────────────────────────
     property int viewMonth: new Date().getMonth()
@@ -45,7 +63,7 @@ StyledWindow {
         selectedDate = d
     }
 
-    // ─── Clock + multi-monitor dismiss + scrim ─────────────────────────
+    // ─── Clock + scrim + focus ────────────────────────────────────────
     Timer {
         id: clockTick
         property date time: new Date()
@@ -56,18 +74,24 @@ StyledWindow {
         onTriggered: time = new Date()
     }
 
-    Connections {
-        target: Hyprland
-        function onFocusedMonitorChanged() {
-            if (!Ui.calendarOpen) return
-            const fm = Hyprland.focusedMonitor
-            if (fm && root.screen && fm.name !== root.screen.name)
-                Ui.calendarOpen = false
-        }
+    // Note: no focused-monitor-changed dismiss handler. The `screen`
+    // binding above already follows Hyprland.focusedMonitor — the panel
+    // simply hops to the new monitor (matching PickerDialog's UX).
+
+    // Escape dismissal. FocusScope pulls the layer's OnDemand keyboard
+    // focus so Esc fires here. Transparent; doesn't consume mouse events.
+    FocusScope {
+        anchors.fill: parent
+        focus: root.shouldBeActive
+        Keys.onEscapePressed: Ui.calendarOpen = false
     }
 
+    // Scrim: left-click outside the card dismisses. Right-clicks fall
+    // through — the scrim shouldn't swallow context menus on whatever
+    // surface lives below us.
     MouseArea {
         anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
         onClicked: Ui.calendarOpen = false
     }
 
@@ -78,44 +102,34 @@ StyledWindow {
         anchors.topMargin: Spacing.xs + (-card.height - Spacing.sm) * root.offsetScale
         anchors.horizontalCenter: parent.horizontalCenter
         width: view.calendarWidth
-        height: view.implicitHeight + Theme.padLg * 2
-        color: Theme.card
-        radius: Theme.radiusLg
-        border.color: Theme.border
-        border.width: 1
+        height: view.implicitHeight + Spacing.lg * 2
+        color: Colors.card
+        radius: Shape.radiusLg
+        border.color: Colors.border
+        border.width: Shape.borderThin
         opacity: 1 - root.offsetScale
 
         // Swallow clicks so the scrim doesn't dismiss us.
         MouseArea { anchors.fill: parent }
 
-        // Paired fade-swap animation on month change. The animation
-        // target is the whole CalendarView so the grid + week column +
-        // nav move as one.
+        // Paired fade-swap animation on month change. Leaving half uses
+        // the `accel` preset (standardAccel — drives *into* the exit),
+        // arriving half uses `decel` (standardDecel — eases *out* of the
+        // entrance). The animation target is the whole CalendarView so
+        // the grid + week column + nav move as one.
         SequentialAnimation {
             id: swapAnim
             property int nextMonth: root.viewMonth
             property int nextYear:  root.viewYear
 
-            NumberAnimation {
-                target: view; property: "opacity"
-                to: 0
-                duration: Motion.durationFast
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.standardAccel
-            }
+            Anim { target: view; property: "opacity"; to: 0; type: "accel" }
             ScriptAction {
                 script: {
                     root.viewMonth = swapAnim.nextMonth
                     root.viewYear  = swapAnim.nextYear
                 }
             }
-            NumberAnimation {
-                target: view; property: "opacity"
-                to: 1
-                duration: Motion.durationStd
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.standardDecel
-            }
+            Anim { target: view; property: "opacity"; to: 1; type: "decel" }
         }
 
         CalendarView {
@@ -123,7 +137,7 @@ StyledWindow {
             anchors {
                 left: parent.left; right: parent.right
                 top: parent.top
-                margins: Theme.padLg
+                margins: Spacing.lg
             }
             viewMonth:    root.viewMonth
             viewYear:     root.viewYear

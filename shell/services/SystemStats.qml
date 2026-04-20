@@ -3,15 +3,19 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// SystemStats — CPU (delta-based, not a process count), RAM, disk. 2s
-// poll.
+// SystemStats — CPU (delta-based, not a process count), RAM, disk.
 //
-// CPU + RAM read via FileView on /proc/stat and /proc/meminfo directly
-// rather than shelling out — no fork-exec overhead per tick.
-// Disk still uses df because there's no cheap /proc equivalent.
+// Two timers:
+//   * cpuMemTimer — 2s, reads /proc/stat + /proc/meminfo via FileView.
+//     No fork-exec overhead per tick, so cheap to poll fast.
+//   * diskTimer — 30s, shells out to df. Disk usage changes slowly;
+//     polling every 2s wastes process spawns for a reading that barely
+//     moves between ticks. 30s is still responsive enough that a large
+//     file operation surfaces inside a typical drawer-open session.
 //
 // refCount: consumers mount a `Ref { service: SystemStats }` to activate
-// polling. When no one's watching the stats, the timer stops.
+// polling. Both timers gate on refCount > 0. When no one's watching, all
+// polling stops.
 QtObject {
     id: root
     property int cpu: 0
@@ -21,6 +25,10 @@ QtObject {
     // Ref-count: incremented by components/Ref.qml, which decrements on
     // destroy. While zero, polling is off.
     property int refCount: 0
+
+    // Poll intervals — named so the trade-off isn't buried in the Timer block.
+    readonly property int _cpuMemIntervalMs: 2000    // /proc reads, no fork
+    readonly property int _diskIntervalMs:   30000   // df spawn, keep slow
 
     property var _prev: ({ idle: 0, total: 0 })
 
@@ -62,14 +70,28 @@ QtObject {
         }
     }
 
-    property Timer timer: Timer {
-        interval: 2000
+    // Fast poll: CPU + RAM only. Hits /proc files, no processes spawned.
+    property Timer cpuMemTimer: Timer {
+        interval: root._cpuMemIntervalMs
         running: root.refCount > 0
         repeat: true
         triggeredOnStart: true
         onTriggered: {
             root._cpuFile.reload()
             root._memFile.reload()
+        }
+    }
+
+    // Slow poll: disk. Spawns df; keep infrequent. Re-entry guard in case
+    // df is unusually slow (network mount, etc.) and the next tick arrives
+    // while the previous is still running.
+    property Timer diskTimer: Timer {
+        interval: root._diskIntervalMs
+        running: root.refCount > 0
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            if (root._dfProc.running) return
             root._dfProc.running = true
         }
     }

@@ -1,6 +1,14 @@
 import QtQuick
 import ".."
+import "../theme"
 
+// NotificationItem — single row in the notifications list. Icon disc on
+// the left, summary / body / meta in the middle, dismiss X on the right.
+// Click body to trigger the default action; Meta-click to dismiss without
+// invoking the app.
+//
+// Motion uses the shared Anim / CAnim presets so hover recolor and
+// dismiss-fade match the rest of the shell — no bespoke durations.
 Rectangle {
     id: root
     required property var entry
@@ -25,19 +33,21 @@ Rectangle {
         Notifs.invokeDefault(appName, appIcon, body)
     }
 
-    implicitHeight: 58
-    color: hoverArea.containsMouse ? Theme.tileBgActive : Theme.tileBg
-    radius: Theme.radiusTile
-    opacity: entry.dismissed ? 0.55 : 1.0
-    Behavior on opacity { NumberAnimation { duration: 180 } }
-    Behavior on color { ColorAnimation { duration: 120 } }
+    implicitHeight: Sizing.px(58)
+    color: hoverArea.containsMouse ? Colors.tileBgActive : Colors.tileBg
+    radius: Shape.radiusTile
+    opacity: entry.dismissed ? Effects.opacityMuted : 1.0
+
+    Behavior on opacity { Anim  { type: "fast" } }
+    Behavior on color   { CAnim { type: "fast" } }
 
     MouseArea {
         id: hoverArea
         anchors.fill: parent
-        // Exclude the X button region (24 width + 12 Row rightMargin = 36)
-        // so clicks on X don't bleed into the body's default-action handler.
-        anchors.rightMargin: 36
+        // Exclude the X button region so clicks on X don't bleed into
+        // the body's default-action handler. Matches the right-side
+        // layout below: dismiss button (24) + Row rightMargin (12) = 36.
+        anchors.rightMargin: Sizing.px(36)
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: (mouse) => {
@@ -50,51 +60,68 @@ Rectangle {
     }
 
     Row {
-        anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-        spacing: 10
+        anchors {
+            fill: parent
+            leftMargin: Spacing.md
+            rightMargin: Spacing.md
+        }
+        spacing: Spacing.md
 
         Rectangle {
-            width: 36; height: 36; radius: 18
-            color: Theme.bgAlt
+            width: Sizing.px(36)
+            height: Sizing.px(36)
+            radius: width / 2
+            color: Colors.bgAlt
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 anchors.centerIn: parent
                 text: "\uf0f3"
-                color: Theme.fg
-                font { family: Theme.fontMono; pixelSize: Theme.fontLabel }
+                color: Colors.fg
+                font { family: Typography.fontMono; pixelSize: Typography.fontLabel }
             }
         }
 
         Column {
-            width: parent.width - 36 - 10 - 24 - 10
+            width: parent.width - Sizing.px(36) - Spacing.md
+                   - Sizing.px(24) - Spacing.md
             anchors.verticalCenter: parent.verticalCenter
             spacing: 1
             Text {
                 text: root.entry.summary
-                color: Theme.fg
-                font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.DemiBold }
-                elide: Text.ElideRight; width: parent.width
+                color: Colors.fg
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontBody
+                    weight: Font.DemiBold
+                }
+                elide: Text.ElideRight
+                width: parent.width
             }
             Text {
                 text: root.entry.body
-                color: Theme.fgMuted
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption }
-                elide: Text.ElideRight; width: parent.width
+                color: Colors.fgMuted
+                font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
+                elide: Text.ElideRight
+                width: parent.width
                 visible: text.length > 0
             }
             Text {
                 text: (root.entry.appName || "")
                       + (root.entry.appName ? " · " : "")
                       + root.relativeTime(root.entry.time)
-                color: Theme.fgDim
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption }
-                elide: Text.ElideRight; width: parent.width
+                color: Colors.fgDim
+                font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
+                elide: Text.ElideRight
+                width: parent.width
             }
         }
 
         IconButton {
-            width: 24; height: 24; radius: 12
-            icon: "\uf00d"; iconSize: 9
+            width: Sizing.px(24)
+            height: Sizing.px(24)
+            radius: width / 2
+            icon: "\uf00d"
+            iconSize: Sizing.fpx(9)
             color: "transparent"
             anchors.verticalCenter: parent.verticalCenter
             onClicked: Notifs.removeFromHistory(root.entry)

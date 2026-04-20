@@ -18,8 +18,15 @@ import Quickshell.Wayland
 //       ...
 //   }
 //
-// Without a name, the default "arche-shell" namespace matches everything
-// the shell paints.
+// Without a `name`, the default "arche-shell" namespace is used — which
+// matches every unnamed arche surface, so always set a name.
+//
+// Pitfall #6: the Wayland namespace is *construction-only*. The attached
+// property binding below is evaluated before the surface commits, so the
+// ternary is effectively a compile-time expression — callers that set
+// `name` as a string literal at the top of their subclass get the
+// expected namespace. Do NOT mutate `name` at runtime; the new value
+// won't reach the compositor.
 PanelWindow {
     id: root
     property string name: ""

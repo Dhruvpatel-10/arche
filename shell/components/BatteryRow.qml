@@ -1,19 +1,19 @@
 import QtQuick
 import Quickshell.Services.UPower
-import ".."
+import "../theme"
 
 // BatteryRow — surfaces the primary battery (UPower.displayDevice):
 // state icon, percent, and time-to-full/time-to-empty. Hides itself on
 // desktops / systems with no battery. Sits between the stat cards and
-// the media card.
+// the media card in the control-center drawer.
 Rectangle {
     id: root
     readonly property var dev: UPower.displayDevice
     visible: dev.isPresent
 
-    implicitHeight: 56
-    color: Theme.bgAlt
-    radius: Theme.radiusTile
+    implicitHeight: Sizing.px(56)
+    color: Colors.bgAlt
+    radius: Shape.radiusTile
 
     readonly property real pct:     (dev.percentage ?? 0) * 100
     readonly property int  state:   dev.state ?? 0
@@ -26,9 +26,9 @@ Rectangle {
     readonly property string glyph: charging ? "\uf0e7"
                                     : onAC    ? "\uf1e6"
                                               : "\uf240"
-    readonly property color tint: pct < 15 ? Theme.critical
-                                  : pct < 30 ? Theme.warn
-                                              : Theme.fg
+    readonly property color tint: pct < 15 ? Colors.critical
+                                  : pct < 30 ? Colors.warn
+                                              : Colors.fg
 
     function _formatSecs(s) {
         if (!s || s <= 0) return ""
@@ -50,39 +50,46 @@ Rectangle {
 
     Row {
         anchors {
-            left: parent.left;  leftMargin: 14
-            right: parent.right; rightMargin: 14
+            left: parent.left;   leftMargin: Spacing.lg - 2   // 14 px
+            right: parent.right; rightMargin: Spacing.lg - 2
             verticalCenter: parent.verticalCenter
         }
-        spacing: 12
+        spacing: Spacing.md
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 34; height: 34; radius: 17
-            color: root.charging ? Theme.accent : Theme.tileBg
+            width: Sizing.px(34)
+            height: Sizing.px(34)
+            radius: width / 2
+            color: root.charging ? Colors.accent : Colors.tileBg
             Text {
                 anchors.centerIn: parent
                 text: root.glyph
-                color: root.charging ? Theme.bgAlt : root.tint
-                font { family: Theme.fontMono; pixelSize: Theme.fontBody }
+                color: root.charging ? Colors.bgAlt : root.tint
+                font { family: Typography.fontMono; pixelSize: Typography.fontBody }
             }
         }
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 34 - 12 - pctText.width - 12
+            width: parent.width - Sizing.px(34) - Spacing.md
+                   - pctText.width - Spacing.md
             spacing: 2
             Text {
                 text: "Battery"
-                color: Theme.fg
-                font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.DemiBold }
+                color: Colors.fg
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontBody
+                    weight: Font.DemiBold
+                }
                 elide: Text.ElideRight
                 width: parent.width
             }
             Text {
                 text: root.timeStr
-                color: Theme.fgMuted
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption }
+                color: Colors.fgMuted
+                font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
                 elide: Text.ElideRight
                 width: parent.width
             }
@@ -94,8 +101,8 @@ Rectangle {
             text: Math.round(root.pct) + "%"
             color: root.tint
             font {
-                family: Theme.fontSans
-                pixelSize: Theme.fontLabel
+                family: Typography.fontSans
+                pixelSize: Typography.fontLabel
                 weight: Font.DemiBold
                 features: { "tnum": 1 }
             }

@@ -1,25 +1,32 @@
 import QtQuick
 import QtQuick.Layouts
-import ".."
+import "../theme"
 
+// Pill — small rounded container with a state layer for hover/press.
+// Used in the bar for status glyphs (wifi / bt / battery), in the
+// notifications list for the "Clear All" chip, and anywhere the shell
+// wants a compact interactive badge.
+//
+// `content` is a default alias onto an inner RowLayout — callers just
+// drop children and the layout arranges them horizontally.
 Rectangle {
     id: root
     default property alias content: row.data
-    property int padding: Theme.pad
-    property int spacing: 8
+    property int padding: Spacing.md
+    property int spacing: Spacing.smMd   // default gap between pill items
     signal clicked()
     signal scrolled(int delta)
 
-    color: Theme.pillBg
-    radius: Theme.radiusPill
-    height: 28
+    color: Colors.pillBg
+    radius: Shape.radiusPill
+    height: Sizing.px(28)
     implicitWidth: row.implicitWidth + padding * 2
     clip: true
 
     StateLayer {
         anchors.fill: parent
         source: mouseArea
-        tint: Theme.fg
+        tint: Colors.fg
     }
 
     RowLayout {

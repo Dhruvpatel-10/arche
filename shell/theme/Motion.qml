@@ -33,6 +33,13 @@ QtObject {
     readonly property int durationInstant: 80
     readonly property int durationSlow:    320
 
+    // ─── Named semantic aliases ────────────────────────────────────────
+    // durationDialog   StyledDialog enter/exit — aliases durationStd today;
+    //                  promoted so a later tune doesn't sweep every std use
+    // durationAdaptive bar surface opacity crossfade on fullscreen toggle
+    readonly property int durationDialog:   durationStd
+    readonly property int durationAdaptive: durationStd
+
     // ─── Easing curves (cubic bezier control points) ───────────────────
     // QML exposes BezierSpline easings as an array of control points
     // [x1,y1, x2,y2, endx, endy]. The last pair MUST be (1,1); we repeat
@@ -63,6 +70,13 @@ QtObject {
     // Expressive Fast Spatial — same overshoot, tighter profile. For
     // lighter movements like a button press-release.
     readonly property var expressiveFastSpatial: [0.42, 1.67, 0.21, 0.90, 1.0, 1.0]
+
+    // ─── Named semantic easing aliases ─────────────────────────────────
+    // easeDialog    StyledDialog — use standard curve (no overshoot; cards
+    //               should arrive calmly, not bounce)
+    // easeAdaptive  bar adaptive opacity — standard curve, same reason
+    readonly property var easeDialog:   standard
+    readonly property var easeAdaptive: standard
 
     // ─── Legacy named easings (enum form) ──────────────────────────────
     // New code: use the bezier-spline arrays above via

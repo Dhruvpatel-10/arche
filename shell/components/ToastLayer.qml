@@ -1,17 +1,22 @@
 import QtQuick
 import Quickshell
 import ".."
+import "../theme"
 
+// ToastLayer — top-right layer surface that stacks active notification
+// toasts. Sized to exactly its content so Hyprland's default blur rule
+// never halos transparent padding.
 StyledWindow {
     id: root
     name: "toasts"
     visible: Notifs.toasts.length > 0
     anchors { top: true; right: true }
-    margins { top: Theme.barHeight + 6; right: 10 }
-    // Size the surface to exactly the content so Hyprland's layer blur
-    // (on namespace quickshell) doesn't halo transparent padding.
+    margins {
+        top: Sizing.barHeight + Spacing.sm   // bar height + small gap
+        right: Spacing.md
+    }
     implicitWidth: list.width
-    implicitHeight: Math.min(list.implicitHeight, 500)
+    implicitHeight: Math.min(list.implicitHeight, Sizing.px(500))
     color: "transparent"
     exclusiveZone: 0
 
@@ -19,8 +24,8 @@ StyledWindow {
         id: list
         anchors.left: parent.left
         anchors.top: parent.top
-        width: 344
-        spacing: 8
+        width: Sizing.px(344)
+        spacing: Spacing.smMd   // matches NotificationsList rhythm
 
         Repeater {
             model: Notifs.toasts

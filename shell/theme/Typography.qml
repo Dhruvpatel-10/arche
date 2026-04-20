@@ -13,6 +13,7 @@ import "."
 //   fontBody     14  default body copy, list row titles
 //   fontLabel    15  emphasized row title, small-icon glyphs
 //   fontTitle    17  modal search input, card section title
+//   fontIcon     16  default glyph size for the Icon primitive
 //   fontDisplay  30  hero numerics only (clock, one big % in a card)
 QtObject {
     // ─── Families ──────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ QtObject {
     readonly property int fontBody:    Sizing.fpx(14)
     readonly property int fontLabel:   Sizing.fpx(15)
     readonly property int fontTitle:   Sizing.fpx(17)
+    readonly property int fontIcon:    Sizing.fpx(16)
     readonly property int fontDisplay: Sizing.fpx(30)
 
     // ─── Weight presets ────────────────────────────────────────────────

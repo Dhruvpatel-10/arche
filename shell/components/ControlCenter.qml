@@ -1,11 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import ".."
 import "../services"
+import "../theme"
 
 StyledWindow {
     id: root
@@ -26,10 +28,22 @@ StyledWindow {
         Anim { type: "spatial" }
     }
 
+    // Multi-monitor: bind the layer surface to the currently-focused
+    // monitor so the drawer opens where the user is looking, not on
+    // Quickshell.screens[0]. Same pattern as PickerDialog. Resolves
+    // Hyprland's HyprlandMonitor to the matching ShellScreen by name.
+    screen: {
+        const fm = Hyprland.focusedMonitor
+        if (!fm) return null
+        const list = Quickshell.screens
+        for (let i = 0; i < list.length; i++)
+            if (list[i].name === fm.name) return list[i]
+        return null
+    }
+
     // Full monitor (minus the bar) so a scrim MouseArea can dismiss on
-    // click-outside. This replaces HyprlandFocusGrab, which was global and
-    // swallowed clicks on every monitor. Because this PanelWindow lives on
-    // one screen only, external monitors stay fully interactive.
+    // click-outside. Because this PanelWindow lives on one screen only,
+    // external monitors stay fully interactive.
     //
     // Quickshell's default ExclusionMode.Auto already shrinks this layer
     // out of the bar's exclusive zone, so parent.top is just below the bar
@@ -38,23 +52,31 @@ StyledWindow {
     color: "transparent"
     exclusiveZone: 0
 
-    // Dismiss when the cursor moves to another monitor. Hyprland's
-    // follow_mouse=1 (default) makes focusedMonitor track the cursor, so
-    // hovering off this screen closes the drawer automatically.
-    Connections {
-        target: Hyprland
-        function onFocusedMonitorChanged() {
-            if (!Ui.controlCenterOpen) return
-            const fm = Hyprland.focusedMonitor
-            if (fm && root.screen && fm.name !== root.screen.name)
-                Ui.controlCenterOpen = false
-        }
+    // OnDemand: Wayland grants keyboard focus when the pointer enters the
+    // surface. The Item below grabs that focus and handles Escape.
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+
+    // Note: no focused-monitor-changed dismiss handler. The `screen`
+    // binding above already follows Hyprland.focusedMonitor — when focus
+    // shifts the drawer simply hops to the new monitor (matching
+    // PickerDialog's UX). Close it via Esc, click-outside, or the toggle.
+
+    // Escape dismissal. FocusScope pulls the layer's OnDemand keyboard
+    // focus so Esc fires here. Transparent; doesn't consume mouse events.
+    FocusScope {
+        anchors.fill: parent
+        focus: root.shouldBeActive
+        Keys.onEscapePressed: Ui.controlCenterOpen = false
     }
 
     // Scrim: clicks anywhere outside the card dismiss the drawer. Clicks on
     // the card itself hit the card's own MouseArea first and never reach us.
+    // Left button only — right-clicks on the scrim should fall through to
+    // whatever lives underneath (context menus, etc.) rather than being
+    // swallowed into a dismiss we didn't ask for.
     MouseArea {
         anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
         onClicked: Ui.controlCenterOpen = false
     }
 
@@ -63,15 +85,16 @@ StyledWindow {
         // Pin the card to the top-right corner just below the bar.
         // topMargin drifts up off-screen as offsetScale approaches 1.
         anchors.top: parent.top
-        anchors.topMargin: 4 + (-card.height - 12) * root.offsetScale
+        anchors.topMargin: Spacing.xs
+                           + (-card.height - Spacing.md) * root.offsetScale
         anchors.right: parent.right
-        anchors.rightMargin: 10
-        width: Theme.controlCenterWidth
-        height: body.implicitHeight + Theme.padLg * 2
-        color: Theme.card
-        radius: Theme.radiusLg
-        border.color: Theme.border
-        border.width: 1
+        anchors.rightMargin: Spacing.md
+        width: Sizing.px(420)
+        height: body.implicitHeight + Spacing.lg * 2
+        color: Colors.card
+        radius: Shape.radiusLg
+        border.color: Colors.border
+        border.width: Shape.borderThin
         opacity: 1 - root.offsetScale
 
         // Swallow clicks on the card so the scrim's dismiss handler doesn't
@@ -85,9 +108,9 @@ StyledWindow {
             id: body
             anchors {
                 fill: parent
-                margins: Theme.padLg
+                margins: Spacing.lg
             }
-            spacing: 12
+            spacing: Spacing.md
 
             // Header — clock / date / uptime / power
             RowLayout {
@@ -95,35 +118,39 @@ StyledWindow {
                 Column {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: 2
+                    spacing: Sizing.px(2)
                     Text {
                         text: Qt.formatTime(clockTick.time, "HH:mm")
-                        color: Theme.fg
-                        font { family: Theme.fontSans; pixelSize: Theme.fontSizeXL; weight: Font.DemiBold }
+                        color: Colors.fg
+                        font { family: Typography.fontSans; pixelSize: Typography.fontDisplay; weight: Font.DemiBold }
                     }
                     Row {
-                        spacing: 8
+                        spacing: Spacing.sm
                         Text {
                             text: Qt.formatDate(clockTick.time, "dddd, MMMM d")
-                            color: Theme.fgMuted
-                            font { family: Theme.fontSans; pixelSize: Theme.fontSize }
+                            color: Colors.fgMuted
+                            font { family: Typography.fontSans; pixelSize: Typography.fontBody }
                         }
-                        Rectangle {
+                        // Middot separator (U+2022) in fontCaption size so it rides
+                        // the baseline and reads as an intentional rule, not a speck.
+                        Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 3; height: 3; radius: 1.5
-                            color: Theme.fgDim
+                            text: "\u2022"
+                            color: Colors.fgDim
+                            opacity: Effects.opacityMuted
+                            font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
                         }
                         Text {
                             text: "up " + Uptime.human
-                            color: Theme.fgDim
-                            font { family: Theme.fontSans; pixelSize: Theme.fontSize }
+                            color: Colors.fgDim
+                            font { family: Typography.fontSans; pixelSize: Typography.fontBody }
                         }
                     }
                 }
                 IconButton {
                     Layout.alignment: Qt.AlignVCenter
                     icon: "\uf011"
-                    iconColor: Theme.critical
+                    iconColor: Colors.critical
                     onClicked: {
                         Ui.controlCenterOpen = false
                         Quickshell.execDetached(["arche-powermenu"])
@@ -135,20 +162,34 @@ StyledWindow {
             Grid {
                 width: parent.width
                 columns: 2
-                columnSpacing: 8
-                rowSpacing: 8
+                columnSpacing: Spacing.smMd
+                rowSpacing:    Spacing.smMd
 
                 ToggleTile {
-                    icon: "\uf1eb"
+                    icon: Net.radioOn ? "\uf1eb" : "\uf6ac"
                     label: "Wi-Fi"
-                    subtitle: "Connected"
-                    active: true
+                    subtitle: Net.radioOn
+                        ? (Net.connected ? Net.ssid : "On")
+                        : "Off"
+                    active: Net.radioOn
+                    onClicked: Net.toggle()
+                    onRightClicked: {
+                        Ui.controlCenterOpen = false
+                        Quickshell.execDetached(["arche-popup", "impala"])
+                    }
                 }
                 ToggleTile {
-                    icon: "\uf293"
+                    icon: Bt.powered ? "\uf293" : "\uf294"
                     label: "Bluetooth"
-                    subtitle: "On"
-                    active: true
+                    subtitle: Bt.powered
+                        ? (Bt.connected ? Bt.device : "On")
+                        : "Off"
+                    active: Bt.powered
+                    onClicked: Bt.toggle()
+                    onRightClicked: {
+                        Ui.controlCenterOpen = false
+                        Quickshell.execDetached(["arche-popup", "bluetui"])
+                    }
                 }
                 ToggleTile {
                     icon: "\uf1f6"
@@ -162,10 +203,9 @@ StyledWindow {
                     label: "Caffeine"
                     subtitle: Ui.caffeineOn ? "Keeping awake" : "Off"
                     active: Ui.caffeineOn
-                    onClicked: {
-                        Ui.caffeineOn = !Ui.caffeineOn
-                        IdleInhibitor.active = Ui.caffeineOn
-                    }
+                    // IdleInhibitor binds its systemd-inhibit process to
+                    // Ui.caffeineOn — flipping Ui.caffeineOn is enough.
+                    onClicked: Ui.caffeineOn = !Ui.caffeineOn
                 }
             }
 
@@ -181,7 +221,12 @@ StyledWindow {
                 }
             }
 
-            Rectangle { width: parent.width; height: 1; color: Theme.border; opacity: 0.5 }
+            Rectangle {
+                width: parent.width
+                height: Shape.borderThin
+                color: Colors.border
+                opacity: Effects.opacitySubtle
+            }
 
             SliderRow {
                 width: parent.width
@@ -201,14 +246,22 @@ StyledWindow {
                 onMoved: v => Brightness.set(v * 100)
             }
 
-            Rectangle { width: parent.width; height: 1; color: Theme.border; opacity: 0.5 }
+            Rectangle {
+                width: parent.width
+                height: Shape.borderThin
+                color: Colors.border
+                opacity: Effects.opacitySubtle
+            }
 
+            // Stats row. 8 px between cards → subtract 2*gap from total
+            // before dividing into three columns.
             Row {
                 width: parent.width
-                spacing: 8
-                StatCard { width: (parent.width - 16) / 3; icon: "\uf2db"; label: "CPU"; percent: SystemStats.cpu }
-                StatCard { width: (parent.width - 16) / 3; icon: "\uf538"; label: "RAM"; percent: SystemStats.ram }
-                StatCard { width: (parent.width - 16) / 3; icon: "\uf0a0"; label: "Disk"; percent: SystemStats.disk }
+                spacing: Spacing.smMd
+                readonly property int _cardWidth: (parent.width - spacing * 2) / 3
+                StatCard { width: parent._cardWidth; icon: "\uf2db"; label: "CPU";  percent: SystemStats.cpu }
+                StatCard { width: parent._cardWidth; icon: "\uf538"; label: "RAM";  percent: SystemStats.ram }
+                StatCard { width: parent._cardWidth; icon: "\uf0a0"; label: "Disk"; percent: SystemStats.disk }
             }
 
             BatteryRow { width: parent.width }

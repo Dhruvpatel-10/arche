@@ -81,6 +81,80 @@ Pattern (mirrors caelestia/shell):
 Live toasts are a separate concern — keep a short-lived `toasts` list with its
 own auto-expire timer for the bottom-corner popup, independent of history.
 
+## Process re-entrancy guards
+
+`Process.running = true` on an already-running Process is a silent no-op — the
+new `command` assignment is dropped. For any service where a poll tick could
+arrive while the previous command is still in flight (`nmcli`, `bluetoothctl`,
+`df`, `brightnessctl`), guard with:
+
+```qml
+if (!root.query.running) root.query.running = true
+```
+
+Services that share a single `Process` between multiple operations (connect /
+disconnect on the same `Process`, for instance) must guard even harder — the
+caller has no feedback that its command was dropped, so the second call
+silently loses its work. See `services/Net.qml` `connectTo`/`disconnect`,
+`services/Bt.qml` `connectDevice`/`disconnectDevice`.
+
+## Drawer dismissal recipe (ControlCenter / CalendarPanel)
+
+Every drawer needs three independent dismissal paths — and only one of them
+should be a MouseArea. The trap: a scrim `MouseArea { onContainsMouseChanged }`
+fires the instant the drawer becomes visible (because `containsMouse` flips
+true under the cursor before the card has settled), which starts the close
+timer before the user has seen the drawer. Let the *card*'s `HoverHandler` own
+the grace-period close; the scrim owns click-outside; a `FocusScope` with
+`Keys.onEscapePressed` owns Esc.
+
+```qml
+StyledWindow {
+    anchors { top: true; bottom: true; left: true; right: true }
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+
+    // Follow focused monitor. No separate onFocusedMonitorChanged handler —
+    // the binding below re-evaluates and the panel simply hops.
+    screen: {
+        const fm = Hyprland.focusedMonitor
+        if (!fm) return null
+        return Quickshell.screens.find(s => s.name === fm.name) ?? null
+    }
+
+    FocusScope {                // Esc
+        anchors.fill: parent
+        focus: root.shouldBeActive
+        Keys.onEscapePressed: Ui.drawerOpen = false
+    }
+    MouseArea {                 // click-outside
+        anchors.fill: parent
+        onClicked: Ui.drawerOpen = false
+    }
+    Rectangle { /* card */
+        HoverHandler {          // grace-period close (card only)
+            onHoveredChanged: hovered ? leaveTimer.stop() : leaveTimer.restart()
+        }
+    }
+}
+```
+
+## Mpris.players — never cache
+
+`Mpris.players` is a QML model; `.values` is an array proxy that invalidates
+on every player add/remove. Cached references (`property var active:
+Mpris.players.values.find(...)`) go stale. Always express the "active player"
+as a derived binding so QML re-evaluates on model reset:
+
+```qml
+readonly property MprisPlayer player: {
+    const list = Mpris.players?.values
+    if (!list || list.length === 0) return null
+    for (let i = 0; i < list.length; i++)
+        if (list[i].isPlaying) return list[i]
+    return list[0]
+}
+```
+
 ## Reference configs
 
 We grep these when stuck:

@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import ".."
+import "../theme"
 import "./picker"
 
 // PickerDialog — reusable fullscreen layer-shell picker.
@@ -13,6 +14,12 @@ import "./picker"
 // multi-monitor focus binding, and footer hint strip — so consumers
 // (clipboard, launcher, power menu) declare only their data, their
 // filter or async query hook, and their delegate.
+//
+// Animation: one `offsetScale` numeric driver (0 = open, 1 = closed)
+// feeds both `card.opacity` and `card.transform.y` from the same
+// source. The old pattern (Behavior on opacity + simultaneous Translate
+// driven by `visible`) desync'd because opacity animated while y snapped
+// — trap #9 fixed by collapsing to one driver.
 //
 // Scroll/selection safety (see fix(clipboard) 866415b): the internal
 // ListView keys its ScriptModel on `itemIdRole` so filter updates
@@ -59,8 +66,14 @@ StyledWindow {
 
     // ─── Visibility ────────────────────────────────────────────────────
     // Bind externally — usually to a singleton's `open` flag.
-    visible: open
     property bool open: false
+
+    // Single offsetScale driver. 0 = fully visible, 1 = fully hidden.
+    // Scrim opacity, card opacity, and card y-translate all derive from
+    // it — no racing Behaviors (trap #9).
+    property real offsetScale: open ? 0 : 1
+    visible: open || offsetScale < 1
+    Behavior on offsetScale { Anim { type: "dialog" } }
 
     // Multi-monitor: render on the currently-focused monitor so
     // invoking the picker via IPC always lands where the user is
@@ -95,20 +108,12 @@ StyledWindow {
     property bool loading:    false          // shows spinner in search bar
     property bool wrapAround: false          // nav wraps past top/bottom
 
-    // When items changes externally, try to keep the previously
-    // selected entry selected by matching its `itemIdRole` in the new
-    // list. True is right for sync consumers (Clipboard refreshes
-    // while the user is browsing — cursor should stay on the same
-    // entry). False for async consumers whose items change in direct
-    // response to typing (Launcher's fzf delivery — cursor should
-    // reset to top of fresh results, not jump to wherever the prior
-    // selection happens to exist in the new list).
     property bool preserveSelectionOnItemsChange: true
 
     // ─── Layout ────────────────────────────────────────────────────────
-    property int maxWidth:       480
-    property int maxHeight:      560
-    property int leftPaneWidth:  360         // only used when rightPane set
+    property int maxWidth:      480
+    property int maxHeight:     560
+    property int leftPaneWidth: 360         // only used when rightPane set
 
     // ─── State (owned locally) ─────────────────────────────────────────
     property string query:         ""
@@ -154,15 +159,6 @@ StyledWindow {
     }
 
     // ─── Selection preservation internals ──────────────────────────────
-    // We shadow the currently-selected entry's id via onSelectedChanged
-    // as the user navigates. When items refresh (externally set), we
-    // look up that id in the fresh filtered list — if it's still there,
-    // anchor to it; otherwise fall back to 0. Tracking by id (not
-    // index) survives reorderings and partial refreshes.
-    //
-    // onQueryChanged resets selectedIndex to 0 unconditionally. That's
-    // always correct: typing means fresh intent. The subsequent
-    // onSelectedChanged captures the new top's id as the anchor.
     property var _lastSelectedId: undefined
 
     onSelectedChanged: {
@@ -208,12 +204,9 @@ StyledWindow {
 
     WlrLayershell.layer:         WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    // Ignore the bar's exclusive zone so the scrim covers the whole screen.
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    // Multi-monitor: close when the focused monitor changes. Matches
-    // rofi — the picker belongs to the screen it opened on; a cursor
-    // move or workspace switch dismisses it rather than teleporting.
+    // Multi-monitor: close when the focused monitor changes.
     Connections {
         target: Hyprland
         function onFocusedMonitorChanged() {
@@ -223,11 +216,6 @@ StyledWindow {
                 root.dismiss()
         }
     }
-
-    // Note: Quickshell.Hyprland does not expose `sessionLocked` in
-    // this version, so picker-over-lock dismissal is handled
-    // compositor-side by hyprlock's own layer surface covering the
-    // overlay. Revisit if a future Quickshell release adds the hook.
 
     // Reset transient state + grab search focus every time the picker
     // opens. Matches the rofi muscle memory: reopening starts on row
@@ -242,6 +230,12 @@ StyledWindow {
     }
 
     // ─── Scrim ─────────────────────────────────────────────────────────
+    Rectangle {
+        anchors.fill: parent
+        color: Colors.dialogScrim
+        opacity: 1 - root.offsetScale
+    }
+
     MouseArea {
         anchors.fill: parent
         onClicked: root.dismiss()
@@ -251,22 +245,20 @@ StyledWindow {
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width:  Math.min(root.maxWidth,  parent.width  - 80)
-        height: Math.min(root.maxHeight, parent.height - 120)
-        color: Theme.card
-        radius: Theme.radius
-        border.color: Theme.border
-        border.width: 1
+        width:  Math.min(root.maxWidth,  parent.width  - Spacing.dialogInset * 2)
+        height: Math.min(root.maxHeight, parent.height - Spacing.dialogInset * 2)
+        color: Colors.dialogSurface
+        radius: Shape.radiusDialog
+        border.color: Colors.dialogBorder
+        border.width: Shape.borderThin
+
+        // Both opacity and y-translate driven by the single offsetScale.
+        // No separate Behavior on opacity or y — trap #9.
+        opacity: 1 - root.offsetScale
+        transform: Translate { y: root.offsetScale * Sizing.px(8) }
 
         // Swallow clicks on the card so the scrim doesn't fire.
         MouseArea { anchors.fill: parent }
-
-        // Subtle entrance.
-        opacity: root.visible ? 1.0 : 0.0
-        transform: Translate { y: root.visible ? 0 : 6 }
-        Behavior on opacity {
-            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
-        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -289,7 +281,7 @@ StyledWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
-                color: Theme.border
+                color: Colors.dialogBorder
                 opacity: 0.5
             }
 
@@ -305,7 +297,7 @@ StyledWindow {
 
                     PickerList {
                         anchors.fill: parent
-                        anchors.margins: 10
+                        anchors.margins: Spacing.md
                         items:             root.filtered
                         itemIdRole:        root.itemIdRole
                         delegateComponent: root.delegate
@@ -321,7 +313,7 @@ StyledWindow {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 1
                     visible: !!root.rightPane
-                    color: Theme.border
+                    color: Colors.dialogBorder
                     opacity: 0.5
                 }
 
@@ -338,40 +330,40 @@ StyledWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 visible: root.hints.length > 0
-                color: Theme.border
+                color: Colors.dialogBorder
                 opacity: 0.5
             }
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 38
+                Layout.preferredHeight: Sizing.px(38)
                 visible: root.hints.length > 0
 
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
-                    anchors.rightMargin: 22
-                    spacing: 20
+                    anchors.rightMargin: Spacing.lg
+                    spacing: Spacing.xl
 
                     Repeater {
                         model: root.hints
                         delegate: Row {
                             required property var modelData
-                            spacing: 7
+                            spacing: Spacing.sm
                             Text {
                                 text:  modelData.k
-                                color: Theme.fgMuted
+                                color: Colors.fgMuted
                                 font {
-                                    family:    Theme.fontMono
-                                    pixelSize: Theme.fontCaption
+                                    family:    Typography.fontMono
+                                    pixelSize: Typography.fontCaption
                                 }
                             }
                             Text {
                                 text:  modelData.v
-                                color: Theme.fgDim
+                                color: Colors.fgDim
                                 font {
-                                    family:    Theme.fontSans
-                                    pixelSize: Theme.fontCaption
+                                    family:    Typography.fontSans
+                                    pixelSize: Typography.fontCaption
                                 }
                             }
                         }

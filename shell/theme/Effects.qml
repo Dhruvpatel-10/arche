@@ -34,4 +34,27 @@ QtObject {
     // All Quickshell cards are fully opaque. Kept as a token so hyprlock
     // and future semi-transparent overlays share one source of truth.
     readonly property real surfaceAlpha: 1.0
+
+    // ─── Adaptive bar surface alpha ────────────────────────────────────
+    // The bar's adaptive surface crossfades between these via one
+    // opacityScale driver per wing. Opaque matches Colors.surfaceOpaque's
+    // implicit 1.0; translucent matches the baked alpha in
+    // Colors.surfaceTranslucent. Named here for the driver's reference.
+    readonly property real surfaceAlphaOpaque:      1.0
+    readonly property real surfaceAlphaTranslucent: 0.78
+
+    // ─── Bar shadow ────────────────────────────────────────────────────
+    // Anchors each bar wing to the screen's top edge. Slightly heavier
+    // than the card shadow because bar surfaces sit against variable
+    // wallpapers, not a known ground. Color: Colors.crust (warm-black).
+    readonly property int  shadowBarBlur:    Sizing.px(14)
+    readonly property int  shadowBarY:       Sizing.px(3)
+    readonly property real shadowBarOpacity: 0.45
+
+    // ─── Dialog shadow ─────────────────────────────────────────────────
+    // Modal elevation — one step above the card shadow. Used by
+    // StyledDialog's content card. Color: Colors.crust.
+    readonly property int  shadowDialogBlur:    Sizing.px(32)
+    readonly property int  shadowDialogYOffset: Sizing.px(8)
+    readonly property real shadowDialogOpacity: 0.40
 }

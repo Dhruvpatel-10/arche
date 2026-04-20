@@ -13,6 +13,8 @@ import "../theme"
 //   "decel"       200 ms / standardDecel — paired-swap arriving half
 //   "spatial"     500 ms / expressiveSpatial     — drawers, lands
 //   "fastSpatial" 350 ms / expressiveFastSpatial — toggle snaps
+//   "dialog"      200 ms / easeDialog    — StyledDialog enter/exit
+//   "adaptive"    200 ms / easeAdaptive  — bar adaptive opacity crossfade
 //
 // Usage:
 //   Behavior on offsetScale { Anim { type: "spatial" } }
@@ -32,6 +34,8 @@ NumberAnimation {
             case "decel":       return Motion.durationStd
             case "spatial":     return Motion.durationLarge
             case "fastSpatial": return Motion.durationMed
+            case "dialog":      return Motion.durationDialog
+            case "adaptive":    return Motion.durationAdaptive
             default:            return Motion.durationStd
         }
     }
@@ -44,6 +48,8 @@ NumberAnimation {
             case "decel":       return Motion.standardDecel
             case "spatial":     return Motion.expressiveSpatial
             case "fastSpatial": return Motion.expressiveFastSpatial
+            case "dialog":      return Motion.easeDialog
+            case "adaptive":    return Motion.easeAdaptive
             default:            return Motion.standard
         }
     }

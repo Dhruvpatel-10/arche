@@ -1,9 +1,15 @@
 import QtQuick
 import ".."
+import "../theme"
 
+// NotificationsList — history column rendered inside the control-center
+// drawer. A title row with a "Clear All" pill on the right, then one
+// NotificationItem per entry. When empty, shows a scaled fade-in
+// illustration (Caelestia /tmp/shell modules/launcher/ContentList.qml
+// pattern) so the drawer reads as "caught up", not "broken".
 Column {
     id: root
-    spacing: 8
+    spacing: Spacing.smMd   // one step denser than `md` between rows
 
     readonly property bool isEmpty: Notifs.history.length === 0
 
@@ -12,30 +18,40 @@ Column {
         height: clearBtn.height   // locks row height so verticalCenter works
         Text {
             text: "Notifications"
-            color: Theme.fg
-            font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.DemiBold }
+            color: Colors.fg
+            font {
+                family: Typography.fontSans
+                pixelSize: Typography.fontBody
+                weight: Font.DemiBold
+            }
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - clearBtn.width
         }
         Rectangle {
             id: clearBtn
-            width: 72; height: 24; radius: 12
+            width: Sizing.px(72)
+            height: Sizing.px(24)
+            radius: height / 2
             anchors.verticalCenter: parent.verticalCenter
-            color: Theme.tileBg
+            color: Colors.tileBg
             visible: !root.isEmpty
             clip: true
 
             StateLayer {
                 anchors.fill: parent
                 source: clearMouse
-                tint: Theme.fg
+                tint: Colors.fg
             }
 
             Text {
                 anchors.centerIn: parent
                 text: "Clear All"
-                color: Theme.fg
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption; weight: Font.Medium }
+                color: Colors.fg
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontCaption
+                    weight: Font.Medium
+                }
             }
             MouseArea {
                 id: clearMouse
@@ -56,13 +72,12 @@ Column {
         }
     }
 
-    // Empty state — Caelestia /tmp/shell modules/launcher/ContentList.qml
-    // pattern: scaled fade-in illustration + two-line label. Muted tone
-    // matches fgMuted/fgDim so it reads as "absence of content" rather
-    // than as a placeholder card.
+    // Empty state. Scaled fade-in so the drawer still feels alive when
+    // there's nothing in the list. Muted tone reads as "absence of
+    // content" rather than as a placeholder card.
     Item {
         width: parent.width
-        height: 84
+        height: Sizing.px(84)
         visible: root.isEmpty
         opacity: root.isEmpty ? 1 : 0
         scale:   root.isEmpty ? 1 : 0.5
@@ -71,25 +86,29 @@ Column {
 
         Column {
             anchors.centerIn: parent
-            spacing: 4
+            spacing: Spacing.xs
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "\uf0f3"    // bell
-                color: Theme.fgDim
-                font { family: Theme.fontMono; pixelSize: Theme.fontSizeXL }
+                color: Colors.fgDim
+                font { family: Typography.fontMono; pixelSize: Typography.fontDisplay }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "No notifications"
-                color: Theme.fgMuted
-                font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.DemiBold }
+                color: Colors.fgMuted
+                font {
+                    family: Typography.fontSans
+                    pixelSize: Typography.fontBody
+                    weight: Font.DemiBold
+                }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "You're all caught up"
-                color: Theme.fgDim
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption }
+                color: Colors.fgDim
+                font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
             }
         }
     }

@@ -1,5 +1,6 @@
 import QtQuick
 import "../.."
+import "../../theme"
 
 // PickerSearchBar — accent prompt label + text input with picker-wide
 // keyboard routing. Private to PickerDialog.
@@ -17,7 +18,7 @@ Item {
     property string placeholder: "Search"
     property bool   loading:     false
 
-    implicitHeight: 60
+    implicitHeight: Sizing.px(60)
 
     signal textEdited(string text)
     signal navigate(int delta)   // -1 = up, +1 = down
@@ -29,14 +30,14 @@ Item {
         id: label
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: 24
+        anchors.leftMargin: Spacing.lg
         visible: root.prompt.length > 0
         text:  root.prompt
-        color: Theme.accent
+        color: Colors.accent
         font {
-            family:    Theme.fontSans
-            pixelSize: Theme.fontCaption
-            weight:    Font.DemiBold
+            family:    Typography.fontSans
+            pixelSize: Typography.fontCaption
+            weight:    Typography.weightDemiBold
         }
     }
 
@@ -46,15 +47,15 @@ Item {
     Rectangle {
         id: spinner
         anchors.right:          parent.right
-        anchors.rightMargin:    24
+        anchors.rightMargin:    Spacing.lg
         anchors.verticalCenter: parent.verticalCenter
-        width:  12
-        height: 12
-        radius: 6
+        width:  Sizing.px(12)
+        height: Sizing.px(12)
+        radius: width / 2
         color:  "transparent"
-        border.color: Theme.fgMuted
-        border.width: 2
-        opacity: 0.7
+        border.color: Colors.fgMuted
+        border.width: Shape.borderMd
+        opacity: Effects.opacityMuted
         visible: root.loading
         RotationAnimator on rotation {
             from: 0; to: 360; duration: 900; loops: Animation.Infinite
@@ -62,8 +63,10 @@ Item {
         }
         // Arc effect via a small bright cap.
         Rectangle {
-            width: 4; height: 4; radius: 2
-            color: Theme.accent
+            width: Sizing.px(4)
+            height: Sizing.px(4)
+            radius: width / 2
+            color: Colors.accent
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: -1
@@ -73,17 +76,17 @@ Item {
     TextInput {
         id: field
         anchors.left:           label.visible ? label.right : parent.left
-        anchors.leftMargin:     label.visible ? 14 : 24
+        anchors.leftMargin:     label.visible ? Spacing.md : Spacing.lg
         anchors.right:          spinner.left
-        anchors.rightMargin:    12
+        anchors.rightMargin:    Spacing.md
         anchors.verticalCenter: parent.verticalCenter
-        color:          Theme.fg
-        selectionColor: Theme.accent
+        color:          Colors.fg
+        selectionColor: Colors.accent
         selectByMouse:  true
         cursorVisible:  focus
         font {
-            family:    Theme.fontSans
-            pixelSize: Theme.fontTitle
+            family:    Typography.fontSans
+            pixelSize: Typography.fontTitle
         }
 
         onTextChanged: root.textEdited(text)
@@ -120,7 +123,7 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             visible: field.text.length === 0
             text:    root.placeholder
-            color:   Theme.fgDim
+            color:   Colors.fgDim
             font:    field.font
         }
     }

@@ -53,9 +53,7 @@ StyledWindow {
         border.width: Shape.borderThin
 
         opacity: Osd.active ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: Motion.durationMed; easing.type: Motion.easeOut }
-        }
+        Behavior on opacity { Anim { type: "med" } }
 
         RowLayout {
             anchors.fill: parent
@@ -95,12 +93,7 @@ StyledWindow {
                     height: parent.height
                     radius: parent.radius
                     color: root.fill
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Motion.durationFast
-                            easing.type: Motion.easeOut
-                        }
-                    }
+                    Behavior on width { Anim { type: "fast" } }
                 }
             }
 

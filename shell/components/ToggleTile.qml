@@ -1,6 +1,12 @@
 import QtQuick
 import ".."
+import "../theme"
 
+// ToggleTile — a square tile with an icon disc, label, subtitle, and an
+// active/inactive visual state. Used in the ControlCenter toggle grid.
+// When active, both the tile surface and the icon disc flip: tile reads
+// brighter (tileBgActive) and the disc fills with `fgOnActive` (pure
+// white punctuation) with bgAlt text inside it.
 Rectangle {
     id: root
     property string icon: ""
@@ -9,19 +15,20 @@ Rectangle {
     property bool active: false
     property bool wide: false
     signal clicked()
+    signal rightClicked()
 
-    implicitHeight: 66
-    implicitWidth: wide ? 372 : 180
-    radius: Theme.radiusTile
+    implicitHeight: Sizing.px(66)
+    implicitWidth: wide ? Sizing.px(372) : Sizing.px(180)
+    radius: Shape.radiusTile
     color: tileColor
     clip: true
 
-    readonly property color tileColor: active ? "#2a2d38" : Theme.tileBg
+    readonly property color tileColor: active ? Colors.tileBgActive : Colors.tileBg
 
     StateLayer {
         anchors.fill: parent
         source: mouse
-        tint: Theme.fg
+        tint: Colors.fg
     }
 
     Row {
@@ -29,21 +36,22 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            leftMargin: 12
-            rightMargin: 12
+            leftMargin: Spacing.md
+            rightMargin: Spacing.md
         }
-        spacing: 10
+        spacing: Spacing.md
 
         Rectangle {
-            width: 38; height: 38; radius: 19
-            color: active ? "#ffffff" : Theme.bgAlt
+            width: Sizing.px(38); height: Sizing.px(38)
+            radius: width / 2
+            color: root.active ? Colors.fgOnActive : Colors.bgAlt
             anchors.verticalCenter: parent.verticalCenter
 
             Text {
                 anchors.centerIn: parent
                 text: root.icon
-                color: active ? Theme.bgAlt : Theme.fg
-                font { family: Theme.fontMono; pixelSize: Theme.fontTitle }
+                color: root.active ? Colors.bgAlt : Colors.fg
+                font { family: Typography.fontMono; pixelSize: Typography.fontTitle }
             }
         }
 
@@ -52,15 +60,15 @@ Rectangle {
             spacing: 1
             Text {
                 text: root.label
-                color: Theme.fg
-                font { family: Theme.fontSans; pixelSize: Theme.fontBody; weight: Font.DemiBold }
+                color: Colors.fg
+                font { family: Typography.fontSans; pixelSize: Typography.fontBody; weight: Typography.weightDemiBold }
                 elide: Text.ElideRight
             }
             Text {
                 visible: root.subtitle.length > 0
                 text: root.subtitle
-                color: Theme.fgMuted
-                font { family: Theme.fontSans; pixelSize: Theme.fontCaption }
+                color: Colors.fgMuted
+                font { family: Typography.fontSans; pixelSize: Typography.fontCaption }
                 elide: Text.ElideRight
             }
         }
@@ -71,8 +79,12 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: mouseEvent => {
+            if (mouseEvent.button === Qt.RightButton) root.rightClicked()
+            else root.clicked()
+        }
     }
 
-    Behavior on color { ColorAnimation { duration: 120 } }
+    Behavior on color { CAnim { type: "fast" } }
 }

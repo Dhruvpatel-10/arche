@@ -32,6 +32,16 @@ QtObject {
     readonly property int radiusPill: radiusFull
     readonly property int radiusLg:   radiusLarge
 
+    // ─── Named semantic aliases ────────────────────────────────────────
+    // radiusDialog  25   modal card — deliberately larger than radiusNormal
+    //                    so dialogs read as a distinct surface class from
+    //                    pickers' legacy 17px corner
+    // radiusPillWing 9   lozenge bar pill (WingPill) — NOT fully round;
+    //                    the split-notch wings use a shorter radius to
+    //                    distinguish bar pills from drawer pills
+    readonly property int radiusDialog:   radiusLarge
+    readonly property int radiusPillWing: Sizing.px(9)
+
     // ─── Border widths ─────────────────────────────────────────────────
     // Hairlines stay 1px — scaling them rounds to 2 on >=1.5x and reads
     // as a fat outline. borderMd scales for explicit emphasis.

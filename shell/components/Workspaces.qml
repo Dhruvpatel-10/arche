@@ -1,15 +1,22 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import ".."
+import "../theme"
 
+// Workspaces — row of dots showing workspace state. Active one stretches
+// into a pill; occupied workspaces are filled, empty ones are outlined.
+// Scroll to move between workspaces, click to jump.
+//
+// Motion: width/color/opacity animate through the shared Anim / CAnim
+// presets so the motion language stays consistent with the rest of the
+// bar. No bespoke durations.
 Item {
     id: root
 
     property int shown: 5
-    property int dotSize: 6
-    property int activeWidth: 18
-    property int spacing: 10
+    property int dotSize: Sizing.px(6)
+    property int activeWidth: Sizing.px(18)
+    property int spacing: Spacing.md
 
     readonly property int activeId: Hyprland.focusedWorkspace?.id ?? 1
 
@@ -19,7 +26,7 @@ Item {
     }
 
     implicitWidth: row.implicitWidth
-    implicitHeight: dotSize + 8
+    implicitHeight: dotSize + Spacing.smMd
 
     Row {
         id: row
@@ -38,25 +45,29 @@ Item {
 
                 width: isActive ? root.activeWidth : root.dotSize
                 height: root.dotSize
-                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+
+                // Pill-stretch eases via the shared `standard` preset.
+                Behavior on width { Anim { type: "standard" } }
 
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: cell.isActive
-                           ? Theme.accent
-                           : (cell.occupied ? Theme.fg : "transparent")
-                    border.color: cell.occupied || cell.isActive ? "transparent" : Theme.fgDim
+                           ? Colors.accent
+                           : (cell.occupied ? Colors.fg : "transparent")
+                    border.color: cell.occupied || cell.isActive
+                                  ? "transparent"
+                                  : Colors.fgDim
                     border.width: cell.occupied || cell.isActive ? 0 : 1
                     opacity: cell.isActive ? 1.0 : (cell.occupied ? 0.85 : 0.55)
 
-                    Behavior on color { ColorAnimation { duration: 180 } }
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
+                    Behavior on color   { CAnim { type: "fast" } }
+                    Behavior on opacity { Anim  { type: "fast" } }
                 }
 
                 MouseArea {
                     anchors.fill: parent
-                    anchors.margins: -6
+                    anchors.margins: -Spacing.sm
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Hyprland.dispatch(`workspace ${cell.wsId}`)
                 }

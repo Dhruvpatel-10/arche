@@ -1,5 +1,5 @@
 import QtQuick
-import "../.."
+import "../../theme"
 
 // PickerItemBase — shared row chrome for picker delegates.
 //
@@ -36,7 +36,7 @@ Rectangle {
     // ─── Contract ──────────────────────────────────────────────────────
     required property bool selected
 
-    property int  rowHeight:         48
+    property int  rowHeight:         Sizing.px(48)
     property bool rightClickRemoves: false
 
     signal activated()
@@ -44,9 +44,11 @@ Rectangle {
 
     // ─── Chrome ────────────────────────────────────────────────────────
     implicitHeight: rowHeight
-    radius:         8
+    radius:         Sizing.px(8)
+    // Selected rows get the accent at ~11% opacity — a warm wash that
+    // reads as "this row is focused" without fighting the list's text.
     color: root.selected
-        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.11)
+        ? Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 0.11)
         : "transparent"
 
     // ─── Input ─────────────────────────────────────────────────────────

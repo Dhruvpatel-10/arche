@@ -13,19 +13,22 @@ import "../theme"
 //
 // Usage:
 //   Rectangle {
-//       color: Theme.pillBg
-//       radius: Theme.radiusPill
+//       color: Colors.pillBg
+//       radius: Shape.radiusPill
 //       MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true }
-//       StateLayer { anchors.fill: parent; source: mouse; tint: Theme.fg }
+//       StateLayer { anchors.fill: parent; source: mouse; tint: Colors.fg }
 //   }
 //
 // Pattern from /tmp/shell components/StateLayer.qml, simplified: no
 // ripple, just the tint overlay. Ripples are 170 lines of Shape +
 // RadialGradient and we decided opacity overlays are enough polish.
+//
+// Default tint: Colors.fgOnActive (white-ish). Callers can override when
+// they want the tint to carry a hue (e.g. a destructive pill tinted red).
 Rectangle {
     id: root
     property var source: null       // MouseArea-like: .containsMouse, .pressed
-    property color tint: "#ffffff"  // overlay color (hover/press tint)
+    property color tint: Colors.fgOnActive
     property real radius: 0         // match parent.radius for matched corners
 
     color: tint
