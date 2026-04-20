@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Caffeine mode: keep system fully awake, turn screens off immediately.
+# Any keyboard/mouse input wakes the screens (Hyprland DPMS wakeup).
+
+PIDFILE=/tmp/arche-caffeine.pid
+
+if [[ -f $PIDFILE ]]; then
+    kill "$(cat $PIDFILE)" 2>/dev/null
+    rm -f "$PIDFILE"
+    hyprctl dispatch dpms on
+    notify-send "󰛨  Caffeine off" "Idle management restored"
+else
+    systemd-inhibit \
+        --what=idle:sleep \
+        --mode=block \
+        --who=arche-caffeine \
+        --why="Caffeine mode" \
+        sleep infinity &
+    echo $! > "$PIDFILE"
+    sleep 0.1
+    hyprctl dispatch dpms off
+    notify-send "󰛨  Caffeine on" "System awake, screens off — press any key to wake"
+fi
