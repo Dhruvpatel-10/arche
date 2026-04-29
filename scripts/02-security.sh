@@ -7,7 +7,7 @@
 # What this script configures:
 #   Packages, Firewall (UFW), Tailscale, SSH hardening, Fail2ban,
 #   Encrypted DNS, Kernel hardening, Lid close, MAC randomization,
-#   USBGuard, Firejail, LUKS/TPM2 enrollment
+#   Firejail, LUKS/TPM2 enrollment
 
 source "$(dirname "$0")/lib.sh"
 
@@ -332,43 +332,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. USBGuard — block unknown USB devices
-# ─────────────────────────────────────────────────────────────────────────────
-# All currently connected USB devices are allowed (policy generated from
-# current state). Any NEW device plugged in after this is blocked by default.
-# Use `usb-inspect` to safely examine blocked devices in a sandbox.
-#
-# Flow: plug in unknown USB → USBGuard blocks it → `usb-inspect` →
-#       mount read-only in firejail sandbox → inspect → allow or keep blocked.
-# ─────────────────────────────────────────────────────────────────────────────
-
-log_section "USBGuard (USB Device Control)"
-
-if command -v usbguard &>/dev/null; then
-    rules_file="/etc/usbguard/rules.conf"
-
-    # Generate initial policy from currently connected devices (one-time)
-    if [[ ! -f "$rules_file" ]] || [[ ! -s "$rules_file" ]]; then
-        log_info "Generating USB policy from currently connected devices..."
-        sudo mkdir -p /etc/usbguard
-        sudo usbguard generate-policy | sudo tee "$rules_file" > /dev/null
-        log_ok "Policy generated — all current USB devices are allowed"
-        log_info "Any NEW device plugged in after this will be blocked"
-    else
-        log_warn "USB policy already exists: $rules_file"
-    fi
-
-    svc_enable usbguard
-    log_ok "USBGuard active — unknown USB devices are blocked"
-    log_info "Inspect blocked devices: usb-inspect"
-    log_info "List blocked devices:    usb-inspect list"
-    log_info "Allow permanently:       usb-inspect allow <id>"
-else
-    log_err "usbguard not found — USB device control not configured"
-fi
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 11. Firejail — app sandboxing
+# 10. Firejail — app sandboxing
 # ─────────────────────────────────────────────────────────────────────────────
 # Firejail sandboxes individual apps: restricts filesystem, network, syscalls.
 # Has 1000+ built-in profiles for common apps.
@@ -408,7 +372,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 12. Post-Setup Guidance
+# 11. Post-Setup Guidance
 # ─────────────────────────────────────────────────────────────────────────────
 
 log_section "Post-Setup — Manual Steps"
