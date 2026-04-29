@@ -54,7 +54,7 @@ Stow is run from `~/arche/`:
    `[ -L "$HOME/.config/$1" ] && echo "OK: symlink created" || echo "FAIL: no symlink"`
 
 10. **If templates exist, render them**
-    `bash scripts/theme.sh apply $1`
+    `bash theming/engine.sh apply $1`
 
 11. **Verify config still works** (app-specific)
 

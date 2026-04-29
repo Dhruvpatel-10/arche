@@ -11,7 +11,7 @@ user-invocable: false
 Every config file belongs to exactly one layer. Never mix them.
 
 1. **TEMPLATES** — files containing colors, fonts, sizes, spacing.
-   Live in `templates/`. Rendered by `scripts/theme.sh` via envsubst.
+   Live in `theming/templates/`. Rendered by `theming/engine.sh` via envsubst.
    Output is gitignored. Examples: style.css.tmpl, config.tmpl, colors.conf.tmpl
 
 2. **STOW PACKAGES** — files containing behavior: keybinds, module lists, rules, logic.
@@ -26,7 +26,7 @@ Every config file belongs to exactly one layer. Never mix them.
 When adding a new component, always touch all four places:
 
 1. `packages/<name>.sh` — PACMAN_PKGS=() and AUR_PKGS=() arrays, no logic
-2. `templates/<name>/` — .tmpl files if the component has visual config (colors/fonts/sizes)
+2. `theming/templates/<name>/` — .tmpl files (or `_emit.sh`) if the component has visual config
 3. `<name>/` — stow package with behavior config
 4. `scripts/<nn>-<name>.sh` — numbered script that installs, stows, enables, verifies
 
@@ -67,9 +67,11 @@ No logic, no functions, no installs. Data only.
 
 ## Theme System
 
-- `themes/catppuccin-mocha.sh` exports shell variables (colors, fonts, sizes)
-- `themes/active` symlink points to current theme
-- `scripts/theme.sh` renders templates via envsubst and reloads services
+- `theming/themes/<name>.sh` exports shell variables (colors, fonts, sizes)
+- `theming/themes/active` symlink points to current theme
+- `theming/engine.sh` renders templates via envsubst, emits `/opt/arche/run/theme.json`, runs reload hooks
+- Per-component sidecars: `theming/templates/<app>/_emit.sh` (custom emitter) + `_reload.sh` (reload hook)
+- Quickshell panel reads `/opt/arche/run/theme.json` (system-shared) via FileView for hot-reload
 - nvim handles its own theming — do not route through templates
 
 ## Dotfiles Structure
@@ -95,7 +97,7 @@ Scope = component name (e.g. `feat(mako): ...`).
 
 ## Ten Rules
 
-1. Never write colors/fonts/sizes into stow package configs — use templates or themes/
+1. Never write colors/fonts/sizes into stow package configs — use theming/templates/ or theming/themes/
 2. Never add package installs in numbered scripts directly — use install_group + packages/
 3. Never use --noconfirm
 4. Never hardcode /home/stark — always $HOME
@@ -104,7 +106,7 @@ Scope = component name (e.g. `feat(mako): ...`).
 7. Conventional commits with scope = component name
 8. If a config file's layer is ambiguous, ask before creating it
 9. Before installing any AUR package, flag it and show the PKGBUILD source URL
-10. New component = packages/ + templates/ (if visual) + stow package + scripts/
+10. New component = packages/ + theming/templates/ (if visual) + stow package + scripts/
 
 ## What Never to Suggest
 

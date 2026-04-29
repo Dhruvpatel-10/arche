@@ -16,12 +16,12 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │
 ├── docs/                   # decision records, architecture, status
 │
-├── themes/                 # source of truth for all visual values
+├── theming/themes/                 # source of truth for all visual values
 │   ├── schema.sh           # variable registry — names, types, defaults
 │   ├── ember.sh            # active theme (warm amber on deep charcoal)
 │   └── active -> ember.sh  # symlink to current theme
 │
-├── templates/              # .tmpl files rendered by theme engine (envsubst)
+├── theming/templates/              # .tmpl files rendered by theme engine (envsubst)
 │   ├── kitty/              # terminal colors + fonts
 │   ├── hypr/               # colors, envs, hyprlock fonts/colors (D023)
 │   ├── rofi/               # launcher theme (D023)
@@ -68,8 +68,8 @@ Every config file belongs to exactly one layer. Never mix them.
 ### Layer 1: Templates
 
 Configs that contain **colors, fonts, sizes, cursors, icons, or spacing**. Rendered by
-`scripts/theme.sh` using `envsubst`. Output is gitignored. Lives in
-`templates/`.
+`theming/engine.sh` using `envsubst`. Output is gitignored. Lives in
+`theming/templates/`.
 
 Examples: `kitty/theme.conf`, `gtk-3.0/settings.ini`, `btop/arche.theme`
 
@@ -89,15 +89,15 @@ Examples: `~/.config/kitty/theme.conf`, `~/.config/btop/arche.theme`
 
 ## Theme System
 
-`themes/ember.sh` exports shell variables consumed by templates:
+`theming/themes/ember.sh` exports shell variables consumed by templates:
 
 - Colors: `COLOR_BG`, `COLOR_FG`, `COLOR_ACCENT`, `COLOR_WARN`, etc.
 - Fonts: `FONT_SANS`, `FONT_MONO`, `FONT_SIZE_*`
 - Layout: `RADIUS`, `BORDER_SIZE`, `GAP`, `BAR_HEIGHT`
 - Appearance: `CURSOR_THEME`, `CURSOR_SIZE`, `ICON_THEME`, `GTK_THEME`
 
-`themes/schema.sh` is the single source of truth for variable names, types, and defaults.
-`scripts/theme.sh` renders all templates and reloads affected services.
+`theming/themes/schema.sh` is the single source of truth for variable names, types, and defaults.
+`theming/engine.sh` renders all templates and reloads affected services.
 nvim is excluded — it uses catppuccin/nvim plugin directly.
 Quickshell theme values live in the external arche-shell repo (`Theme.qml`) —
 kept in sync with ember manually for now (see status.md Q1).

@@ -231,7 +231,7 @@ greeter. Replaced it with a bespoke QML theme at
   buttons for shutdown / restart / suspend — each only shown if SDDM
   reports the action is available.
 - Two-file palette: `theme.conf` holds colors/fonts/layout as flat keys that
-  the QML reads via `config.*`. Values match `themes/ember.sh` directly so
+  the QML reads via `config.*`. Values match `theming/themes/ember.sh` directly so
   the greeter visually continues the rest of the system.
 
 **Why:**
@@ -317,7 +317,7 @@ Tradeoff: changing the wordmark text means regenerating the PNG
 (`just boot`), not editing a config string. That's fine — the wordmark is
 a brand element, not a configurable knob.
 
-**The palette.** Hand-picked, not from `themes/ember.sh`. The desktop is
+**The palette.** Hand-picked, not from `theming/themes/ember.sh`. The desktop is
 ember; the pre-boot identity is purple. Different on purpose — the splash is
 a front door, not a room you spend time in.
 
@@ -442,7 +442,7 @@ that D021 handed to KDE Plasma's built-ins.
   lower visual latency, tighter loop for keyboard-first workflows.
 - Quickshell wasn't ready at D021 time; now it is. It collapses the old
   Waybar + Mako + SwayOSD + cliphist-menu split into one QML tree with a
-  single theme source (`Theme.qml`) that lines up with `themes/ember.sh`.
+  single theme source (`Theme.qml`) that lines up with `theming/themes/ember.sh`.
 - Default Breeze SDDM theme is enough — the vendored SilentSDDM tree from
   D013 is not restored; it carried ~260 config keys of surface area and
   a QML import dependency chain that was never load-bearing. If the user
@@ -1239,7 +1239,7 @@ wipes the destination first to stay idempotent across upstream file removals.
 and `metadata.desktop` selects the active variant via its `ConfigFile=` line.
 The default config has 260+ keys spread across nested sections, and most of
 the visual signature comes from per-variant background images, not color
-values. Templating it from `themes/ember.sh` would be high-effort and
+values. Templating it from `theming/themes/ember.sh` would be high-effort and
 low-payoff (the glassmorphism look is independent of accent color). Instead,
 ship all upstream variants verbatim and let the user swap by editing one line
 in `metadata.desktop`. This is a deliberate departure from the arche
@@ -1443,13 +1443,13 @@ vulnerabilities (Spectre, Meltdown) at early boot.
 Decision rule: **does this config contain colors, fonts, or sizes?**
 
 - **No** → stow package only (`stow/<name>/`). Symlinked as-is.
-- **Yes** → behavior parts in stow, visual parts in `templates/`. `theme.sh`
+- **Yes** → behavior parts in stow, visual parts in `theming/templates/`. `theme.sh`
   renders the template to `~/.config/` (generated output, gitignored).
 - **All visual, no behavior** → template only (e.g. mako).
 
 Concrete mapping:
 
-| Component  | stow/ (behavior)                 | templates/ (visual)              |
+| Component  | stow/ (behavior)                 | theming/templates/ (visual)              |
 |------------|----------------------------------|----------------------------------|
 | fish       | config.fish, conf.d/, functions/ | conf.d/theme.fish.tmpl           |
 | kitty      | kitty.conf (behavior)            | theme.conf.tmpl                  |
@@ -1547,8 +1547,8 @@ See [architecture.md](architecture.md) for full details.
 **Date:** 2026-03-13, **Updated:** 2026-03-25
 **Status:** Accepted (revised)
 
-Ember is the active theme (`themes/ember.sh`). Warm amber (#c9943e) on deep
+Ember is the active theme (`theming/themes/ember.sh`). Warm amber (#c9943e) on deep
 charcoal (#13151c). Originally started as Catppuccin Mocha, replaced with a
 custom palette. All color values defined once in the theme file and consumed
 via templates. Adding a new theme means creating a new shell file satisfying
-`themes/schema.sh`. See `docs/theme-standard.md` for the full specification.
+`theming/themes/schema.sh`. See `docs/theme-standard.md` for the full specification.

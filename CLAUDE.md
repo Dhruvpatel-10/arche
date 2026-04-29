@@ -8,10 +8,10 @@
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
 
 ## Goal
-Clone this repo on a fresh Arch install, run `bootstrap.sh`, get a fully configured system.
-Every decision is minimal, idempotent, declarative, and auditable.
+Clone repo on fresh Arch install, run `bootstrap.sh`, get fully configured system.
+All decisions: minimal, idempotent, declarative, auditable.
 
-Full architecture and decision records live in `docs/`.
+Full architecture and decision records in `docs/`.
 
 ---
 
@@ -32,19 +32,23 @@ Full architecture and decision records live in `docs/`.
 ├── tests/                    # validation scripts
 │   └── run.sh                # test runner: just test
 │
-├── themes/                   # source of truth for all visual values
-│   ├── schema.sh             # variable registry — names, types, defaults
-│   ├── ember.sh              # active theme (warm amber on deep charcoal)
-│   └── active -> ember.sh    # symlink to current theme
-│
-├── templates/                # .tmpl files rendered by theme engine (envsubst)
+├── theming/                  # entire theme system bundled here
+│   ├── engine.sh             # apply / switch / list / validate
+│   ├── themes/               # value sets
+│   │   ├── schema.sh         # variable registry — names, types, defaults
+│   │   ├── ember.sh          # default theme (warm amber on deep charcoal)
+│   │   ├── frost.sh          # alt theme (muted teal glassmorphism)
+│   │   └── active -> X.sh    # symlink to current theme
+│   └── templates/            # per-app output specs (convention-over-config)
+│       ├── <app>/*.tmpl      # envsubst input → ~/.config/<app>/<file>
+│       ├── <app>/_emit.sh    # custom emitter (e.g. arche/ writes theme.json)
+│       └── <app>/_reload.sh  # live-reload hook (run after render)
 │
 ├── packages/                 # package registry — data only, no logic
 │   └── *.sh                  # each file: PACMAN_PKGS=() and AUR_PKGS=()
 │
 ├── scripts/
 │   ├── lib.sh                # shared primitives — all scripts source this
-│   ├── theme.sh              # theme engine: apply / switch / list
 │   └── 00-preflight.sh ... 12-boot.sh
 │
 ├── system/                   # system configs (/etc/) — symlinked by scripts, not stow
@@ -85,33 +89,57 @@ Full architecture and decision records live in `docs/`.
 
 ## The Three-Layer Config Split
 
-Every config file belongs to exactly one layer. Never mix them.
+Every config belongs to exactly one layer. Never mix.
 
-**TEMPLATES** — configs that contain colors, fonts, sizes, cursors, icons, or spacing.
-Rendered by theme.sh using envsubst. Output is gitignored.
+**TEMPLATES** — configs with colors, fonts, sizes, cursors, icons, or spacing.
+Rendered by `theming/engine.sh` via envsubst. Output gitignored.
 
-**STOW PACKAGES** — configs that contain behavior: keybinds, module lists, rules, logic.
-Symlinked directly via GNU Stow from `stow/`. Committed as-is.
+**STOW PACKAGES** — configs with behavior: keybinds, module lists, rules, logic.
+Symlinked via GNU Stow from `stow/`. Committed as-is.
 
 **GENERATED OUTPUT** — files produced by rendering templates.
 Live in ~/.config/. Never committed.
 
-Decision rule: does this config contain colors/fonts/sizes?
+Decision rule: does config contain colors/fonts/sizes?
 - No → stow only. Yes → behavior in stow, visual in templates. All visual → template only.
 
-See `docs/decisions.md` D005 for the per-component mapping.
+See `docs/decisions.md` D005 for per-component mapping.
 
 ---
 
 ## Theme System
 
-`themes/schema.sh` is the single source of truth for all variable names, types, and defaults.
-Theme files (e.g. `themes/ember.sh`) assign values. `lib.sh` reads the schema to validate,
-export, and derive `_NOHASH` variants automatically. See `docs/theme-standard.md` for full spec.
+Everything theme-related lives under `theming/`:
 
-Active theme: `themes/ember.sh` (warm amber on deep charcoal).
+- `theming/themes/schema.sh` — single source of truth for variable names + types
+- `theming/themes/<name>.sh` — value sets (Ember, Frost, …)
+- `theming/themes/active` — symlink to active theme
+- `theming/templates/<app>/` — per-app output specs
+- `theming/engine.sh` — apply / switch / list / validate
 
-Variable groups defined in schema.sh:
+Active theme: `theming/themes/ember.sh` (warm amber on deep charcoal).
+
+**Two consumption tiers, both fed from same exported vars per apply:**
+
+| Tier | Mechanism | Path |
+|---|---|---|
+| Foreign apps (kitty, hypr, gtk, mpv, rofi, …) | envsubst `*.tmpl` → app's required format | `~/.config/<app>/` |
+| Arche-owned (Quickshell panel, future tools) | `_emit.sh` writes canonical JSON; consumed via FileView | `/opt/arche/run/theme.json` (system-shared) |
+
+**Per-component sidecar convention:**
+
+```
+theming/templates/<component>/
+├── *.tmpl       — envsubst input (foreign-app tier; output strips .tmpl)
+├── _emit.sh     — custom emitter; replaces .tmpl rendering when present
+└── _reload.sh   — live-reload hook; sourced after render. Absent = silent.
+```
+
+Engine logic: walk dirs → if `_emit.sh` exists run it, else envsubst all `*.tmpl` →
+if `_reload.sh` exists run it. No central case statement. Add a new component =
+add a dir + files. Remove = delete the dir.
+
+Variable groups in `theming/themes/schema.sh`:
 - `SCHEMA_COLORS_REQUIRED` — core palette (11 vars, must be #hex6)
 - `SCHEMA_COLORS_OPTIONAL` — extended palette (12 vars, defaults from required)
 - `SCHEMA_FONTS_REQUIRED` — font families (2 vars)
@@ -121,8 +149,23 @@ Variable groups defined in schema.sh:
 - `SCHEMA_APPEARANCE_REQUIRED` — cursor/icon/GTK theme names (3 vars)
 - `SCHEMA_APPEARANCE_INTEGERS` — cursor size (1 var)
 
-scripts/theme.sh renders templates via envsubst and reloads affected services.
-nvim handles its own theming via catppuccin/nvim plugin — excluded from templates.
+`theming/engine.sh` renders templates via envsubst, emits `theme.json` for
+arche-owned consumers, and reloads affected services. nvim handles own theming
+via catppuccin/nvim plugin — excluded from templates.
+
+**Arche runtime dir:** `/opt/arche/run/` is the system-shared runtime
+state directory for arche-owned consumers. `/opt/arche` is mode 2775 with
+the `users` group, so any user on the host can read+write. Gitignored.
+Currently holds `theme.json`. Future arche tools (TUI, daemons) that
+need machine-wide state should emit / consume from here, not from a
+per-user `~/.config/arche/`. Per-user state — config, history, secrets —
+still lives under each user's `~/.config/` and `~/.local/state/`.
+
+Why system-shared: the active theme symlink (`theming/themes/active`)
+is already global, every Hyprland session on the host runs the same
+`/opt/arche/shell/` Quickshell source (D029), and `theming/templates/<app>/`
+is the single source of truth for visuals — making the rendered JSON
+per-user only created drift. One emit, one read, every panel re-paints.
 
 ---
 
@@ -134,9 +177,9 @@ PACMAN_PKGS=()
 AUR_PKGS=()
 ```
 
-lib.sh provides `install_group <file>` which iterates both arrays idempotently.
+lib.sh provides `install_group <file>` — iterates both arrays idempotently.
 Scripts call install_group, never call pacman/paru directly.
-Removal is always manual (`paru -Rns`).
+Removal always manual (`paru -Rns`).
 
 ---
 
@@ -163,8 +206,8 @@ install_group <file>    — source packages file, run pkg_install + aur_install
 ## scripts/ Conventions
 
 - Every script starts with: `source "$(dirname "$0")/lib.sh"`
-- Every script is independently runnable: `bash scripts/05-hyprland.sh`
-- bootstrap.sh runs them in numeric order, captures exit codes, prints summary
+- Every script independently runnable: `bash scripts/05-hyprland.sh`
+- bootstrap.sh runs in numeric order, captures exit codes, prints summary
 - Scripts do exactly four things: install packages, stow config, enable services, verify
 - Bash only. No Python in scripts.
 - No --noconfirm anywhere.
@@ -175,7 +218,7 @@ install_group <file>    — source packages file, run pkg_install + aur_install
 
 ## Testing
 
-Tests live in `tests/` and run via `just test`. Three levels:
+Tests in `tests/`, run via `just test`. Three levels:
 
 **Lint** — static analysis, runs everywhere (CI-safe, no root needed):
 - `bash -n` on all scripts and package files
@@ -191,72 +234,71 @@ Tests live in `tests/` and run via `just test`. Three levels:
 - Stow targets match expected paths
 
 **Integration** — verify installed state (needs live system):
-- Commands from packages/ are available in PATH
-- Services from scripts are active
+- Commands from packages/ available in PATH
+- Services from scripts active
 - Rendered templates match expected output
 - Bash config loads without errors: `bash -lc 'echo ok'`
 
 Run: `just test` (lint only), `just test-stow`, `just test-all` (includes integration).
 
-Every new script or config must have at least lint coverage. Add a test when adding a component.
+Every new script or config needs at least lint coverage. Add test when adding component.
 
 ---
 
 ## Popup Convention (Floating TUI Windows)
 
-Any TUI app that should open as a centered floating window uses kitty's `--class popup`.
-A Hyprland window rule in `stow/hypr/.config/hypr/windows.conf` matches `popup` on window
+TUI apps that open as centered floating window use kitty's `--class popup`.
+Hyprland window rule in `stow/hypr/.config/hypr/windows.conf` matches `popup` on window
 class and applies: float, center, fixed size.
 
-**To launch a popup TUI from a keybinding:**
+**To launch popup TUI from keybinding:**
 ```
 kitty --class popup -e bluetui
 ```
 
-**To add a new popup:** use `--class popup` in the keybinding. The hypr rule handles the rest.
+**To add new popup:** use `--class popup` in keybinding. Hypr rule handles the rest.
 
-The `arche-popup` helper in `stow/arche-scripts/.local/bin/arche/` wraps this pattern —
+`arche-popup` helper in `stow/arche-scripts/.local/bin/arche/` wraps this pattern —
 prefer `arche-popup <cmd>` in keybindings over raw `kitty --class popup -e <cmd>`.
 
 ---
 
 ## Tools
 
-Pre-built binaries live in `tools/bin/`. Source code stays in external repos under `~/projects/system/`.
+Pre-built binaries in `tools/bin/`. Source code in external repos under `~/projects/system/`.
 
 - `arche-legion` — Lenovo Vantage replacement (battery, fan, profile, camera, USB, Fn lock)
 - `arche-denoise` — Rust CLI: file/pipe GPU noise suppression (`clean`, `setup`, `status`)
 - `arche-denoise-mic` — C daemon: PipeWire virtual mic with Maxine GPU denoising
 
-Note: screen-share picker is now `hyprland-preview-share-picker` (AUR), not a tools/ binary — see D028.
+Note: screen-share picker is now `hyprland-preview-share-picker` (AUR), not tools/ binary — see D028.
 
 **Deploy:** symlinks at `system/usr/local/bin/arche/*` point into `tools/bin/`, auto-linked
 to `/usr/local/bin/arche/` by `link_system_all` in `00-preflight.sh`. `/etc/profile.d/arche.sh`
 and `/etc/fish/conf.d/arche.fish` (also in `system/`) prepend that directory to PATH for
-every user and every shell.
+every user and shell.
 
 **arche-denoise SDK:** installed system-wide at `/usr/local/share/arche/denoise/` via
 `sudo arche-denoise setup --system` (run by `09-apps.sh`). One SDK install, all users.
 
-**Update workflow:** build in the external repo, copy the new binary into `tools/bin/` — the
-symlink chain (`/usr/local/bin/arche/X → system/usr/local/bin/arche/X → tools/bin/X`) picks
-it up immediately.
+**Update workflow:** build in external repo, copy new binary into `tools/bin/` — symlink
+chain (`/usr/local/bin/arche/X → system/usr/local/bin/arche/X → tools/bin/X`) picks up immediately.
 
 ---
 
 ## Quickshell Panel Source (`shell/`)
 
-The Quickshell panel source (bar + control-center + notifications + OSD + clipboard
-picker + calendar) lives at `/opt/arche/shell/`, versioned with the rest of the repo.
+Quickshell panel source (bar + control-center + notifications + OSD + clipboard
+picker + calendar) lives at `/opt/arche/shell/`, versioned with repo.
 `scripts/07-panel.sh` symlinks `~/.config/quickshell/` → `/opt/arche/shell/` for every
-user — one source of truth, no per-user clone. Hot-reload on file save still works
+user — one source of truth, no per-user clone. Hot-reload on file save works
 (quickshell watches file mtimes). See D029 (supersedes D023's external-repo bit).
 
 ---
 
 ## Stow Convention
 
-All stow packages live under `stow/`. Each mirrors the home directory structure:
+All stow packages under `stow/`. Each mirrors home directory structure:
 ```
 stow/fish/.config/fish/config.fish  →  ~/.config/fish/config.fish
 ```
@@ -267,48 +309,44 @@ The stow_pkg function: `stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"`
 
 ## bootstrap.sh Behaviour
 
-Assumes: repo is already cloned, user has sudo, running on Arch Linux.
-`scripts/05-hyprland.sh` installs Hyprland itself, SDDM, and the Wayland
-utility stack — no prior desktop install required.
-Does not: clone the repo, configure SSH keys, set up secrets.
+Assumes: repo cloned, user has sudo, running on Arch Linux.
+`scripts/05-hyprland.sh` installs Hyprland, SDDM, and Wayland utility stack — no prior desktop required.
+Does not: clone repo, configure SSH keys, set up secrets.
 Runs: 00-preflight through 12-boot in order. Each section prompts y/N/a(ll).
-Each script is independently idempotent.
-Ends with: `theme apply`, then a summary table.
+Each script independently idempotent.
+Ends with: `theming/engine.sh apply`, then summary table.
 
-**Boot chain (D024).** `12-boot.sh` is the last script because it rewrites the
-boot chain: switches mkinitcpio to `systemd` + `sd-encrypt` + `plymouth`, writes
-a UKI preset, installs the `arche` Plymouth theme (subtle lavender + ARCHE
-wordmark), rewrites `/etc/crypttab.initramfs` with the real LUKS UUID, and
-rebuilds UKIs. After it runs, the LUKS passphrase still works (rendered by
-Plymouth). To activate TPM2+PIN unlock, the user runs `just tpm-enroll`
-separately — we never touch keyslots from bootstrap.
+**Boot chain (D024).** `12-boot.sh` last because it rewrites boot chain:
+switches mkinitcpio to `systemd` + `sd-encrypt` + `plymouth`, writes UKI preset,
+installs `arche` Plymouth theme (subtle lavender + ARCHE wordmark), rewrites
+`/etc/crypttab.initramfs` with real LUKS UUID, rebuilds UKIs. After run, LUKS passphrase
+still works (rendered by Plymouth). To activate TPM2+PIN unlock, user runs `just tpm-enroll`
+separately — never touch keyslots from bootstrap.
 
-**Reboot gate.** `00-preflight.sh` runs `pacman -Syu`. If the upgrade replaces the
-running kernel (`/usr/lib/modules/$(uname -r)` no longer exists), preflight exits
-with code 2 and bootstrap pauses, prompting the user to reboot. After reboot,
-re-run `bash bootstrap.sh` — every step is idempotent, so preflight becomes a
-fast no-op and bootstrap continues with `01-base` onward on the new kernel.
+**Reboot gate.** `00-preflight.sh` runs `pacman -Syu`. If upgrade replaces running kernel
+(`/usr/lib/modules/$(uname -r)` no longer exists), preflight exits code 2 and bootstrap
+pauses, prompting reboot. After reboot, re-run `bash bootstrap.sh` — every step idempotent,
+preflight becomes fast no-op, bootstrap continues with `01-base` onward on new kernel.
 Pattern: run once → reboot if prompted → run again to finish.
 
 ---
 
 ## Justfile Layout
 
-Top-level `Justfile` is slim — it sets `dotfiles := justfile_directory()`, imports
-the modules under `just/`, and defines the single top-level `install` target. All
-other targets live in the imported modules but remain at the top level in the
-CLI (no namespace prefix). Run `just` or `just --list` to see the grouped list.
+Top-level `Justfile` sets `dotfiles := justfile_directory()`, imports modules under `just/`,
+defines single top-level `install` target. All other targets in imported modules but remain
+at top level in CLI (no namespace prefix). Run `just` or `just --list` for grouped list.
 
 | File              | Group        | Targets                                                                       |
 |-------------------|--------------|-------------------------------------------------------------------------------|
 | `Justfile`        | bootstrap    | `install`                                                                     |
 | `just/user.just`  | helpers      | `ssh-setup`, `multi-user-init`, `tpm-enroll`, `secondary-user`                |
 | `just/scripts.just` | scripts    | `preflight`, `base`, `security`, `gpu`, `audio`, `hyprland`, `shell`, `panel`, `panel-restart`, `runtimes`, `apps`, `stow`, `appearance`, `boot` |
-| `just/theme.just` | theme        | `theme`, `switch`, `themes`, `render`, `reload`                               |
+| `just/theme.just` | theme        | `theme-apply`, `theme-switch <name>`, `theme-list`                            |
 | `just/test.just`  | test         | `test`, `test-stow`, `gate`, `test-all`                                       |
 | `just/util.just`  | utilities    | `restow`, `relink`, `backup`, `sddm-preview`                                  |
 
-Component scripts map 1:1 to targets: `just <component>` runs the matching
+Component scripts map 1:1 to targets: `just <component>` runs matching
 `scripts/NN-<component>.sh` (e.g. `just hyprland` → `scripts/05-hyprland.sh`).
 
 ---
@@ -327,6 +365,8 @@ Component scripts map 1:1 to targets: `just <component>` runs the matching
 - Rust 1.94.0 via rustup
 - Bun 1.3.5 via ~/.bun
 - Docker 29.3.0 system
+- JDK 17 (jdk17-openjdk) — default Java; required by Android SDK build-tools and Gradle
+- Android SDK at `/opt/android-sdk` (AUR `android-sdk` family) — `ANDROID_HOME` + PATH wired in `stow/fish/.config/fish/conf.d/android.fish`. Human users joined to `android-sdk` group by `08-runtimes.sh` for write access (sdkmanager). adb comes from `android-sdk-platform-tools` — never install `extra/android-tools` alongside, they collide on `/usr/bin/adb`.
 
 ### Key CLI Tools
 fzf, eza, bat, ripgrep, fd, zoxide, lazygit, lazydocker,
@@ -339,7 +379,7 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - rofi-wayland (app launcher), grim + slurp + satty (screenshots)
 - hyprlock (lock screen), hypridle (idle management), hyprsunset (night light)
 - awww (wallpaper — successor to swww), cliphist (clipboard history), hyprpolkitagent (auth)
-- xdg-desktop-portal-hyprland + xdg-desktop-portal-gtk (the Hyprland portal only implements Screenshot/ScreenCast/GlobalShortcuts — Settings/FileChooser/etc fall through to portal-gtk, which also bridges gsettings `color-scheme` → xdg `color-scheme` D-Bus property for Electron/Chromium/Vivaldi)
+- xdg-desktop-portal-hyprland + xdg-desktop-portal-gtk (Hyprland portal implements Screenshot/ScreenCast/GlobalShortcuts only — Settings/FileChooser/etc fall through to portal-gtk, which also bridges gsettings `color-scheme` → xdg `color-scheme` D-Bus property for Electron/Chromium/Vivaldi)
 
 ### Lenovo Legion Pro 5 (16ARX8)
 - ideapad_laptop + lenovo_wmi_gamezone kernel modules (loaded)
@@ -347,7 +387,7 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - Platform profiles: low-power, balanced, performance, max-power
 - Fan mode control (auto / full speed)
 - Camera kill switch, USB charging toggle, Fn lock
-- arche-legion TUI manages all of the above (Super+Ctrl+G)
+- arche-legion TUI manages all (Super+Ctrl+G)
 
 ### NVIDIA
 - nvidia-open-dkms 590.48.01 (open kernel module)
@@ -382,11 +422,11 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ## Current State — All Components Built
 
-Infrastructure: bootstrap.sh, Justfile, lib.sh, theme.sh, tests/run.sh, docs/
+Infrastructure: bootstrap.sh, Justfile, lib.sh, theming/engine.sh, tests/run.sh, docs/
 Scripts: 13 numbered scripts (00-preflight through 12-boot)
 Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, panel, runtimes, apps, appearance, boot)
-Themes: ember.sh (active), schema.sh (variable registry)
-Templates: btop, electron-flags, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, rofi, starship, tmux
+Themes: theming/themes/ember.sh (default), theming/themes/frost.sh, theming/themes/schema.sh
+Templates: theming/templates/{arche, btop, electron-flags, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, rofi, starship, tmux}
 Stow: see Repository Structure above
 System: pacman.conf, 3 pacman hooks, 3 system binaries, sddm.conf.d/10-arche.conf
 
@@ -396,41 +436,41 @@ See `docs/status.md` for full tracking.
 
 ## Active Known Issues
 
-See `docs/status.md` for the full table.
+See `docs/status.md` for full table.
 
 ---
 
 ## Rules Claude Code Must Follow
 
-1. Never write colors, fonts, or sizes into stow package configs — use templates or themes/.
+1. Never write colors, fonts, or sizes into stow package configs — use `theming/templates/` or `theming/themes/`.
 2. Never add package installs inside scripts directly — use install_group and packages/.
 3. Never use --noconfirm.
 4. Never hardcode /home/stark — always $HOME.
 5. Never commit generated files (style.css, colors.conf, rendered configs).
 6. Every new script must be independently runnable.
 7. Conventional commits: feat/fix/chore/docs/refactor. Scope = component name.
-8. If a config file's layer is ambiguous, ask before creating it.
-9. Before installing any AUR package, flag it and show the PKGBUILD source URL.
-10. When adding a new component, touch all required places: packages/, templates/ (if visual), stow/, scripts/.
-11. Every new script or config must have at least lint-level test coverage.
+8. If config file layer ambiguous, ask before creating.
+9. Before installing any AUR package, flag it and show PKGBUILD source URL.
+10. When adding new component, touch all required places: packages/, theming/templates/ (if visual), stow/, scripts/.
+11. Every new script or config needs at least lint-level test coverage.
 12. Keep docs/ updated when making structural changes or decisions.
-13. When adding a new floating TUI popup, use `kitty --class popup -e <cmd>` (or `arche-popup <cmd>`) — the hypr window rule handles float/center/size.
+13. When adding new floating TUI popup, use `kitty --class popup -e <cmd>` (or `arche-popup <cmd>`) — hypr window rule handles float/center/size.
 14. Hyprland window rules live in `stow/hypr/.config/hypr/windows.conf`. Do not hardcode rules in scripts.
 
 ---
 
 ## What NOT to Do
 - Do not suggest Oh My Zsh, zinit, bash-it, oh-my-bash, ble.sh, bash-preexec, or carapace — fish + fisher + atuin is the stack (D018 reverses D016, restores D003)
-- Do not install fisher from AUR — install it from upstream curl into `~/.config/fish/functions/fisher.fish`. See `06-shell.sh`.
+- Do not install fisher from AUR — install from upstream curl into `~/.config/fish/functions/fisher.fish`. See `06-shell.sh`.
 - Do not use GRUB or Limine syntax — bootloader is systemd-boot (D024)
-- Do not reference the old `encrypt` hook or `cryptdevice=` cmdline — we use `sd-encrypt` + `/etc/crypttab.initramfs` for TPM2 unlock (D024)
-- Do not reference nvm — fnm is the active Node manager
+- Do not reference old `encrypt` hook or `cryptdevice=` cmdline — use `sd-encrypt` + `/etc/crypttab.initramfs` for TPM2 unlock (D024)
+- Do not reference nvm — fnm is active Node manager
 - Do not reference pyenv — not installed
-- Do not reference bash, zsh, ble.sh, bash-preexec, or carapace as the active shell — fish is the shell (D018)
+- Do not reference bash, zsh, ble.sh, bash-preexec, or carapace as active shell — fish is shell (D018)
 - Do not hardcode /home/stark — use `$HOME` or `~`
-- Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is the pattern (gitignored)
-- Do not reference KDE Plasma, KWin, KRunner, Plasma Login Manager, Spectacle, kscreenlocker, Powerdevil, Klipper, kde-gtk-config — removed in D023, Hyprland is the desktop
+- Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is pattern (gitignored)
+- Do not reference KDE Plasma, KWin, KRunner, Plasma Login Manager, Spectacle, kscreenlocker, Powerdevil, Klipper, kde-gtk-config — removed in D023, Hyprland is desktop
 - Do not reference Waybar, Mako, SwayOSD, syshud — Quickshell (arche-shell) replaces bar/notifications/OSD in one layer (D023)
 - Do not install dunst — its user unit is `Type=dbus` with `BusName=org.freedesktop.Notifications`, so D-Bus auto-activates it and races Quickshell's `NotificationServer` (`Notifs.qml`) for the name, leaving every toast rendered in dunst's default blue-bubble style (D023)
-- Do not reference plasma-login-manager — SDDM is the greeter (D023 reverts D022)
-- Do not vendor SilentSDDM or any SDDM theme — default Breeze ships with sddm and is what we use (D023)
+- Do not reference plasma-login-manager — SDDM is greeter (D023 reverts D022)
+- Do not vendor SilentSDDM or any SDDM theme — default Breeze ships with sddm, that what we use (D023)

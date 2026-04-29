@@ -21,6 +21,7 @@ tools/*/target/
 *.bak
 *.bak.*
 *.pre-stow
+*.original.md
 
 # Generated output (rendered by theme.sh — never committed)
 # These live in ~/.config/<component>/ and are recreated by `just theme`

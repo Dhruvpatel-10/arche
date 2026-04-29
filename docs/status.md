@@ -9,12 +9,12 @@ Last updated: 2026-04-18
 | Component          | Status  | Notes                              |
 |--------------------|---------|------------------------------------|
 | `scripts/lib.sh`   | Done    | Shared primitives for all scripts  |
-| `scripts/theme.sh` | Done    | Theme engine: apply/switch/list    |
+| `theming/engine.sh` | Done    | Theme engine: apply/switch/list    |
 | `bootstrap.sh`     | Done    | Orchestrator                       |
 | `Justfile`         | Done    | Day-to-day interface               |
 | `tests/run.sh`     | Done    | Lint/stow/integration test runner  |
 | `docs/`            | Done    | Architecture, decisions, status    |
-| `themes/schema.sh` | Done    | Variable registry — names, types, defaults |
+| `theming/themes/schema.sh` | Done    | Variable registry — names, types, defaults |
 
 ## Stow Packages
 
@@ -152,7 +152,7 @@ Last updated: 2026-04-18
 | ~~T1~~ | ~~Qt6ct Ember.conf has hardcoded colors~~ | — | Resolved — Qt theming removed entirely (no Qt apps left) |
 | ~~T2~~ | ~~Kvantum Ember.kvconfig has hardcoded colors~~ | — | Resolved — Qt theming removed entirely |
 | T3  | CSS templates hardcode font-size/border-radius instead of using theme vars | Low | Open |
-| Q1  | Quickshell theme values duplicate schema.sh (should be rendered from templates/active eventually — D023 follow-up) | Medium | Open |
+| Q1  | Quickshell theme values duplicate schema.sh (should be rendered from theming/templates/active eventually — D023 follow-up) | Medium | Open |
 | B1  | 95-boot-cleanup.hook prunes old kernels but not stale UKIs in /boot/EFI/Linux — D024 follow-up | Low | Open |
 | B2  | Plymouth prompt text uses Image.Text fallback (Cantarell) instead of IBM Plex Sans — cosmetic, functional | Low | Open |
 

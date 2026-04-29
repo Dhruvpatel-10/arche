@@ -86,8 +86,7 @@ arche/
 ├── bootstrap.sh        # orchestrator — runs all scripts in order
 ├── install.sh          # curl one-liner entry point
 ├── Justfile            # day-to-day interface
-├── themes/             # color palettes, fonts, layout values
-├── templates/          # visual configs rendered via envsubst
+├── theming/            # theme system (themes/ + templates/ + engine.sh)
 ├── packages/           # declarative package lists (pacman + AUR)
 ├── scripts/            # numbered setup scripts (00-preflight … 11-appearance)
 ├── stow/               # behavior configs symlinked via GNU Stow
@@ -101,7 +100,7 @@ arche/
 
 Every config belongs to exactly one layer:
 
-- **Templates** `templates/` — colors, fonts, sizes. Rendered by theme engine.
+- **Templates** `theming/templates/` — colors, fonts, sizes. Rendered by engine.
 - **Stow** `stow/` — behavior: keybinds, modules, rules. Symlinked as-is.
 - **Generated** `~/.config/` — rendered output. Never committed.
 
@@ -109,28 +108,34 @@ Every config belongs to exactly one layer:
 
 Ember ships as the default — warm amber (`#c9943e`) on deep charcoal (`#13151c`).
 
-Themes are defined in `themes/` and rendered across templates for kitty, hypr,
-rofi, GTK, Qt, fish, starship, btop, tmux, mpv, glow, and arche-legion.
-`themes/schema.sh` is the single source of truth for every variable;
-`docs/theme-standard.md` documents the full spec. The Quickshell panel carries
-its own `Theme.qml` (in the arche-shell repo) — kept in sync with ember manually
-for now.
+Theme values live in `theming/themes/<name>.sh`; output specs in
+`theming/templates/<app>/`. `theming/themes/schema.sh` is the single source of
+truth for every variable; `docs/theme-standard.md` documents the full spec.
+
+Two consumption tiers, both fed from the same exported vars on each apply:
+
+- Foreign apps (kitty, hypr, gtk, mpv, …) — `*.tmpl` files rendered via
+  envsubst into `~/.config/<app>/`.
+- Arche-owned (Quickshell panel, future arche tools) — canonical
+  `/opt/arche/run/theme.json` emitted by `theming/templates/arche/_emit.sh`.
+  Path is system-shared (the `users` group can write under `/opt/arche`),
+  so a switch by any user re-paints every running panel on the host —
+  Quickshell's FileView watches mtime and hot-reloads on change.
 
 ```bash
-just theme apply     # render templates + reload services
-just switch <name>   # switch to a different theme
-just themes          # list available themes
+just theme-apply       # render templates + emit theme.json + run reload hooks
+just theme-switch ember # switch to a different theme
+just theme-list        # list available themes
 ```
 
 ## Day-to-Day
 
 ```bash
-just install         # full bootstrap
-just theme apply     # re-render theme
-just reload          # render + reload all running services
-just test            # lint checks
-just test-all        # lint + stow + integration
-just restow fish     # re-stow a single package
+just install            # full bootstrap
+just theme-apply        # re-render theme + reload running services
+just test               # lint checks
+just test-all           # lint + stow + integration
+just restow fish        # re-stow a single package
 ```
 
 ## Security

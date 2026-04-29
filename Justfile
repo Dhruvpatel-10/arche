@@ -7,7 +7,7 @@ dotfiles := justfile_directory()
 
 import 'just/user.just'       # multi-user-init, secondary-user, ssh-setup, tpm-enroll
 import 'just/scripts.just'    # preflight, base, ..., boot, panel-restart
-import 'just/theme.just'      # theme, switch, themes, render, reload
+import 'just/theme.just'      # theme-apply, theme-switch, theme-list
 import 'just/test.just'       # test, test-stow, gate, test-all
 import 'just/util.just'       # restow, relink, backup, sddm-preview
 

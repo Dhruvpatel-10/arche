@@ -70,7 +70,7 @@ secondary-user:
     run_step "Panel (quickshell → /opt/arche/shell)"      scripts/07-panel.sh
     run_step "Apps (docker/syncthing/bluetooth/denoise)"  scripts/09-apps.sh
     run_step "Appearance (fonts + GTK/Qt templates)"      scripts/11-appearance.sh
-    run_step "Theme apply (render all templates)"         scripts/theme.sh apply
+    run_step "Theme apply (render all templates)"         theming/engine.sh apply
 
     echo
     echo "[✓] Secondary user setup complete."

@@ -32,3 +32,9 @@ sddm-preview:
 [group: 'utilities']
 dns:
     bash {{dotfiles}}/scripts/dns.sh
+
+# Fetch + install Apple SF Pro fonts to /usr/share/fonts/SF-Pro.
+# Optional arg: path to a pre-downloaded SF-Pro.dmg (skips Apple CDN download).
+[group: 'utilities']
+sf-pro dmg='':
+    bash {{dotfiles}}/helpers/install-sf-pro.sh {{dmg}}
