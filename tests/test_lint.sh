@@ -8,7 +8,7 @@ test_lint() {
 
     section "Lint: Bash syntax"
 
-    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/packages/*.sh "$ARCHE"/themes/*.sh \
+    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/packages/*.sh "$ARCHE"/theming/themes/*.sh \
              "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
         [[ -f "$f" ]] || continue
         local rel="${f#$ARCHE/}"
@@ -121,14 +121,14 @@ test_lint() {
 
     section "Lint: Theme variables (schema-driven)"
 
-    for f in "$ARCHE"/themes/*.sh; do
+    for f in "$ARCHE"/theming/themes/*.sh; do
         local name
         name="$(basename "$f")"
         [[ "$name" == "schema.sh" ]] && continue
 
         local missing
         missing=$(
-            source "$ARCHE/themes/schema.sh"
+            source "$ARCHE/theming/themes/schema.sh"
             source "$f"
             for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_FONTS_REQUIRED[@]}" \
                        "${SCHEMA_INTEGERS_REQUIRED[@]}" "${SCHEMA_APPEARANCE_REQUIRED[@]}"; do
@@ -136,9 +136,9 @@ test_lint() {
             done
         )
         if [[ -z "$missing" ]]; then
-            pass "themes/$name exports all required variables"
+            pass "theming/themes/$name exports all required variables"
         else
-            fail "themes/$name missing: $missing"
+            fail "theming/themes/$name missing: $missing"
         fi
     done
 
@@ -146,12 +146,12 @@ test_lint() {
 
     section "Lint: Active theme symlink"
 
-    if [[ -L "$ARCHE/themes/active" && -f "$ARCHE/themes/active" ]]; then
-        pass "themes/active symlink valid"
-    elif [[ -L "$ARCHE/themes/active" ]]; then
-        fail "themes/active symlink broken"
+    if [[ -L "$ARCHE/theming/themes/active" && -f "$ARCHE/theming/themes/active" ]]; then
+        pass "theming/themes/active symlink valid"
+    elif [[ -L "$ARCHE/theming/themes/active" ]]; then
+        fail "theming/themes/active symlink broken"
     else
-        fail "themes/active not a symlink"
+        fail "theming/themes/active not a symlink"
     fi
 
     # ── Template variable coverage ──
@@ -160,7 +160,7 @@ test_lint() {
 
     local defined_vars
     defined_vars=$(
-        source "$ARCHE/themes/schema.sh"
+        source "$ARCHE/theming/themes/schema.sh"
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                    "${SCHEMA_FONTS_REQUIRED[@]}" "${SCHEMA_INTEGERS_REQUIRED[@]}" \
                    "${SCHEMA_INTEGERS_OPTIONAL[@]}" "${SCHEMA_ALPHA_OPTIONAL[@]}" \
@@ -178,7 +178,7 @@ test_lint() {
     )
 
     local tmpl_vars
-    tmpl_vars=$(grep -roh '\${[A-Z_]*}' "$ARCHE/templates/" 2>/dev/null \
+    tmpl_vars=$(grep -roh '\${[A-Z_]*}' "$ARCHE/theming/templates/" 2>/dev/null \
         | sort -u | sed 's/[${}]//g')
 
     local undefined=""

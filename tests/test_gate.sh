@@ -33,16 +33,16 @@ test_gate() {
 
     section "Gate: Theme can render"
 
-    if [[ ! -L "$ARCHE/themes/active" || ! -f "$ARCHE/themes/active" ]]; then
-        fail "themes/active missing or broken — theme.sh will fail"
+    if [[ ! -L "$ARCHE/theming/themes/active" || ! -f "$ARCHE/theming/themes/active" ]]; then
+        fail "theming/themes/active missing or broken — engine.sh will fail"
     else
-        pass "themes/active symlink valid"
+        pass "theming/themes/active symlink valid"
 
         # Check theme exports required vars
         local missing
         missing=$(
-            source "$ARCHE/themes/schema.sh"
-            source "$ARCHE/themes/active"
+            source "$ARCHE/theming/themes/schema.sh"
+            source "$ARCHE/theming/themes/active"
             for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_FONTS_REQUIRED[@]}" \
                        "${SCHEMA_INTEGERS_REQUIRED[@]}" "${SCHEMA_APPEARANCE_REQUIRED[@]}"; do
                 [[ -n "${!var:-}" ]] || echo "$var"
@@ -59,7 +59,7 @@ test_gate() {
 
     local defined_vars
     defined_vars=$(
-        source "$ARCHE/themes/schema.sh"
+        source "$ARCHE/theming/themes/schema.sh"
         for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}" \
                    "${SCHEMA_FONTS_REQUIRED[@]}" "${SCHEMA_INTEGERS_REQUIRED[@]}" \
                    "${SCHEMA_INTEGERS_OPTIONAL[@]}" "${SCHEMA_ALPHA_OPTIONAL[@]}" \
@@ -75,7 +75,7 @@ test_gate() {
     )
 
     local tmpl_vars
-    tmpl_vars=$(grep -roh '\${[A-Z_]*}' "$ARCHE/templates/" 2>/dev/null \
+    tmpl_vars=$(grep -roh '\${[A-Z_]*}' "$ARCHE/theming/templates/" 2>/dev/null \
         | sort -u | sed 's/[${}]//g')
 
     local undefined=""

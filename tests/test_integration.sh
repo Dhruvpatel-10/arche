@@ -100,8 +100,8 @@ test_integration() {
 
     section "Integration: Theme values in rendered output"
 
-    if [[ -f "$ARCHE/themes/active" ]]; then
-        if (source "$ARCHE/themes/active" 2>/dev/null); then
+    if [[ -f "$ARCHE/theming/themes/active" ]]; then
+        if (source "$ARCHE/theming/themes/active" 2>/dev/null); then
             pass "active theme sources cleanly"
         else
             fail "active theme fails to source"
@@ -109,7 +109,7 @@ test_integration() {
 
         # Read expected values from active theme
         local accent bg fg font_mono
-        eval "$(source "$ARCHE/themes/active" && echo "accent=$COLOR_ACCENT bg=$COLOR_BG fg=$COLOR_FG font_mono=\"$FONT_MONO\"")"
+        eval "$(source "$ARCHE/theming/themes/active" && echo "accent=$COLOR_ACCENT bg=$COLOR_BG fg=$COLOR_FG font_mono=\"$FONT_MONO\"")"
 
         # Spot-check: bg color in kitty/theme.conf
         if [[ -f "$HOME/.config/kitty/theme.conf" ]]; then
