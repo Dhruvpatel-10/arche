@@ -66,8 +66,10 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - fish, atuin, starship, kitty, tmux
 - fisher (fish plugin manager) is installed from upstream curl by `06-shell.sh` — not from AUR. See D018.
 
-### runtimes.sh — Dev Runtimes (pacman: 5)
+### runtimes.sh — Dev Runtimes (pacman: 7, AUR: 4)
 - rust, go, cmake, clang, gdb
+- jdk17-openjdk, android-udev (Android / React Native prerequisites)
+- **AUR:** android-sdk, android-sdk-platform-tools, android-sdk-build-tools, android-platform — installs to `/opt/android-sdk`. `08-runtimes.sh` adds every human user to the `android-sdk` group and pins default JDK to 17. PATH/`ANDROID_HOME` set by `stow/fish/.config/fish/conf.d/android.fish`.
 - **Note:** fnm (Node) and Bun install via their own scripts in `08-runtimes.sh`, not pacman
 
 ### apps.sh — Applications (pacman: ~22)
