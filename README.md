@@ -139,7 +139,6 @@ just restow fish     # re-stow a single package
 - SSH key-only auth (ed25519, no passwords, no root)
 - DNS-over-TLS (NextDNS primary, Cloudflare fallback, DNSSEC)
 - Kernel hardening (SYN cookies, ptrace, BPF, symlink protection)
-- USBGuard (block unknown devices)
 - MAC address randomization
 - Firejail for untrusted apps
 - fail2ban (brute-force SSH protection)

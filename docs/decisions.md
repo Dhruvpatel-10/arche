@@ -5,6 +5,34 @@ Newest entries at the top.
 
 ---
 
+## D030 — Drop USBGuard
+
+**Date:** 2026-04-28
+**Status:** Accepted
+**Reverses:** D003-era inclusion of USBGuard in the security layer.
+
+USBGuard blocked every hotplug device by default and offered no in-session
+prompt — phones plugged for MTP file transfer were silently denied, surfacing
+only as repeated `Device.Insert`/`Device.Remove` lines in the journal as the
+USB stack retried. The recovery path required `usb-inspect` or
+`usbguard allow-device -p <N>` per device, with no UX integration into the
+Quickshell notification stack. For a single-user laptop that already encrypts
+the disk, locks the screen, and runs a default-deny firewall, the friction
+exceeded the threat model: USBGuard's value is in shared/multi-user
+workstations and kiosk deployments where unattended ports get probed.
+
+Removed: package `usbguard`, the policy-generation block in `02-security.sh`,
+the `usb-inspect` helper at `system/usr/local/bin/`, the README/CLAUDE/status
+references. `firejail` and `fail2ban` stay; LUKS, sysctl hardening, SSH
+key-only, and the rest of the layer are unchanged.
+
+If a future host needs USB lockdown (shared machine, traveling, hostile
+environment), reintroduce alongside `usbguard-notifier` (AUR) so the user gets
+a libnotify popup with allow/block actions on every plug — silent block was
+the actual UX failure, not the policy itself.
+
+---
+
 ## D029 — Vendor Quickshell source into `/opt/arche/shell/`
 
 **Date:** 2026-04-19
@@ -1403,8 +1431,7 @@ vulnerabilities (Spectre, Meltdown) at early boot.
 - No auditd — compliance tool, overhead without value on a personal machine.
 - No unattended updates — manual `pacman -Syu` preferred.
 - LUKS encryption is install-time, not managed by bootstrap.
-- USBGuard — auto-installed and configured; initial policy generated from
-  currently connected devices. New devices blocked by default.
+- USBGuard — removed; see D030.
 
 ---
 

@@ -375,7 +375,6 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 - Lid close: explicit logind suspend (battery + AC), ignore docked
 - WiFi: MAC address randomization (NetworkManager or iwd)
 - CPU: amd-ucode for microcode vulnerability patches
-- USB: USBGuard blocks unknown devices; usb-inspect for sandboxed inspection
 - Sandboxing: firejail for untrusted apps and AppImages
 - Secrets: API keys in ~/.config/fish/local.fish (not tracked in git)
 

@@ -114,7 +114,6 @@ Last updated: 2026-04-18
 | `system/etc/pacman.d/hooks/zz-snapper-post.hook` | `/etc/pacman.d/hooks/` | Done   |
 | `system/usr/local/bin/boot-cleanup`     | `/usr/local/bin/boot-cleanup`   | Done   |
 | `system/usr/local/bin/snapper-pacman`   | `/usr/local/bin/snapper-pacman` | Done   |
-| `system/usr/local/bin/usb-inspect`      | `/usr/local/bin/usb-inspect`    | Done   |
 | `system/etc/snapper/configs/root`       | `/etc/snapper/configs/root`     | Done   |
 | `system/etc/sddm.conf.d/10-arche.conf`  | `/etc/sddm.conf.d/10-arche.conf`| Done (D023) |
 | `system/etc/systemd/resolved.conf`      | `/etc/systemd/resolved.conf`    | Done   |
