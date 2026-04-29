@@ -175,6 +175,94 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 7b. Memory Pressure & OOM Protection
+# ─────────────────────────────────────────────────────────────────────────────
+# Without this, a runaway build (cargo test spawning N linkers, each eating
+# multi-GB) can exhaust RAM + zram, thrash the kernel reclaim path, and freeze
+# the whole desktop — fans spin, UI dies, only power button saves you.
+#
+# Three layers, cheapest first:
+#   1. Disk swap file (8G, btrfs subvol @swap)  — real overflow target so zram
+#      isn't the only pressure valve. Priority defaults to lower than zram, so
+#      fast tier fills first, disk only catches overflow.
+#   2. systemd-oomd (PSI-based userspace OOM)   — drop-ins in system/etc/systemd
+#      configure per-user slice to SIGKILL fattest cgroup when total swap >90%
+#      OR PSI memory pressure stays >60% for 20s. One rustc dies, desktop survives.
+#   3. user-.slice MemoryHigh=85%               — soft cap, kernel throttles via
+#      reclaim before oomd has to kill. Cargo stays fast until it nears cap.
+#
+# Cargo is NOT throttled — no CARGO_BUILD_JOBS cap, no nice. Build runs full
+# speed; runaway gets killed cleanly instead of wedging the system.
+# ─────────────────────────────────────────────────────────────────────────────
+
+log_section "Memory Pressure & OOM Protection"
+
+# ─── Disk swap file (btrfs subvol so it's excluded from snapper snapshots) ───
+
+SWAP_SIZE="8g"
+SWAP_SUBVOL="/swap"
+SWAP_FILE="/swap/swapfile"
+
+if findmnt / -no FSTYPE | grep -q '^btrfs$'; then
+    if ! swapon --show --noheadings | awk '{print $1}' | grep -qx "$SWAP_FILE"; then
+        # Create dedicated subvol (nested under @) — keeps swapfile out of
+        # snapshots of @. Swap inside a snapshotted subvol breaks on rollback.
+        if [[ ! -d "$SWAP_SUBVOL" ]]; then
+            log_info "Creating btrfs subvolume for swap at $SWAP_SUBVOL..."
+            sudo btrfs subvolume create "$SWAP_SUBVOL"
+        fi
+
+        if [[ ! -f "$SWAP_FILE" ]]; then
+            log_info "Allocating $SWAP_SIZE btrfs swap file at $SWAP_FILE..."
+            # mkswapfile handles nodatacow + no-compression + mkswap in one step
+            sudo btrfs filesystem mkswapfile --size "$SWAP_SIZE" --uuid clear "$SWAP_FILE"
+        fi
+
+        sudo swapon "$SWAP_FILE"
+        log_ok "Disk swap active: $SWAP_FILE ($SWAP_SIZE)"
+    else
+        log_warn "Swap file already active: $SWAP_FILE"
+    fi
+
+    # fstab: persist across reboots. zram handled separately by zram-generator.
+    # Use fixed-string match so a quoted path with slashes can't be misread as
+    # a regex. Earlier regex form silently appended a duplicate entry on every
+    # rerun, leaving fstab with two identical swap lines and a noisy boot warning.
+    if ! grep -qF "$SWAP_FILE " /etc/fstab; then
+        log_info "Adding swap file to /etc/fstab..."
+        echo "$SWAP_FILE none swap defaults 0 0" | sudo tee -a /etc/fstab > /dev/null
+        log_ok "fstab updated"
+    else
+        log_warn "fstab already has swap entry"
+    fi
+
+    # If a previous run with the broken regex appended duplicate rows, collapse
+    # them down to one. Idempotent: no-op once fstab is clean.
+    if [[ $(grep -cF "$SWAP_FILE " /etc/fstab) -gt 1 ]]; then
+        log_info "Removing duplicate $SWAP_FILE entries from /etc/fstab..."
+        sudo awk -v sf="$SWAP_FILE" 'BEGIN{seen=0} $1==sf && /swap/ {if(seen) next; seen=1} {print}' \
+            /etc/fstab | sudo tee /etc/fstab.new > /dev/null
+        sudo mv /etc/fstab.new /etc/fstab
+        log_ok "fstab deduplicated"
+    fi
+else
+    log_warn "Root is not btrfs — skipping swap file setup (zram still active)"
+fi
+
+# ─── systemd-oomd drop-ins (linked by link_system_all earlier) + enable ───
+
+# Drop-ins live at:
+#   system/etc/systemd/oomd.conf.d/10-arche.conf               — PSI duration, swap limit
+#   system/etc/systemd/system/user-.slice.d/50-arche-oomd.conf — per-user PSI kill + MemoryHigh
+# Already symlinked into /etc by 00-preflight's link_system_all.
+
+# Pick up freshly linked drop-ins so MemoryHigh and ManagedOOM apply live.
+sudo systemctl daemon-reload
+
+svc_enable systemd-oomd
+log_ok "systemd-oomd active — total swap >90% OR PSI >60% for 20s in user slice → kill fattest cgroup"
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 8. Lid Close — explicit logind behavior
 # ─────────────────────────────────────────────────────────────────────────────
 # Makes lid close behavior explicit instead of relying on logind defaults.
