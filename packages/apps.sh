@@ -36,6 +36,8 @@ PACMAN_PKGS=(
     qbittorrent
     kdeconnect               # phone integration
     kio-extras               # KIO workers (tags, recentdocuments, mtp, …) — kdeconnectd resolves clipboard URLs through KIO
+    gvfs-mtp                 # MTP backend for GIO — Nautilus/file managers see Android phones in File Transfer mode
+    gvfs-gphoto2             # PTP backend — phones in Camera/PTP mode and actual cameras
 
     # Bluetooth
     bluez
