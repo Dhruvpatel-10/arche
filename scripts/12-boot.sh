@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 12-boot.sh — Pre-boot UI (Plymouth) + UKI build + sd-encrypt switch
+# 12-boot.sh — UKI build + sd-encrypt switch
 #
 # This script touches the boot chain. It is idempotent but consequential:
-#   · Switches mkinitcpio HOOKS from `encrypt` → `sd-encrypt`
+#   · Switches mkinitcpio HOOKS from `encrypt` → `sd-encrypt` (via the
+#     /etc/mkinitcpio.conf.d/arche.conf drop-in)
 #   · Writes a UKI-only linux.preset
-#   · Installs a custom Plymouth theme (arche — subtle purple, ARCHE wordmark)
 #   · Writes /etc/crypttab.initramfs with the real LUKS UUID (TPM2-ready but
 #     not yet enrolled — enrollment is a separate, explicit step via
 #     helpers/tpm2-enroll.sh / `just tpm-enroll`)
@@ -12,34 +12,19 @@
 #
 # After this script, a passphrase LUKS unlock still works (fallback keyslot
 # untouched). TPM2+PIN becomes active only after the user runs the enrollment
-# helper.
-#
-# Requires: ttf-ibm-plex (installed by 11-appearance.sh), imagemagick
-# (installed by 09-apps.sh).
+# helper. The passphrase / PIN prompt appears on the plain kernel TTY — no
+# graphical splash.
 
 source "$(dirname "$0")/lib.sh"
 
-log_info "Configuring pre-boot UI + UKI..."
-
-# ─── Sanity: required deps from earlier scripts ─────────────────────────────
-# Checked BEFORE package install so we fail fast without side-effects.
-
-if ! pacman -Q imagemagick &>/dev/null; then
-    log_err "imagemagick not installed — run 'just apps' (or 09-apps.sh) first"
-    exit 1
-fi
-if ! pacman -Q ttf-ibm-plex &>/dev/null; then
-    log_err "ttf-ibm-plex not installed — run 'just appearance' (or 11-appearance.sh) first"
-    exit 1
-fi
+log_info "Configuring sd-encrypt + UKI..."
 
 # ─── Symlink system configs FIRST ───────────────────────────────────────────
-# Plymouth's pacman install trigger runs `mkinitcpio -P` as a hook. We need
-# the HOOKS drop-in, linux.preset, kernel cmdline, AND /etc/crypttab.initramfs
-# all in place before that, so the hook-triggered UKI build is already
-# bootable — sd-encrypt can see the LUKS device, plymouth draws, cmdline
-# has root=. Otherwise the first UKI is unbootable until the script's own
-# final rebuild runs, which would brick boot if the user Ctrl+C'd mid-run.
+# HOOKS drop-in, linux.preset, kernel cmdline, AND /etc/crypttab.initramfs all
+# need to be in place before any pacman-triggered `mkinitcpio -P` runs, so the
+# hook-built UKI is already bootable — sd-encrypt can see the LUKS device,
+# cmdline has root=. Otherwise the first UKI is unbootable until the script's
+# own final rebuild runs, which would brick boot if the user Ctrl+C'd mid-run.
 link_system_all
 
 # Rewrite /etc/crypttab.initramfs with the live LUKS UUID. tpm2-device=auto
@@ -62,65 +47,7 @@ sudo chmod 600 /etc/crypttab.initramfs
 
 install_group "$ARCHE/packages/boot.sh"
 
-# Prefer the v7 `magick` CLI; fall back to legacy `convert`.
-IM=magick
-command -v magick &>/dev/null || IM=convert
-
-# ─── 1. Deploy Plymouth theme ────────────────────────────────────────────────
-
-theme_src="$ARCHE/tools/plymouth/arche"
-theme_dst="/usr/share/plymouth/themes/arche"
-
-log_info "Installing Plymouth theme 'arche' to $theme_dst..."
-sudo install -d -m 755 "$theme_dst"
-sudo install -m 644 "$theme_src/arche.plymouth" "$theme_dst/arche.plymouth"
-sudo install -m 644 "$theme_src/arche.script"   "$theme_dst/arche.script"
-
-# ─── 2. Render PNG assets ────────────────────────────────────────────────────
-# Kept out of git — regenerated from the palette on every run. Cheap.
-
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-
-# Palette (match arche.script exactly).
-FG_HEX="#c8bbdd"     # light lavender — wordmark
-ACCENT_HEX="#a08dc4" # muted lavender — rule + dots
-ERR_HEX="#b88a9a"    # dusty rose — error dots
-BG_HEX="none"        # transparent; Window.SetBackground fills behind
-
-# Wordmark: ARCHE in IBM Plex Sans Medium, letter-spaced, flat.
-# Use the explicit file path — fontconfig family-name resolution via
-# -font "IBM Plex Sans" is flaky under ImageMagick's `label:` pseudo-image;
-# the TTF path always works and is pinned by ttf-ibm-plex's Arch layout.
-log_info "Rendering ARCHE wordmark..."
-wordmark_font="/usr/share/fonts/TTF/IBMPlexSans-Medium.ttf"
-if [[ ! -f "$wordmark_font" ]]; then
-    log_err "Expected font not found: $wordmark_font (ttf-ibm-plex layout may have changed)"
-    exit 1
-fi
-$IM -background "$BG_HEX" -fill "$FG_HEX" \
-    -font "$wordmark_font" -pointsize 96 \
-    -kerning 18 \
-    label:"ARCHE" "$tmp/title.png"
-
-# Hairline rule: 1×220 px @ 40% alpha.
-log_info "Rendering accent rule..."
-$IM -size 220x1 "xc:$ACCENT_HEX" -alpha set -channel A -evaluate multiply 0.4 +channel "$tmp/rule.png"
-
-# PIN dots: 10×10 filled circle, accent and error colour.
-log_info "Rendering PIN dots..."
-$IM -size 10x10 xc:none -fill "$ACCENT_HEX" -draw "circle 5,5 5,0" "$tmp/dot.png"
-$IM -size 10x10 xc:none -fill "$ERR_HEX"    -draw "circle 5,5 5,0" "$tmp/dot_error.png"
-
-sudo install -m 644 "$tmp"/*.png "$theme_dst/"
-log_ok "Theme assets rendered + installed"
-
-# ─── 3. Set Plymouth default theme + link config ─────────────────────────────
-
-sudo plymouth-set-default-theme arche
-log_ok "Plymouth default theme = arche"
-
-# ─── 4. Rebuild UKIs ────────────────────────────────────────────────────────
+# ─── Rebuild UKIs ──────────────────────────────────────────────────────────
 # Legacy loader entries are archived AFTER the UKI build succeeds — if
 # mkinitcpio fails, systemd-boot still has a valid path to boot from the old
 # entries on the next power-cycle.
@@ -135,7 +62,7 @@ else
     exit 1
 fi
 
-# ─── 6. Verify UKI landed ───────────────────────────────────────────────────
+# ─── Verify UKI landed ─────────────────────────────────────────────────────
 
 if [[ ! -f /boot/EFI/Linux/arch-linux.efi ]]; then
     log_err "Default UKI missing — expected /boot/EFI/Linux/arch-linux.efi"
@@ -144,7 +71,7 @@ if [[ ! -f /boot/EFI/Linux/arch-linux.efi ]]; then
 fi
 log_ok "Default UKI present at /boot/EFI/Linux/arch-linux.efi"
 
-# ─── 7. Archive legacy systemd-boot loader entries ──────────────────────────
+# ─── Archive legacy systemd-boot loader entries ────────────────────────────
 # Only after we've confirmed a working UKI exists. systemd-boot auto-discovers
 # UKIs in /boot/EFI/Linux/ via BLS Type #2; the archived *.conf files aren't
 # needed and would just create duplicate menu entries.
@@ -157,6 +84,6 @@ for entry in /boot/loader/entries/*.conf; do
     fi
 done
 
-log_ok "Pre-boot UI setup done"
+log_ok "Boot setup done"
 log_info "Next step: enroll TPM2 + PIN via 'just tpm-enroll' (or helpers/tpm2-enroll.sh)"
-log_info "Until then, the passphrase prompt still works (now rendered by Plymouth)."
+log_info "Until then, the passphrase prompt still works (plain TTY, no splash)."

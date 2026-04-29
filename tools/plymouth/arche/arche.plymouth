@@ -1,8 +1,0 @@
-[Plymouth Theme]
-Name=arche
-Description=Arche pre-boot splash — ARCHE wordmark in subtle lavender, Plymouth-rendered PIN widget.
-ModuleName=script
-
-[script]
-ImageDir=/usr/share/plymouth/themes/arche
-ScriptFile=/usr/share/plymouth/themes/arche/arche.script

@@ -35,18 +35,12 @@ else
     log_ok "Initramfs rebuilt with NVIDIA modules"
 fi
 
-# Ensure early KMS on the kernel cmdline. Required for two things:
-#   1. Wayland (nvidia_drm.modeset=1 is the modesetting driver prereq).
-#   2. Plymouth visibility during LUKS unlock — the Arch kernel only
-#      suppresses simpledrm when `nvidia_drm.modeset=1` is parsed from the
-#      cmdline (module defaults are parsed too late). Without it,
-#      simpledrm grabs fb0 first, plymouthd opens that DRM device, then
-#      nvidia_drm hotswaps fb0 a second later — plymouthd's handle goes
-#      stale and the splash silently black-screens. See D024.
+# Ensure early KMS on the kernel cmdline. nvidia_drm.modeset=1 is the
+# modesetting driver prereq for Wayland (Hyprland).
 if ! grep -q "nvidia_drm.modeset=1" /etc/kernel/cmdline 2>/dev/null; then
     log_warn "nvidia_drm.modeset=1 missing from /etc/kernel/cmdline"
     log_info "  /etc/kernel/cmdline is symlinked from system/etc/kernel/cmdline in the repo."
-    log_info "  Add 'nvidia_drm.modeset=1 nvidia_drm.fbdev=1' there, then re-run 'just boot'."
+    log_info "  Add 'nvidia_drm.modeset=1' there, then re-run 'just boot'."
 else
     log_ok "nvidia_drm.modeset=1 present on cmdline"
 fi

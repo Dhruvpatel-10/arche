@@ -35,7 +35,7 @@ echo
 declare -A descriptions=(
     [00-preflight]="System checks, pacman config, mirror ranking, full update"
     [01-base]="Core packages (CLI tools, base-devel, git, stow)"
-    [02-security]="Firewall, SSH hardening, Tailscale, DNS, kernel hardening, USBGuard"
+    [02-security]="Firewall, SSH hardening, Tailscale, DNS, kernel hardening"
     [03-gpu]="NVIDIA open driver + CUDA (skipped if no NVIDIA GPU)"
     [04-audio]="PipeWire + WirePlumber audio stack"
     [05-hyprland]="Hyprland compositor, Wayland utils, SDDM (default Breeze theme), rofi"
@@ -45,7 +45,7 @@ declare -A descriptions=(
     [09-apps]="Desktop apps (browser, media, file manager, etc.)"
     [10-stow]="Symlink all stow packages to \$HOME"
     [11-appearance]="Fonts, icons, cursors, GTK theming (nwg-look)"
-    [12-boot]="Plymouth splash + sd-encrypt + UKI (rebuilds UKIs; enroll TPM2 separately)"
+    [12-boot]="sd-encrypt + UKI (rebuilds UKIs; enroll TPM2 separately)"
 )
 
 # ─── Run all scripts in order ───

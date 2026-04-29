@@ -10,7 +10,7 @@ preflight:
 base:
     bash {{dotfiles}}/scripts/01-base.sh
 
-# Configure security (ufw, ssh, sysctl hardening, USBGuard)
+# Configure security (ufw, ssh, sysctl hardening, fail2ban)
 [group: 'scripts']
 security:
     bash {{dotfiles}}/scripts/02-security.sh
@@ -75,7 +75,7 @@ stow:
 appearance:
     bash {{dotfiles}}/scripts/11-appearance.sh
 
-# Set up pre-boot UI (Plymouth arche theme) + sd-encrypt + UKI
+# Set up sd-encrypt + UKI (TPM2-capable, passphrase/PIN on plain TTY)
 [group: 'scripts']
 boot:
     bash {{dotfiles}}/scripts/12-boot.sh

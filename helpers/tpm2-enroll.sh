@@ -8,8 +8,8 @@
 # update re-seals the TPM, which will lock you out if you don't have a
 # fallback. Keep the passphrase.
 #
-# Prerequisites: bash scripts/12-boot.sh has already run (Plymouth + sd-encrypt
-# + UKI in place). This helper only touches the LUKS keyslots.
+# Prerequisites: bash scripts/12-boot.sh has already run (sd-encrypt + UKI
+# in place). This helper only touches the LUKS keyslots.
 #
 # Run as your normal user. The script uses sudo where needed.
 set -euo pipefail
@@ -58,7 +58,7 @@ ok "Passphrase keyslot present (${passphrase_slots}) — safe to enroll TPM2 alo
 
 echo
 warn "This will enroll a TPM2+PIN keyslot on $luks_part."
-warn "On the next boot, Plymouth will prompt for the PIN instead of the passphrase."
+warn "On the next boot, the kernel TTY will prompt for the PIN instead of the passphrase."
 warn "The passphrase keyslot will NOT be removed — it stays as fallback."
 echo
 printf "  Continue? [y/N] "
