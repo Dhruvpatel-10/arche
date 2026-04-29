@@ -8,6 +8,7 @@
 #
 # Usage:
 #   arche-wallpaper           — pick from wallpaper directory (fzf)
+#   arche-wallpaper restore   — re-apply last-set wallpaper (autostart)
 #   arche-wallpaper random    — set a random wallpaper
 #   arche-wallpaper toggle    — cycle to the next wallpaper (sorted)
 #   arche-wallpaper <path>    — set a specific image
@@ -54,6 +55,16 @@ set_wallpaper() {
         --transition-duration "$TRANSITION_DURATION"
     mkdir -p "$(dirname "$STATE_FILE")"
     printf '%s\n' "$img" > "$STATE_FILE"
+
+    # Resample the bar-strip contrast so the Quickshell bar can adapt its
+    # text colour to the new wallpaper. Fire-and-forget — the shell's
+    # FileView picks up the JSON write via `watchChanges`. Failures don't
+    # block the wallpaper change (helper missing on fresh install, etc.).
+    if command -v arche-bar-contrast >/dev/null 2>&1; then
+        setsid -f arche-bar-contrast "$img" \
+            >/dev/null 2>&1 < /dev/null || true
+    fi
+
     notify-send -i "$img" "Wallpaper set" "$(basename "$img")"
 }
 
@@ -63,6 +74,18 @@ if [[ ! -d "$WALLPAPER_DIR" ]]; then
 fi
 
 case "${1:-}" in
+    restore)
+        # Autostart hook — re-apply whatever the user last picked. On a
+        # first boot (no state file) fall back to a random pick so the
+        # screen isn't blank, otherwise stay deterministic.
+        last=$(current_wallpaper || true)
+        if [[ -n "$last" && -f "$last" ]]; then
+            set_wallpaper "$last"
+        else
+            pick=$(list_wallpapers | shuf -n1)
+            [[ -n "$pick" ]] && set_wallpaper "$pick"
+        fi
+        ;;
     random)
         pick=$(list_wallpapers | shuf -n1)
         [[ -n "$pick" ]] && set_wallpaper "$pick"

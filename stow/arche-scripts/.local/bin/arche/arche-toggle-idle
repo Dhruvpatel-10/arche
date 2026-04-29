@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-# Toggle hypridle — kill it to stop auto-lock, restart to re-enable.
-
-if pgrep -x hypridle >/dev/null; then
-    pkill -x hypridle
-    notify-send "󱫖  Idle lock disabled"
-else
-    uwsm-app -- hypridle >/dev/null 2>&1 &
-    notify-send "󱫖  Idle lock enabled"
-fi
-
+# Idle-lock toggle. State + notification owned by the Quickshell IdleLock
+# service (shell/services/IdleLock.qml). This script is a thin wrapper
+# kept for any non-keybind callers; the keybind goes direct via IPC.
+exec qs ipc call idle toggle

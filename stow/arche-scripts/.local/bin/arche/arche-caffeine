@@ -1,23 +1,62 @@
 #!/usr/bin/env bash
-# Caffeine mode: keep system fully awake, turn screens off immediately.
-# Any keyboard/mouse input wakes the screens (Hyprland DPMS wakeup).
+# Caffeine: block idle/sleep/lid, tear down all monitors (KMS connectors
+# released), keep CPU/net/disk at full speed. Same key toggles off —
+# restores monitors via `hyprctl reload` which re-applies monitors.conf.
+#
+# DPMS off is avoided: NVIDIA open + Legion eDP gets stuck in panel
+# self-refresh and wake returns a black screen until hard power-cycle.
+# `hyprctl keyword monitor NAME,disable` fully releases the DRM connector
+# instead, which is a different code path and wakes cleanly.
 
-PIDFILE=/tmp/arche-caffeine.pid
+set -u
 
-if [[ -f $PIDFILE ]]; then
-    kill "$(cat $PIDFILE)" 2>/dev/null
-    rm -f "$PIDFILE"
-    hyprctl dispatch dpms on
-    notify-send "󰛨  Caffeine off" "Idle management restored"
-else
+UNIT=arche-caffeine.scope
+
+is_active() { systemctl --user --quiet is-active "$UNIT"; }
+
+monitors_off() {
+    local names
+    mapfile -t names < <(hyprctl -j monitors | jq -r '.[].name')
+    for m in "${names[@]}"; do
+        hyprctl keyword monitor "$m,disable" >/dev/null
+    done
+}
+
+monitors_on() {
+    # Re-read monitors.conf; modes + positions restored from config.
+    hyprctl reload >/dev/null
+}
+
+if is_active; then
+    systemctl --user stop "$UNIT" >/dev/null 2>&1 || true
+    monitors_on
+    notify-send "󰛨  Caffeine off" "Monitors restored, idle/sleep/lid unblocked"
+    exit 0
+fi
+
+systemd-run --user \
+    --unit="$UNIT" \
+    --scope \
+    --quiet \
+    --property=Description="arche caffeine — no-sleep, monitors off" \
     systemd-inhibit \
-        --what=idle:sleep \
+        --what=idle:sleep:handle-lid-switch \
         --mode=block \
         --who=arche-caffeine \
         --why="Caffeine mode" \
         sleep infinity &
-    echo $! > "$PIDFILE"
+disown
+
+for _ in 1 2 3 4 5; do
+    is_active && break
     sleep 0.1
-    hyprctl dispatch dpms off
-    notify-send "󰛨  Caffeine on" "System awake, screens off — press any key to wake"
+done
+
+if ! is_active; then
+    notify-send -u critical "󰛨  Caffeine failed" "systemd scope did not start — idle management unchanged"
+    exit 1
 fi
+
+monitors_off
+# Notification fires just before screens die — user sees it briefly.
+notify-send "󰛨  Caffeine on" "Monitors off, CPU awake, lid-safe — SUPER+CTRL+K to wake"

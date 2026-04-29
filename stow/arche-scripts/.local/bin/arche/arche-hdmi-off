@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Disable HDMI output — software unplug. Re-enable with arche-hdmi-reset.
+
+set -euo pipefail
+
+MONITOR="HDMI-A-1"
+
+if ! hyprctl monitors all -j | jq -e ".[] | select(.name == \"$MONITOR\")" > /dev/null 2>&1; then
+    notify-send -u normal "HDMI Off" "$MONITOR not detected"
+    exit 0
+fi
+
+if hyprctl monitors all -j | jq -e ".[] | select(.name == \"$MONITOR\" and .disabled == true)" > /dev/null 2>&1; then
+    notify-send -u low "HDMI Off" "$MONITOR already disabled"
+    exit 0
+fi
+
+hyprctl keyword monitor "$MONITOR, disable"
+notify-send -u low "HDMI Off" "$MONITOR disabled"

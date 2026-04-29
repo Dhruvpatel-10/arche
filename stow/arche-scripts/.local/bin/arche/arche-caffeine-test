@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Caffeine dry-run: disables monitors, logs heartbeats to disk, restores
+# monitors after timeout. Log survives reboot so a freeze/forced-reboot
+# still leaves forensic evidence.
+#
+# Usage: arche-caffeine-test [seconds]        default 30
+
+set -u
+
+SECONDS_DARK=${1:-30}
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/arche"
+LOG="$STATE_DIR/caffeine-test.log"
+HB_PID_FILE="$STATE_DIR/caffeine-test.heartbeat.pid"
+
+mkdir -p "$STATE_DIR"
+
+say() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*" | tee -a "$LOG"; }
+
+# Kill any leftover heartbeat from a previous run
+if [[ -f "$HB_PID_FILE" ]]; then
+    kill "$(cat "$HB_PID_FILE")" 2>/dev/null || true
+    rm -f "$HB_PID_FILE"
+fi
+
+echo "=============================================================" >> "$LOG"
+say "=== arche-caffeine-test start: dark=${SECONDS_DARK}s ==="
+say "kernel: $(uname -r)    uptime: $(uptime -p)"
+
+# Heartbeat: 1s tick with epoch + load. Flushed every write.
+(
+    while true; do
+        printf '[hb %s] epoch=%s load=%s\n' \
+            "$(date +%H:%M:%S)" "$(date +%s)" "$(cut -d' ' -f1 /proc/loadavg)" \
+            >> "$LOG"
+        sync "$LOG" 2>/dev/null || true
+        sleep 1
+    done
+) &
+HB_PID=$!
+echo "$HB_PID" > "$HB_PID_FILE"
+disown
+say "heartbeat pid=$HB_PID"
+
+# Snapshot monitors before tearing down
+say "monitors before:"
+hyprctl -j monitors | jq -r '.[] | "  \(.name)  \(.width)x\(.height)@\(.refreshRate)  disabled=\(.disabled)"' | tee -a "$LOG"
+
+mapfile -t NAMES < <(hyprctl -j monitors | jq -r '.[].name')
+
+say "disabling ${#NAMES[@]} monitor(s): ${NAMES[*]}"
+for m in "${NAMES[@]}"; do
+    hyprctl keyword monitor "$m,disable" >/dev/null
+done
+
+say "monitors disabled. sleeping ${SECONDS_DARK}s in the dark..."
+sleep "$SECONDS_DARK"
+
+say "reloading hyprland to restore monitors..."
+hyprctl reload >/dev/null
+
+sleep 1
+say "monitors after:"
+hyprctl -j monitors | jq -r '.[] | "  \(.name)  \(.width)x\(.height)@\(.refreshRate)  disabled=\(.disabled)"' | tee -a "$LOG"
+
+# Heartbeat stats — count ticks logged during the dark window
+dark_ticks=$(grep -c '^\[hb ' "$LOG" || true)
+say "heartbeat ticks in this run: $dark_ticks  (expected ~${SECONDS_DARK})"
+
+kill "$HB_PID" 2>/dev/null || true
+rm -f "$HB_PID_FILE"
+say "=== test complete. full log: $LOG ==="
+
+notify-send "Caffeine test done" "See $LOG — ${dark_ticks} heartbeat ticks"

@@ -3,12 +3,14 @@
 
 set -euo pipefail
 
-# Prevent double execution — exit if already running
+# Single-instance lock. flock is kernel-held, so it's released automatically
+# when the script exits — including on SIGKILL or a crash. The older
+# PID-file + `kill -0` check left the lock held forever if the script hung
+# instead of crashing (e.g. grim blocked on a DMA fence — see below), so
+# SUPER+S silently no-op'd until the lockfile was removed by hand.
 SCREENSHOT_LOCK="${XDG_RUNTIME_DIR:-/tmp}/arche-screenshot.lock"
-if [[ -f "$SCREENSHOT_LOCK" ]] && kill -0 "$(cat "$SCREENSHOT_LOCK")" 2>/dev/null; then
-    exit 0
-fi
-echo $$ > "$SCREENSHOT_LOCK"
+exec 200>"$SCREENSHOT_LOCK"
+flock -n 200 || exit 0
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 dir="$HOME/Pictures/Screenshots"
@@ -37,8 +39,13 @@ geometry=$(slurp -d \
     -B 00000066 \
     -w 2) || exit 0
 
-# Capture from frozen frame
-grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
+# Capture from frozen frame. `timeout` guards against grim blocking
+# indefinitely on a DMA fence (observed with Hyprland + NVIDIA + wlr
+# screencopy) — without it a hang would leave wayfreeze on screen and
+# the flock held until the process was killed by hand. grim normally
+# finishes in well under a second; 10s is generous enough to absorb
+# a slow frame without being user-visible when things misbehave.
+timeout 10s grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
 
 # Unfreeze immediately — don't wait for clipboard/notification
 cleanup

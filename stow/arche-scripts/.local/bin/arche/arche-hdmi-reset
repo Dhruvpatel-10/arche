@@ -6,9 +6,16 @@ set -euo pipefail
 
 MONITOR="HDMI-A-1"
 
-# Check if the monitor is currently known to Hyprland
-if ! hyprctl monitors -j | jq -e ".[] | select(.name == \"$MONITOR\")" > /dev/null 2>&1; then
+# Check cable present — use `monitors all` so disabled outputs are visible too
+if ! hyprctl monitors all -j | jq -e ".[] | select(.name == \"$MONITOR\")" > /dev/null 2>&1; then
     notify-send -u normal "HDMI Reset" "$MONITOR not detected — nothing to reset"
+    exit 0
+fi
+
+# If currently disabled (e.g. after arche-hdmi-off), skip the cycle and just enable
+if hyprctl monitors all -j | jq -e ".[] | select(.name == \"$MONITOR\" and .disabled == true)" > /dev/null 2>&1; then
+    hyprctl keyword monitor "$MONITOR, 3840x2160@160.00Hz, 1600x0, 1.5"
+    notify-send -u low "HDMI Reset" "$MONITOR enabled"
     exit 0
 fi
 
