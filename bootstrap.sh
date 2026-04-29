@@ -150,7 +150,7 @@ if [[ "$auto_yes" != true ]]; then
         log_warn "Skipped theme apply"
         results+=("theme SKIP")
     else
-        if bash "$ARCHE/scripts/theme.sh" apply; then
+        if bash "$ARCHE/theming/engine.sh" apply; then
             results+=("theme OK")
         else
             results+=("theme FAIL")
@@ -158,7 +158,7 @@ if [[ "$auto_yes" != true ]]; then
     fi
 else
     log_info "━━━ Applying theme ━━━"
-    if bash "$ARCHE/scripts/theme.sh" apply; then
+    if bash "$ARCHE/theming/engine.sh" apply; then
         results+=("theme OK")
     else
         results+=("theme FAIL")

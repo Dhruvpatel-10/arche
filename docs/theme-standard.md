@@ -26,7 +26,7 @@ Nothing is hardcoded anywhere else.
 
 ## Schema Design
 
-### Variable Registry (`themes/schema.sh`)
+### Variable Registry (`theming/themes/schema.sh`)
 
 The schema defines every valid theme variable as a member of a typed group.
 Each group is a bash array. Membership in the array IS the type declaration.
@@ -123,7 +123,7 @@ It must NOT: source other files, run commands, define functions, or export anyth
 
 ```bash
 # Nord — cool blue palette
-# themes/nord.sh
+# theming/themes/nord.sh
 
 # ─── Required Colors ───
 COLOR_BG="#2e3440"
@@ -173,7 +173,7 @@ When `theme_render` runs, the following happens in order:
 
 ```
 1. SOURCE  schema.sh       → load variable group arrays
-2. SOURCE  themes/active   → load theme values into shell
+2. SOURCE  theming/themes/active   → load theme values into shell
 3. DEFAULTS                → fill optional vars from required vars
 4. VALIDATE                → check all required vars set + type check
 5. DERIVE  _NOHASH         → strip # from every SCHEMA_COLORS_* member
@@ -303,19 +303,19 @@ Add to `tests/run.sh` under the lint level.
 
 ```bash
 # 1. Copy the skeleton
-cp themes/ember.sh themes/mytheme.sh
+cp theming/themes/ember.sh theming/themes/mytheme.sh
 
 # 2. Edit values — schema.sh comments tell you what each variable is
-$EDITOR themes/mytheme.sh
+$EDITOR theming/themes/mytheme.sh
 
 # 3. Validate
-bash scripts/theme.sh validate mytheme
+bash theming/engine.sh validate mytheme
 
 # 4. Preview (render without switching active)
-bash scripts/theme.sh preview mytheme
+bash theming/engine.sh preview mytheme
 
 # 5. Switch
-bash scripts/theme.sh switch mytheme
+bash theming/engine.sh switch mytheme
 ```
 
 ### `theme.sh validate <name>`
@@ -332,9 +332,9 @@ Lets you see exactly what would change before committing to a switch.
 
 ## Adding a New Variable
 
-1. Add to the appropriate array in `themes/schema.sh`
+1. Add to the appropriate array in `theming/themes/schema.sh`
 2. If optional: add default in the defaults block
-3. Add value to each theme file in `themes/`
+3. Add value to each theme file in `theming/themes/`
 4. Use `${VAR_NAME}` in templates
 5. Run `just test` — lint will verify templates only use schema vars
 
@@ -344,7 +344,7 @@ That's it. No need to touch lib.sh exports, _NOHASH loops, or any other plumbing
 
 ## Removing a Variable
 
-1. Remove from `themes/schema.sh`
+1. Remove from `theming/themes/schema.sh`
 2. Remove from all theme files
 3. Remove `${VAR_NAME}` from all templates
 4. Run `just test` — lint catches any stragglers
@@ -369,7 +369,7 @@ That's it. No need to touch lib.sh exports, _NOHASH loops, or any other plumbing
 
 | File | Owns | Touches |
 |------|------|---------|
-| `themes/schema.sh` | Variable names, types, defaults | Nothing — pure data |
+| `theming/themes/schema.sh` | Variable names, types, defaults | Nothing — pure data |
 | `themes/*.sh` | Color/font/size values | Nothing — pure assignment |
 | `scripts/lib.sh` | Validation, export, render pipeline | Reads schema + theme |
 | `templates/*.tmpl` | Component visuals | References schema vars via `${VAR}` |
@@ -384,7 +384,7 @@ No file does another file's job. No information is duplicated across files.
 Current state has hardcoded export lists in lib.sh and manual _NOHASH loops.
 Migration is mechanical:
 
-1. Create `themes/schema.sh` with current variables
+1. Create `theming/themes/schema.sh` with current variables
 2. Replace lib.sh hardcoded exports with schema-driven loop
 3. Replace lib.sh _NOHASH loop with schema-driven loop
 4. Add `theme_validate` to lib.sh

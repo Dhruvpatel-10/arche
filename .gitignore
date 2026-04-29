@@ -26,5 +26,10 @@ tools/*/target/
 # These live in ~/.config/<component>/ and are recreated by `just theme`
 .audit/
 
+# Arche shared runtime state — emitted by theming/engine.sh, consumed by
+# arche-owned tools (Quickshell panel, future TUIs). Lives at /opt/arche/run/
+# so all users on the host share one source of truth (D014 + D029 spirit).
+run/
+
 # External tool markers (OpenAI Codex CLI, etc.)
 .codex

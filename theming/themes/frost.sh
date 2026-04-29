@@ -32,11 +32,12 @@ COLOR_SURFACE2="#202838"     # Surface2
 
 # ─── Fonts ───
 
-FONT_SANS="IBM Plex Sans"
-FONT_MONO="MesloLGS Nerd Font Mono"
+FONT_SANS="SF Pro Text"
+FONT_MONO="JetBrainsMono Nerd Font Mono"
 FONT_SIZE_NORMAL="10"
 FONT_SIZE_SMALL="8"
 FONT_SIZE_BAR="10"
+FONT_SIZE_TERMINAL="11"
 
 # ─── Layout ───
 

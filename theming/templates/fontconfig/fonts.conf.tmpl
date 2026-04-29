@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<!-- Generated — do not edit. Edit templates/fontconfig/fonts.conf.tmpl and run: just theme -->
+<fontconfig>
+  <alias>
+    <family>sans-serif</family>
+    <prefer>
+      <family>${FONT_SANS}</family>
+      <family>IBM Plex Sans</family>
+      <family>Noto Sans</family>
+      <family>DejaVu Sans</family>
+    </prefer>
+  </alias>
+
+  <alias>
+    <family>serif</family>
+    <prefer>
+      <family>${FONT_SANS}</family>
+      <family>IBM Plex Sans</family>
+      <family>Noto Serif</family>
+      <family>DejaVu Serif</family>
+    </prefer>
+  </alias>
+
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>${FONT_MONO}</family>
+      <family>JetBrainsMono Nerd Font Mono</family>
+      <family>MesloLGS Nerd Font Mono</family>
+      <family>Noto Sans Mono</family>
+      <family>DejaVu Sans Mono</family>
+    </prefer>
+  </alias>
+
+  <alias>
+    <family>system-ui</family>
+    <prefer>
+      <family>${FONT_SANS}</family>
+      <family>IBM Plex Sans</family>
+    </prefer>
+  </alias>
+
+  <alias>
+    <family>emoji</family>
+    <prefer>
+      <family>Noto Color Emoji</family>
+      <family>Twemoji</family>
+    </prefer>
+  </alias>
+
+  <match target="font">
+    <edit name="antialias" mode="assign"><bool>true</bool></edit>
+    <edit name="hinting" mode="assign"><bool>true</bool></edit>
+    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
+    <edit name="rgba" mode="assign"><const>rgb</const></edit>
+    <edit name="lcdfilter" mode="assign"><const>lcddefault</const></edit>
+  </match>
+</fontconfig>

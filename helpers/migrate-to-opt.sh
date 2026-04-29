@@ -89,7 +89,7 @@ sudo find "$dst" -type f -exec chmod 0664 {} \;
 # Re-mark legitimately-executable files. We can't chmod by extension because
 # many *.sh files in this repo are DATA (sourced, not run):
 #   packages/*.sh                    — sourced by install_group, declare PACMAN_PKGS arrays
-#   themes/*.sh                      — sourced by theme_render, declare COLOR_* variables
+#   theming/themes/*.sh                      — sourced by theme_render, declare COLOR_* variables
 #   stow/fish/.config/fish/{conf.d,functions}/*.fish — sourced by fish at login
 # Heuristic: a file is executable iff it (a) has a #! shebang at byte 0, or
 # (b) lives under a bin/ directory (catches binaries without shebangs like

@@ -65,6 +65,7 @@ SCHEMA_INTEGERS_OPTIONAL=(
     NOTIF_FONT_SIZE       # (default: FONT_SIZE_NORMAL)
     NOTIF_FONT_SIZE_SMALL # (default: FONT_SIZE_SMALL)
     NOTIF_TIMEOUT         # (default: 5000)
+    FONT_SIZE_TERMINAL    # Kitty/terminal font size (default: FONT_SIZE_NORMAL)
 )
 
 # ─── Special variables (value: 2-char hex alpha suffix, no #) ───

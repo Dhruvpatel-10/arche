@@ -228,7 +228,7 @@ svc_enable() {
 # ─── Theme Validation ───
 
 theme_validate() {
-    local theme_file="${1:-$ARCHE/themes/active}"
+    local theme_file="${1:-$ARCHE/theming/themes/active}"
 
     if [[ ! -f "$theme_file" ]]; then
         log_err "Theme file not found: $theme_file"
@@ -236,7 +236,7 @@ theme_validate() {
     fi
 
     # shellcheck source=/dev/null
-    source "$ARCHE/themes/schema.sh"
+    source "$ARCHE/theming/themes/schema.sh"
     # shellcheck source=/dev/null
     source "$theme_file"
 
@@ -329,10 +329,10 @@ theme_validate() {
 # ─── Theme Rendering ───
 
 theme_render() {
-    local theme_file="$ARCHE/themes/active"
+    local theme_file="$ARCHE/theming/themes/active"
 
     if [[ ! -f "$theme_file" ]]; then
-        log_err "No active theme — run: theme.sh switch <name>"
+        log_err "No active theme — run: theming/engine.sh switch <name>"
         return 1
     fi
 
@@ -344,7 +344,7 @@ theme_render() {
 
     # Load schema — defines SCHEMA_COLORS_REQUIRED, SCHEMA_COLORS_OPTIONAL, etc.
     # shellcheck source=/dev/null
-    source "$ARCHE/themes/schema.sh"
+    source "$ARCHE/theming/themes/schema.sh"
 
     # Load theme values
     # shellcheck source=/dev/null
@@ -376,6 +376,7 @@ theme_render() {
     : "${NOTIF_FONT_SIZE:=$FONT_SIZE_NORMAL}"
     : "${NOTIF_FONT_SIZE_SMALL:=$FONT_SIZE_SMALL}"
     : "${NOTIF_TIMEOUT:=5000}"
+    : "${FONT_SIZE_TERMINAL:=$FONT_SIZE_NORMAL}"
 
     # Apply defaults for opacity variables
     : "${KITTY_OPACITY:=1.0}"
@@ -434,47 +435,54 @@ theme_render() {
 
     local components=("$@")
 
-    # If no args, render all templates
+    # If no args, render every component dir under theming/templates/
     if [[ ${#components[@]} -eq 0 ]]; then
         components=()
-        for tmpl_dir in "$ARCHE/templates"/*/; do
+        for tmpl_dir in "$ARCHE/theming/templates"/*/; do
             [[ -d "$tmpl_dir" ]] && components+=("$(basename "$tmpl_dir")")
         done
     fi
 
+    # Per-component dispatch:
+    #   1. If _emit.sh exists  → source it (custom emitter; e.g. arche/ writes JSON)
+    #   2. Else                → envsubst every *.tmpl into ~/.config/<component>/
+    #   3. If _reload.sh exists → source it (live reload hook for the app)
+    # No central case statement. Add new component = drop a dir under
+    # theming/templates/ with the right files. Engine doesn't need editing.
     local component tmpl output
     for component in "${components[@]}"; do
-        local tmpl_dir="$ARCHE/templates/$component"
+        local tmpl_dir="$ARCHE/theming/templates/$component"
         if [[ ! -d "$tmpl_dir" ]]; then
             log_warn "No templates for $component — skipping"
             continue
         fi
 
-        while IFS= read -r -d '' tmpl; do
-            # template path: templates/kitty/theme.conf.tmpl
-            # relative:      theme.conf.tmpl
-            # output path:   ~/.config/kitty/theme.conf
-            local rel="${tmpl#"$tmpl_dir"/}"
-            local rel_noext="${rel%.tmpl}"
+        if [[ -f "$tmpl_dir/_emit.sh" ]]; then
+            # shellcheck source=/dev/null
+            source "$tmpl_dir/_emit.sh"
+        else
+            while IFS= read -r -d '' tmpl; do
+                # templates/kitty/theme.conf.tmpl → ~/.config/kitty/theme.conf
+                local rel="${tmpl#"$tmpl_dir"/}"
+                local rel_noext="${rel%.tmpl}"
 
-            # Flat components render straight to ~/.config/<file> (not inside a subdir),
-            # for configs that live at the top of ~/.config/ (e.g. electron-flags.conf).
-            case "$component" in
-                electron-flags)
-                    output="$HOME/.config/$rel_noext"
-                    ;;
-                *)
-                    output="$HOME/.config/$component/$rel_noext"
-                    ;;
-            esac
+                # Flat components render to ~/.config/<file> (no subdir),
+                # for configs that live at top of ~/.config/ (e.g. electron-flags.conf).
+                case "$component" in
+                    electron-flags) output="$HOME/.config/$rel_noext" ;;
+                    *)              output="$HOME/.config/$component/$rel_noext" ;;
+                esac
 
-            mkdir -p "$(dirname "$output")"
-            envsubst "$_envsubst_vars" < "$tmpl" > "${output}.tmp" && mv "${output}.tmp" "$output"
-            log_ok "Rendered $component/$rel_noext"
-        done < <(find "$tmpl_dir" -name '*.tmpl' -type f -print0)
+                mkdir -p "$(dirname "$output")"
+                envsubst "$_envsubst_vars" < "$tmpl" > "${output}.tmp" && mv "${output}.tmp" "$output"
+                log_ok "Rendered $component/$rel_noext"
+            done < <(find "$tmpl_dir" -name '*.tmpl' -type f -print0)
+        fi
 
-        # Reload the component
-        _theme_reload "$component"
+        if [[ -f "$tmpl_dir/_reload.sh" ]]; then
+            # shellcheck source=/dev/null
+            source "$tmpl_dir/_reload.sh"
+        fi
     done
 
     # After rendering, propagate palette to gsettings-based consumers (libadwaita + xdg-portal).
@@ -506,44 +514,5 @@ _theme_apply_gsettings() {
     done
 }
 
-_theme_reload() {
-    local component="$1"
-    case "$component" in
-        kitty)
-            # Scope to current user — stray kitty PIDs from other users would EPERM the
-            # kill, bubble up a non-zero return through the function, and trip set -e.
-            if pids=$(pgrep -x -u "$USER" kitty 2>/dev/null); then
-                # shellcheck disable=SC2086
-                kill -SIGUSR1 $pids 2>/dev/null || true
-                log_ok "Reloaded Kitty"
-            fi
-            ;;
-        starship)
-            log_ok "Starship updates instantly"
-            ;;
-        fish)
-            log_ok "Fish theme picks up on next shell launch"
-            ;;
-        gtk-3.0)
-            log_ok "GTK3 picks up changes on next app launch"
-            ;;
-        gtk-4.0)
-            log_ok "GTK4 picks up changes on next app launch"
-            ;;
-        electron-flags)
-            log_ok "Electron apps pick up flags on next launch"
-            ;;
-        legion)
-            log_ok "Legion picks up theme on next launch"
-            ;;
-        glow)
-            log_ok "Glow picks up theme on next launch"
-            ;;
-        hyprland-preview-share-picker)
-            log_ok "hyprland-preview-share-picker picks up theme on next launch"
-            ;;
-        *)
-            log_warn "No reload rule for $component"
-            ;;
-    esac
-}
+# Per-app reload moved to theming/templates/<app>/_reload.sh sidecars.
+# Apps without a sidecar simply pick up the new theme on next launch — silent.

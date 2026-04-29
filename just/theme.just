@@ -1,26 +1,19 @@
-# Theme engine — render templates and switch themes.
+# Theme engine — render templates, switch themes, list available themes.
+# Recipes are prefixed `theme-` so `just --list` groups them visually under
+# one namespace; Just has no native subcommands, this is the idiomatic
+# substitute. Engine lives at theming/engine.sh.
 
-# Apply theme (render templates + reload services)
+# Apply current theme — render templates, emit theme.json, run reload hooks
 [group: 'theme']
-theme target="apply":
-    bash {{dotfiles}}/scripts/theme.sh {{target}}
+theme-apply:
+    bash {{dotfiles}}/theming/engine.sh apply
 
-# Switch to a different theme (e.g. just switch ember)
+# Switch to a different theme (e.g. just theme-switch ember)
 [group: 'theme']
-switch name:
-    bash {{dotfiles}}/scripts/theme.sh switch {{name}}
+theme-switch name:
+    bash {{dotfiles}}/theming/engine.sh switch {{name}}
 
-# List available themes
+# List available themes (active marked with *)
 [group: 'theme']
-themes:
-    bash {{dotfiles}}/scripts/theme.sh list
-
-# Render all templates without reloading services
-[group: 'theme']
-render:
-    bash {{dotfiles}}/scripts/theme.sh apply
-
-# Re-render + reload all running services (rapid iteration)
-[group: 'theme']
-reload:
-    bash {{dotfiles}}/scripts/theme.sh apply
+theme-list:
+    bash {{dotfiles}}/theming/engine.sh list
