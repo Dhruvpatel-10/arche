@@ -6,6 +6,8 @@ PACMAN_PKGS=(
     ttf-ibm-plex              # IBM Plex Sans — UI sans-serif font
     ttf-meslo-nerd            # MesloLGS Nerd Font — primary mono (Menlo lineage)
     ttf-jetbrains-mono-nerd   # JetBrainsMono Nerd Font — fallback mono
+    ttf-lato                  # Lato — Slack's bundled UI font; without it Slack falls to system sans and looks off
+    noto-fonts                # Noto Sans/Serif — fallback for web pages and apps that name them
     noto-fonts-emoji          # Emoji fallback
 
     # Icons
