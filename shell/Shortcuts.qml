@@ -29,7 +29,12 @@ import "./osd"
 //   notifs     Notifs.qml         dismissOne / clearAll
 //   osd        Shortcuts.qml      volume / brightness
 //   popover    Shortcuts.qml      show <name> / toggle <name> / close
+//   media      Shortcuts.qml      popoverToggle / popoverOpen / popoverClose
+//                                 (+ dialogToggle / dialogOpen / dialogClose
+//                                 as back-compat aliases for older keybinds)
 //   island     Shortcuts.qml      expand / collapse / focus / recording / peek
+//                                 (legacy shims; island surface retired,
+//                                 flags still flow through for scripts)
 //   mpris      Shortcuts.qml      playPause / next / previous / volUp / mute …
 //
 // Discover live targets at runtime: `qs ipc show`.
@@ -69,6 +74,31 @@ Scope {
         function show(name: string):   void { Ui.rightPopover = name }
         function toggle(name: string): void { Ui.togglePopover(name) }
         function close():              void { Ui.closePopover() }
+    }
+
+    // Media popover — the compact now-playing card opened by clicking
+    // the inline NowPlayingStrip in the Bar. IPC lets a keybind open it
+    // without reaching for the mouse.
+    //
+    //   bind = SUPER, M, exec, qs ipc call media popoverToggle
+    //
+    // The `dialog*` variants are kept as aliases for the period when
+    // this was mis-named MediaDialog — drop them once no keybinds in
+    // stow/hypr/ reference them. Every function writes the same
+    // `Ui.mediaPopoverOpen` flag so the two API names never drift.
+    IpcHandler {
+        target: "media"
+        function popoverToggle(): void {
+            Ui.mediaPopoverOpen = !Ui.mediaPopoverOpen
+        }
+        function popoverOpen():  void { Ui.mediaPopoverOpen = true }
+        function popoverClose(): void { Ui.mediaPopoverOpen = false }
+
+        // Back-compat aliases — will be removed after existing scripts
+        // migrate to the popover* names.
+        function dialogToggle(): void { popoverToggle() }
+        function dialogOpen():   void { popoverOpen() }
+        function dialogClose():  void { popoverClose() }
     }
 
     IpcHandler {

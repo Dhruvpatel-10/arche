@@ -11,40 +11,55 @@ ShellRoot {
     // nothing would keep it alive and the caffeine toggle would silently
     // no-op. One-line touch per side-effect service — no behaviour wired.
     readonly property var _caffeine: IdleInhibitor
+    // IdleLock owns hypridle's lifecycle (start/stop driven by `enabled`)
+    // and registers IPC `idle`. Without a reference here the singleton
+    // would never construct, autostart wouldn't fire, and the keybind
+    // would no-op.
+    readonly property var _idleLock: IdleLock
 
-    // Split-notch bar — three per-screen layer windows that together
-    // form the living-notch panel. Wings hug the corners; the Island
-    // floats between them and morphs by state. See components/*Wing.qml
-    // and components/IslandWindow.qml.
+    // Bar — one full-width layer surface per screen, macOS-style. See
+    // components/Bar.qml for the composition + adaptive-surface story
+    // (the bar's color tracks wallpaper luminance via WallpaperContrast
+    // and crossfades to opaque under fullscreen apps).
+    //
+    // Previously this was a three-wing split (BarLeftWing + BarCenterWing
+    // + BarRightWing) plus a separate BarExclusionZone that reserved
+    // the top edge. The unified Bar owns its own exclusive zone and
+    // composes the three clusters (BarWorkspaces + NowPlayingStrip on
+    // the left, BarClock centered, BarStatusPills on the right) as
+    // anchored children. The retired wings and exclusion layer have
+    // been deleted; see docs/quickshell-notes.md → "Bar exclusion zone"
+    // for the why.
     Variants {
         model: Quickshell.screens
-        BarLeftWing {}
-    }
-    Variants {
-        model: Quickshell.screens
-        IslandWindow {}
-    }
-    Variants {
-        model: Quickshell.screens
-        BarRightWing {}
+        Bar {}
     }
 
-    // Drawers (one PanelWindow each for now).
+    // Drawers (one PanelWindow each for now). MediaPopover follows the
+    // focused monitor (like CalendarPanel) so "full music" always opens
+    // where the user is looking. It's launched by clicking the inline
+    // NowPlayingStrip in the Bar or via IPC (`qs ipc call media
+    // popoverToggle`).
     ControlCenter {}
     CalendarPanel {}
+    MediaPopover {}
     ToastLayer {}
     ClipboardPicker {}
     PowerMenuDialog {}
     LauncherDialog {}
 
-    // Per-pill focused popovers — one per screen so each monitor gets
-    // its own scrim / focus-grab pair. Mutually exclusive via the single
-    // `Ui.rightPopover` string.
-    Variants { model: Quickshell.screens; NotificationsPopover {} }
-    Variants { model: Quickshell.screens; AudioMixerPopover    {} }
-    Variants { model: Quickshell.screens; NetworkPopover       {} }
-    Variants { model: Quickshell.screens; BluetoothPopover     {} }
-    Variants { model: Quickshell.screens; BatteryPopover       {} }
+    // Per-pill focused popovers — single instance each, rendered on the
+    // Hyprland-focused monitor (same pattern as MediaPopover + CalendarPanel).
+    // Per-screen Variants would paint the popover on every monitor at once
+    // when its flag flips, because every instance would bind to the same
+    // global `Ui.rightPopover` string. Single instance + focused-monitor
+    // teleport keeps the popover where the user is looking. Mutually
+    // exclusive via `Ui.rightPopover`.
+    NotificationsPopover {}
+    AudioMixerPopover    {}
+    NetworkPopover       {}
+    BluetoothPopover     {}
+    BatteryPopover       {}
 
     // Per-screen OSD overlay.
     Variants {

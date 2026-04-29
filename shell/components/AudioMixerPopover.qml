@@ -19,9 +19,12 @@ WingPopover {
 
     cardWidth:         Sizing.px(360)
     anchorRightMargin: Sizing.px(90)   // roughly under the volume pill
+    bodyHeight:        Sizing.px(340)
 
-    property var modelData
-    screen: modelData
+    // Sticky header — rendered outside the Flickable by WingPopover.
+    title:          "Audio"
+    titleIcon:      ""
+    titleIconColor: Colors.accent
 
     // ─── Derived lists — rebuilt when Pipewire.nodes changes ─────────
     property var sinkStreams: []
@@ -53,29 +56,6 @@ WingPopover {
             width: parent.width
             spacing: Spacing.md
 
-            // ─── Header ───────────────────────────────────────────
-            Row {
-                width: parent.width
-                spacing: Spacing.sm
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\uf028"
-                    color: Colors.accent
-                    font.family: Typography.fontMono
-                    font.pixelSize: Typography.fontLabel
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Audio"
-                    color: Colors.fg
-                    font.family: Typography.fontSans
-                    font.pixelSize: Typography.fontBody
-                    font.weight: Typography.weightDemiBold
-                }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Colors.border; opacity: 0.5 }
-
             // ─── Master output ─────────────────────────────────────
             Column {
                 width: parent.width
@@ -93,7 +73,7 @@ WingPopover {
                 SliderRow {
                     width: parent.width
                     icon: (Pipewire.defaultAudioSink?.audio?.muted ?? false)
-                          ? "\uf6a9" : "\uf028"
+                          ? "" : ""
                     value: Pipewire.defaultAudioSink?.audio?.volume ?? 0
                     onMoved: v => {
                         const s = Pipewire.defaultAudioSink?.audio
@@ -126,7 +106,7 @@ WingPopover {
                 SliderRow {
                     width: parent.width
                     icon: (Pipewire.defaultAudioSource?.audio?.muted ?? false)
-                          ? "\uf131" : "\uf130"
+                          ? "" : ""
                     value: Pipewire.defaultAudioSource?.audio?.volume ?? 0
                     onMoved: v => {
                         const s = Pipewire.defaultAudioSource?.audio
@@ -180,7 +160,7 @@ WingPopover {
                     }
                     SliderRow {
                         width: parent.width
-                        icon: (node?.audio?.muted ?? false) ? "\uf6a9" : "\uf027"
+                        icon: (node?.audio?.muted ?? false) ? "" : ""
                         value: node?.audio?.volume ?? 0
                         onMoved: v => {
                             if (!node?.audio) return
@@ -193,14 +173,26 @@ WingPopover {
                     }
                 }
             }
+        }
+    }
 
-            // ─── Escape hatch → wiremix ───────────────────────────
-            Rectangle { width: parent.width; height: 1; color: Colors.border; opacity: 0.5 }
+    // ─── Sticky footer: escape hatch → wiremix ────────────────────────
+    footerComponent: Component {
+        Column {
+            width: parent.width
+            spacing: 0
+
             Rectangle {
                 width: parent.width
-                height: Sizing.px(34)
-                radius: Shape.radiusSm
-                color: wiremixMouse.containsMouse ? Colors.tileBgActive : Colors.tileBg
+                height: Shape.borderThin
+                color: Colors.border
+                opacity: Effects.opacitySubtle
+            }
+
+            Rectangle {
+                width: parent.width
+                height: Sizing.px(44)
+                color: wiremixMouse.containsMouse ? Colors.tileBgActive : "transparent"
                 Behavior on color { CAnim { type: "fast" } }
 
                 Row {
@@ -210,7 +202,9 @@ WingPopover {
                     spacing: Spacing.sm
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf7d9"
+                        //  (fa-sliders-h) present in MesloLGS Nerd Font;
+                        //  (nf-md-tune) is MISSING — replaced.
+                        text: ""
                         color: Colors.fg
                         font.family: Typography.fontMono
                         font.pixelSize: Typography.fontCaption

@@ -22,7 +22,9 @@ StyledDialog {
     open: PowerMenu.confirmOpen
     maxWidth:  Sizing.px(380)
     maxHeight: Sizing.px(220)
-    dangerDefault: false   // Cancel focused by default — danger via Tab
+    // User already picked the action in the picker; focus the danger button
+    // so Enter completes. Cancel still reachable via Tab / Esc / outside click.
+    dangerDefault: true
 
     // Render on the same monitor as the picker.
     screen: {
@@ -34,8 +36,10 @@ StyledDialog {
         return null
     }
 
-    onDismissed: (reason) => {
-        if (reason === "action") {
+    // Read the ArcheDialog-exposed `dismissReason` property —
+    // parameterless signal (see ArcheDialog.qml "HISTORY" comment for why).
+    onDismissed: {
+        if (root.dismissReason === "action") {
             PowerMenu.confirm()
         } else {
             // Esc / outside / cancel / monitor-left — all just cancel.
@@ -119,13 +123,13 @@ StyledDialog {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.dismissed("cancel")
+                    onClicked: root._emitDismissal("cancel")
                 }
 
                 activeFocusOnTab: true
-                Keys.onReturnPressed: root.dismissed("cancel")
-                Keys.onEnterPressed: root.dismissed("cancel")
-                Keys.onEscapePressed: root.dismissed("esc")
+                Keys.onReturnPressed: root._emitDismissal("cancel")
+                Keys.onEnterPressed: root._emitDismissal("cancel")
+                Keys.onEscapePressed: root._emitDismissal("esc")
 
                 // Arrow navigation mirrors Tab order.
                 Keys.onLeftPressed: cancelBtn.forceActiveFocus()
@@ -171,13 +175,13 @@ StyledDialog {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.dismissed("action")
+                    onClicked: root._emitDismissal("action")
                 }
 
                 activeFocusOnTab: true
-                Keys.onReturnPressed: root.dismissed("action")
-                Keys.onEnterPressed: root.dismissed("action")
-                Keys.onEscapePressed: root.dismissed("esc")
+                Keys.onReturnPressed: root._emitDismissal("action")
+                Keys.onEnterPressed: root._emitDismissal("action")
+                Keys.onEscapePressed: root._emitDismissal("esc")
 
                 Keys.onLeftPressed: cancelBtn.forceActiveFocus()
                 Keys.onRightPressed: dangerBtn.forceActiveFocus()

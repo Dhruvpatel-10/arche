@@ -29,7 +29,17 @@ QtObject {
 
     // Scale a logical pixel value by layoutScale and round to an integer.
     // Use for padding, radii, panel widths, icon boxes — anything chrome.
-    function px(base: real): int  { return Math.round(base * layoutScale) }
+    //
+    // Guard: hairline 1-logical-px borders survive low scales. Without the
+    // `base >= 1 ? Math.max(1, ...)` clamp, `px(1)` at layoutScale 0.75
+    // would round to 1 (fine) but a future 0.6 clamp leak would round to 0
+    // and the border vanishes. Zero-base (e.g. `px(0.5)`) is preserved as-is
+    // so sub-pixel spacers still collapse.
+    function px(base: real): int {
+        const raw = base * layoutScale
+        if (base > 0 && raw < 1) return 1
+        return Math.round(raw)
+    }
 
     // Scale a logical pixel value by fontScale. Use for font pixelSize.
     function fpx(base: real): int { return Math.round(base * fontScale) }
@@ -59,7 +69,9 @@ QtObject {
         return isNaN(v) ? fontScale : v
     }
     function pxFor(base: real, screenName: string): int {
-        return Math.round(base * layoutScaleFor(screenName))
+        const raw = base * layoutScaleFor(screenName)
+        if (base > 0 && raw < 1) return 1
+        return Math.round(raw)
     }
     function fpxFor(base: real, screenName: string): int {
         return Math.round(base * fontScaleFor(screenName))
@@ -69,6 +81,16 @@ QtObject {
     // Role-named wrappers over px(N) so the Theme facade and consumers
     // can refer to `Sizing.barHeight` instead of an unlabelled literal.
     // Only add entries here that every shell deployment shares.
-    readonly property int barHeight:          px(38)
+    //
+    // Bar: the wings + center clock all agree on a single logical height.
+    // barHeightLogical is the pre-scale base — wings call
+    // Sizing.pxFor(Sizing.barHeightLogical, screenName) so a per-screen
+    // scale env var can bump the bar (and all its contents) on a physically
+    // larger monitor without touching callers.
+    readonly property int barHeightLogical:   30
+    readonly property int barHeight:          px(barHeightLogical)
+    function barHeightFor(screenName: string): int {
+        return pxFor(barHeightLogical, screenName)
+    }
     readonly property int controlCenterWidth: px(420)
 }

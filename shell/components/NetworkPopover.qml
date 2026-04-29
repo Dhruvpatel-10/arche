@@ -19,9 +19,16 @@ WingPopover {
 
     cardWidth:         Sizing.px(340)
     anchorRightMargin: Sizing.px(170)   // roughly under the wifi pill
+    bodyHeight:        Sizing.px(380)
 
-    property var modelData
-    screen: modelData
+    // Sticky header — icon tint reflects radio / connection state. One
+    // wifi glyph ();  /  are MISSING in MesloLGS and
+    // rendered as CJK fallback (see quickshell-notes.md).
+    title:     "Wi-Fi"
+    titleIcon: ""
+    titleIconColor: Net.radioOn
+                    ? (Net.connected ? Colors.accent : Colors.fgMuted)
+                    : Colors.fgDim
 
     // Kick a scan when the popover opens. Connections stays at the
     // WingPopover scope — it's not a visual item.
@@ -37,29 +44,6 @@ WingPopover {
             id: body
             width: parent.width
             spacing: Spacing.md
-
-            // ─── Header ───────────────────────────────────────────────
-            Row {
-                width: parent.width
-                spacing: Spacing.sm
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Net.radioOn
-                          ? (Net.connected ? "\uf1eb" : "\uf519")
-                          : "\uf6ac"
-                    color: Net.radioOn ? Colors.accent : Colors.fgMuted
-                    font.family: Typography.fontMono
-                    font.pixelSize: Typography.fontLabel
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Wi-Fi"
-                    color: Colors.fg
-                    font.family: Typography.fontSans
-                    font.pixelSize: Typography.fontBody
-                    font.weight: Typography.weightDemiBold
-                }
-            }
 
             // ─── Radio toggle row ─────────────────────────────────────
             Rectangle {
@@ -138,7 +122,7 @@ WingPopover {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf1eb"
+                        text: ""
                         color: Colors.accent
                         font.family: Typography.fontMono
                         font.pixelSize: Typography.fontLabel
@@ -218,7 +202,7 @@ WingPopover {
                         spacing: Sizing.px(4)
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "\uf021"
+                            text: ""
                             color: Colors.fg
                             font.family: Typography.fontMono
                             font.pixelSize: Typography.fontMicro
@@ -294,10 +278,14 @@ WingPopover {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.signal > 66
-                                      ? "\uf1eb"
-                                      : (modelData.signal > 33 ? "\uf6aa" : "\uf6ab")
+                                // One glyph () with opacity stepping
+                                // for signal strength.  / 
+                                // (nf-md signal bars) are MISSING in
+                                // MesloLGS and rendered as CJK fallback.
+                                text: ""
                                 color: isActive ? Colors.accent : Colors.fg
+                                opacity: modelData.signal > 66 ? 1.0
+                                       : modelData.signal > 33 ? 0.7 : 0.45
                                 font.family: Typography.fontMono
                                 font.pixelSize: Typography.fontCaption
                             }
@@ -318,7 +306,7 @@ WingPopover {
                             Text {
                                 visible: scanRow.isSecure
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "\uf023"
+                                text: ""
                                 color: Colors.fgMuted
                                 font.family: Typography.fontMono
                                 font.pixelSize: Typography.fontMicro
@@ -369,14 +357,26 @@ WingPopover {
                     wrapMode: Text.WordWrap
                 }
             }
+        }
+    }
 
-            // ─── Escape hatch → impala ────────────────────────────────
-            Rectangle { width: parent.width; height: 1; color: Colors.border; opacity: 0.5 }
+    // ─── Sticky footer: escape hatch → impala ─────────────────────────
+    footerComponent: Component {
+        Column {
+            width: parent.width
+            spacing: 0
+
             Rectangle {
                 width: parent.width
-                height: Sizing.px(34)
-                radius: Shape.radiusSm
-                color: impalaMouse.containsMouse ? Colors.tileBgActive : Colors.tileBg
+                height: Shape.borderThin
+                color: Colors.border
+                opacity: Effects.opacitySubtle
+            }
+
+            Rectangle {
+                width: parent.width
+                height: Sizing.px(44)
+                color: impalaMouse.containsMouse ? Colors.tileBgActive : "transparent"
                 Behavior on color { CAnim { type: "fast" } }
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
@@ -385,14 +385,14 @@ WingPopover {
                     spacing: Spacing.sm
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf013"
+                        text: ""
                         color: Colors.fg
                         font.family: Typography.fontMono
                         font.pixelSize: Typography.fontCaption
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Open impala"
+                        text: "Network settings"
                         color: Colors.fg
                         font.family: Typography.fontSans
                         font.pixelSize: Typography.fontCaption

@@ -24,6 +24,8 @@ NotificationServer {
     imageSupported: true
     persistenceSupported: true
 
+    property bool dndEnabled: false
+
     property var toasts: []
     readonly property int toastTimeoutMs: 5000
 
@@ -38,12 +40,18 @@ NotificationServer {
         const t = toastTimerComponent.createObject(root, { target: n })
         t.running = true
 
+        // Snapshot fields onto a plain JS object. `n.image` carries the
+        // notification's hero image (Slack avatars, album art via MPRIS,
+        // screenshot previews). Captured here so the history renders the
+        // same visual the toast did — we used to drop it and fall back
+        // to appIcon only, which made every notification look identical.
         const entry = {
             id: n.id,
             summary: n.summary,
             body: n.body,
             appName: n.appName,
             appIcon: n.appIcon,
+            image:   n.image,
             time: Date.now(),
             dismissed: false
         }

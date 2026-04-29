@@ -268,7 +268,92 @@ StyledWindow {
 
             MediaCard { width: parent.width }
 
-            NotificationsList { width: parent.width }
+            // ─── Notifications section ────────────────────────────────
+            // NotificationsList is body-only now (items + empty state);
+            // the title + count pill + Clear All pattern lives here
+            // inline for the drawer, and inside WingPopover's sticky
+            // header slot for the popover. Same visual vocabulary, two
+            // render sites — no duplicated widget because the drawer
+            // already owns its own scroll / layout rules.
+            Item {
+                width: parent.width
+                height: Math.max(notifTitleRow.height, notifClearBtn.height)
+                visible: !notifList.isEmpty || notifList.width > 0
+
+                Row {
+                    id: notifTitleRow
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Spacing.smMd
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Notifications"
+                        color: Colors.fg
+                        font {
+                            family: Typography.fontSans
+                            pixelSize: Typography.fontBody
+                            weight: Font.DemiBold
+                        }
+                    }
+
+                    Rectangle {
+                        visible: !notifList.isEmpty
+                        anchors.verticalCenter: parent.verticalCenter
+                        width:  ccCountLabel.implicitWidth + Spacing.md
+                        height: Sizing.px(20)
+                        radius: height / 2
+                        color:  Colors.tileBg
+
+                        Text {
+                            id: ccCountLabel
+                            anchors.centerIn: parent
+                            text: Notifs.history.length
+                            color: Colors.fgMuted
+                            font {
+                                family: Typography.fontMono
+                                pixelSize: Typography.fontMicro
+                                weight: Font.Medium
+                            }
+                            font.features: ({ "tnum": 1 })
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: notifClearBtn
+                    visible: !notifList.isEmpty
+                    width:  Sizing.px(80)
+                    height: Sizing.px(24)
+                    radius: height / 2
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    color:  ccClearMouse.containsMouse ? Colors.tileBgActive : Colors.tileBg
+                    clip: true
+
+                    Behavior on color { CAnim { type: "fast" } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Clear All"
+                        color: Colors.fg
+                        font {
+                            family: Typography.fontSans
+                            pixelSize: Typography.fontCaption
+                            weight: Font.Medium
+                        }
+                    }
+                    MouseArea {
+                        id: ccClearMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Notifs.clearHistory()
+                    }
+                }
+            }
+
+            NotificationsList { id: notifList; width: parent.width }
         }
     }
 

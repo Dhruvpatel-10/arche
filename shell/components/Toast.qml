@@ -35,15 +35,18 @@ Rectangle {
     // toast reads as sliding in from off-canvas rather than from its own
     // right margin. Paired with the opacity fade in Component.onCompleted
     // below so each toast both translates and fades in via one trigger.
-    transform: Translate { id: slide; x: Sizing.px(40) }
+    // `slideX` is a direct property on root so `Behavior on slideX` actually
+    // fires — `Behavior on <nestedObject>.<prop>` is not valid QML syntax.
+    property real slideX: Sizing.px(40)
+    transform: Translate { x: root.slideX }
 
     Component.onCompleted: {
         opacity = 1
-        slide.x = 0
+        slideX = 0
     }
 
     Behavior on opacity { Anim { type: "standard" } }
-    Behavior on slide.x { Anim { type: "standard" } }
+    Behavior on slideX { Anim { type: "standard" } }
 
     Row {
         anchors {

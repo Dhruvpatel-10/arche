@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# arche-bar-contrast — sample the top strip of the current wallpaper,
+# compute average luminance + dominant color, and write the result as
+# JSON so the Quickshell bar can pick text colors that stay legible
+# against whatever the user just set as their wallpaper.
+#
+# The shell (services/WallpaperContrast.qml) FileView-watches the output
+# path and repolls on change — this script is fire-and-forget.
+#
+# Usage:
+#   arche-bar-contrast             # sample $STATE_FILE (set by arche-wallpaper)
+#   arche-bar-contrast /path/img   # sample a specific image
+#
+# Deps: ImageMagick (magick / convert), jq (optional — we print JSON ourselves).
+# Cost: ~50-80 ms on a 4K image; cheap enough to run synchronously after
+# every wallpaper change.
+
+set -euo pipefail
+
+STATE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/arche-wallpaper/current"
+
+# Output path matches services/WallpaperContrast.qml. Keep them in sync.
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/arche-shell-${USER}}/arche-shell"
+OUT_FILE="$RUNTIME_DIR/bar-contrast.json"
+
+# Bar height in logical pixels. Must match
+# shell/theme/Sizing.qml → barHeightLogical. At 2x hidpi the strip we sample
+# is ~60 device px, which is enough rows to average cleanly without slurping
+# whole-image pixels.
+BAR_HEIGHT="${ARCHE_BAR_HEIGHT:-30}"
+
+# Luminance threshold that flips `isLight` in the shell. Tunable via env for
+# iterating without recompiling QML. 0.55 empirically keeps the default
+# Ember dark surface on ~90% of wallpapers and only flips to the
+# light-foreground variant on genuinely pale backgrounds.
+LIGHT_THRESHOLD="${ARCHE_BAR_LIGHT_THRESHOLD:-0.55}"
+
+# ─── Pick input ──────────────────────────────────────────────────────────
+if [[ $# -ge 1 ]]; then
+    IMG="$1"
+elif [[ -f "$STATE_FILE" ]]; then
+    IMG="$(cat "$STATE_FILE")"
+else
+    echo "arche-bar-contrast: no wallpaper arg and $STATE_FILE missing" >&2
+    exit 1
+fi
+
+if [[ ! -f "$IMG" ]]; then
+    echo "arche-bar-contrast: wallpaper not found: $IMG" >&2
+    exit 1
+fi
+
+# ─── Pick the ImageMagick binary ─────────────────────────────────────────
+# IM7 ships `magick`; IM6 ships `convert` as a symlink to the old binary.
+# Prefer the new one; fall back.
+if command -v magick >/dev/null 2>&1; then
+    MAGICK="magick"
+else
+    MAGICK="convert"
+fi
+
+# ─── Crop top strip + compute stats ──────────────────────────────────────
+# One invocation of ImageMagick does both:
+#   1. -resize  '1000x>'             downscale wide images first (10x faster)
+#   2. -crop    'WIDTHx${BAR_HEIGHT}+0+0'  take the top strip
+#   3. +repage                       drop virtual canvas metadata
+#
+# Then:
+#   • Average luminance via `-colorspace gray` + `-format "%[fx:mean]"`
+#     → float in [0,1].
+#   • Dominant color via `-scale 1x1!` + `%[pixel:p{0,0}]`
+#     → hex8 like `#RRGGBBAA`. We'll strip the alpha below.
+#
+# Using `-format` + `info:` avoids writing a temp image and parses the
+# numbers directly from stdout.
+
+# Step 1: write a scratch cropped image (kept in /tmp). Doing the work in
+# two passes is cleaner than cramming both stats into a single format
+# expression and loses nothing on speed.
+TMP_CROP="$(mktemp --suffix=.png)"
+trap 'rm -f "$TMP_CROP"' EXIT
+
+# `'1000x>'` resizes only when wider than 1000 px. Tall images (portrait
+# wallpapers on a portrait monitor) are untouched horizontally but the
+# top strip still gets cropped cleanly.
+"$MAGICK" "$IMG" -resize '1000x>' \
+    -gravity North -crop "x${BAR_HEIGHT}+0+0" +repage \
+    "$TMP_CROP"
+
+# Step 2: mean luminance in [0,1].
+LUM_STR="$("$MAGICK" "$TMP_CROP" -colorspace gray -format '%[fx:mean]' info:)"
+# Normalise "0.4213" format (sometimes IM prints in scientific notation for
+# near-zero values). awk handles both.
+LUM="$(awk -v v="$LUM_STR" 'BEGIN{ printf "%.4f", v + 0.0 }')"
+
+# Step 3: dominant color via 1×1 resample.
+# `pixel:p{0,0}` formats as `srgb(R,G,B)` or `srgba(R,G,B,A)` depending on
+# the file. Use `-depth 8 -define format:pixel-format=hex` via format string
+# to coerce to hex output.
+DOMINANT_RAW="$("$MAGICK" "$TMP_CROP" -scale '1x1!' \
+    -format '#%[hex:p{0,0}]' info:)"
+# `%[hex:...]` emits 8 hex chars for RGBA; trim to 6 (RGB) — we don't need
+# the alpha channel here, the bar's own surface owns the alpha story.
+DOMINANT="${DOMINANT_RAW:0:7}"
+if [[ ! "$DOMINANT" =~ ^#[0-9a-fA-F]{6}$ ]]; then
+    DOMINANT="#1d2029"   # bg fallback matching Colors.bgSurface
+fi
+
+# Step 4: isLight?
+IS_LIGHT="$(awk -v l="$LUM" -v t="$LIGHT_THRESHOLD" \
+    'BEGIN{ print (l+0.0 > t+0.0) ? "true" : "false" }')"
+
+# ─── Write JSON ──────────────────────────────────────────────────────────
+mkdir -p "$RUNTIME_DIR"
+
+# Atomic write: the shell's FileView re-reads on change. A partial write
+# (text() empty) makes `_parse` log "malformed JSON" for a frame. The
+# tempfile + rename pattern gives an atomic visibility flip.
+TMP_OUT="$(mktemp "${OUT_FILE}.XXXX")"
+cat >"$TMP_OUT" <<EOF
+{
+  "wallpaper": "$(printf '%s' "$IMG" | sed 's/\\/\\\\/g; s/"/\\"/g')",
+  "luminance": $LUM,
+  "isLight": $IS_LIGHT,
+  "dominant": "$DOMINANT",
+  "timestamp": $(date +%s)
+}
+EOF
+mv "$TMP_OUT" "$OUT_FILE"
+
+# Echo summary for CLI invocations; systemd / hook callers ignore it.
+if [[ -t 1 ]]; then
+    printf 'wallpaper  %s\nluminance  %s\nisLight    %s\ndominant   %s\nout        %s\n' \
+        "$IMG" "$LUM" "$IS_LIGHT" "$DOMINANT" "$OUT_FILE"
+fi

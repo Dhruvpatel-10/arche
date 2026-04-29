@@ -2,15 +2,24 @@ import QtQuick
 import QtQuick.Layouts
 import "../theme"
 
-// WingPill — small rounded-rect pill for the split-notch right wing.
-// Height 24, radius Shape.radiusPillWing (9px scaled), dedicated
-// pillBg / pillBgHover color roles so drawer polish doesn't drag the
-// bar's hover along with it.
+// WingPill — small rounded-rect tap target for the right-wing clusters.
+//
+// Redesign 2026-04-20: unboxed look. No border at rest, no fill at rest.
+// Hover reveals a subtle surface wash; the icon(s)/numeral(s) are the
+// shape at rest. This lets three pills in a row read as *one cluster*
+// instead of three chips against the bar surface.
+//
+// Height is Sizing.pxFor(22, …) — one rhythm for every right-wing cluster
+// (see BarStatusPills.qml for the vertical contract). Corners are slightly
+// rounded (Shape.radiusPillWing) so the hover wash doesn't hard-clip.
 Rectangle {
     id: root
     default property alias content: row.data
     property int spacing: Spacing.sm
-    property int padding: Spacing.md
+    property int padding: Spacing.smMd
+    // Height lives on the parent; lets BarStatusPills use the same rhythm
+    // across all pills even when one has no visible hover.
+    property int pillHeight: Sizing.px(22)
 
     // Set to true/false to paint the bottom-right status dot. null =
     // no status dot. Used by Wi-Fi / Bluetooth pills.
@@ -19,13 +28,13 @@ Rectangle {
     signal clicked()
     signal scrolled(int delta)
 
-    Layout.preferredHeight: Sizing.px(24)
-    implicitHeight: Sizing.px(24)
+    Layout.preferredHeight: pillHeight
+    implicitHeight: pillHeight
     implicitWidth: row.implicitWidth + padding * 2
     radius: Shape.radiusPillWing
-    color: mouseArea.containsMouse ? Colors.pillBgHover : Colors.pillBg
-    border.color: Colors.border
-    border.width: Shape.borderThin
+    // Transparent at rest — no chip silhouette. Hover only.
+    color: mouseArea.containsMouse ? Colors.pillBgHover : "transparent"
+    border.width: 0
 
     Behavior on color { CAnim { type: "fast" } }
 

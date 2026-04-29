@@ -39,6 +39,18 @@ Item {
             width: parent.width - Sizing.px(28) - Sizing.px(48) - Spacing.md * 2
             height: Sizing.px(28)
             anchors.verticalCenter: parent.verticalCenter
+            // Zero the Qt Controls default paddings so the track's visual
+            // extent matches the Slider's own width exactly. Otherwise the
+            // fill ends inside `availableWidth` while the neighbouring
+            // "100%" label sits spacing.md past the Slider bounds — the
+            // label floats visibly past the fill and the row reads as
+            // misaligned. Aligning paddings to zero makes the gap between
+            // fill-end and label exactly `spacing.md`, which is the
+            // intended layout contract.
+            leftPadding: 0
+            rightPadding: 0
+            topPadding: 0
+            bottomPadding: 0
             from: 0; to: 1
             value: root.value
             onMoved: root.moved(value)

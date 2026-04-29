@@ -23,9 +23,16 @@ WingPopover {
 
     cardWidth:         Sizing.px(320)
     anchorRightMargin: Sizing.px(12)   // rightmost pill, flush with the edge
+    bodyHeight:        Sizing.px(280)
 
-    property var modelData
-    screen: modelData
+    // Sticky header — glyph + tint reflect power state. Charging → bolt
+    // + success green. AC-only (fully charged) → plug. Otherwise the
+    // battery glyph tinted by capacity (critical < 15 %, warn < 30 %).
+    title:     root.dev?.isPresent ? "Battery" : "Power"
+    titleIcon: root.charging ? "\uf0e7"
+               : root.onAC    ? "\uf1e6"
+                              : "\uf240"
+    titleIconColor: root.charging ? Colors.success : root.battTint
 
     // ─── Platform profile polling (non-visual) ──────────────────────
     property string platformProfile: ""
@@ -97,29 +104,6 @@ WingPopover {
             id: body
             width: parent.width
             spacing: Spacing.md
-
-            // ─── Header ───────────────────────────────────────────────
-            Row {
-                width: parent.width
-                spacing: Spacing.sm
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.charging ? "\uf0e7"
-                          : root.onAC    ? "\uf1e6"
-                                         : "\uf240"
-                    color: root.charging ? Colors.success : root.battTint
-                    font.family: Typography.fontMono
-                    font.pixelSize: Typography.fontLabel
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.dev?.isPresent ? "Battery" : "Power"
-                    color: Colors.fg
-                    font.family: Typography.fontSans
-                    font.pixelSize: Typography.fontBody
-                    font.weight: Typography.weightDemiBold
-                }
-            }
 
             // ─── Hero: big percent + state ───────────────────────────
             Rectangle {

@@ -1,5 +1,16 @@
 # Design Brief: Panel Visual Refresh + Adaptive Surface Opacity + Per-Screen Scaling
 
+> **Archival note (2026-04-20).** This brief was written against the earlier
+> three-wing bar architecture (`BarLeftWing` + `BarCenterWing` + `BarRightWing`
+> + a separate `BarExclusionZone`). That design has since been unified into a
+> single full-width `components/Bar.qml` that owns its own exclusive zone and
+> composes the three clusters as anchored children (`BarWorkspaces`,
+> `NowPlayingStrip`, `BarClock`, `BarStatusPills`). The *visual contracts*
+> described below — adaptive opacity driver, per-screen `Sizing.pxFor` /
+> `Sizing.fpxFor`, theme roles — remain accurate; only the per-surface file
+> split is stale. See `quickshell-notes.md` → "Bar exclusion zone" for the
+> current architecture.
+
 ## 1. Intent
 
 When this lands, the bar stops feeling like a sticker pasted on the wallpaper and starts behaving like part of the compositor. On a tiled desktop it stays translucent and out of the way — the warm charcoal reads *through* a slight wash of the wallpaper below so the eye registers "layered surface" instead of "opaque hat". The moment a window takes over the workspace under that bar (maximized or true fullscreen), the surface firms up to near-solid so the chrome has its own ground, the amber accent stops fighting background noise, and the silhouette reads cleanly against whatever app is now beneath it. Typography sharpens: the workspace number gets a mono demi-weight so the active tile feels chiselled, status glyphs sit at a hair larger size so 18 pixels of pill actually contain a legible icon, and the separator stops being a ghost dot and starts being an intentional rule. Per-screen scaling lands defaults that are already tuned — laptop reads crisp at arm's length, external reads present at 80 cm — so the refresh lands the same way across both displays on first boot, without env-var twiddling.

@@ -18,6 +18,27 @@ QtObject {
     property bool dndOn:             false
     property bool caffeineOn:        false
 
+    // ─── Media popover ────────────────────────────────────────────────
+    // Compact now-playing card anchored below the bar's NowPlayingStrip.
+    // Click-only: clicking the strip (or firing `qs ipc call media
+    // popoverToggle`) flips this flag. Esc / click-outside / clicking
+    // the strip again all close it. A previous hover-triggered model
+    // flickered at certain cursor positions because the card slid
+    // through the cursor during open/close animations; see
+    // docs/quickshell-notes.md → "Hover-triggered popovers, retired".
+    //
+    // Renamed from `mediaDialogOpen` — this is a popover, not a modal
+    // dialog. The old IPC function names (`media dialogToggle/Open/
+    // Close`) stay live as aliases in Shortcuts.qml so existing keybinds
+    // don't break.
+    property bool mediaPopoverOpen: false
+    onMediaPopoverOpenChanged: {
+        if (mediaPopoverOpen) {
+            controlCenterOpen = false
+            rightPopover = "none"
+        }
+    }
+
     // ─── Right-wing pill popovers ─────────────────────────────────────
     // One string flag, mutually exclusive. Each right-wing pill has its
     // own focused dialog instead of every pill opening ControlCenter.
@@ -38,8 +59,21 @@ QtObject {
     }
     function closePopover(): void { rightPopover = "none" }
 
-    // ─── Living Notch state machine ───────────────────────────────────
-    // Precedence (highest → lowest):
+    // ─── Living Notch state machine (DEPRECATED — 2026-04-20) ────────
+    // The Island was retired in favour of the unified `Bar` — a minimal
+    // centered clock+date (`components/BarClock.qml`) + an inline
+    // now-playing text strip in the left cluster
+    // (`components/NowPlayingStrip.qml`) + the full `MediaPopover`.
+    // These fields stay as side-effect state only: external scripts and
+    // keybinds still write `Ui.recording` / `Ui.recordingTime` (read by
+    // the Bar's right-cluster recording pill in `BarStatusPills.qml`)
+    // and `Ui.pinnedPlayerIdentity` (read by NowPlayingStrip's player
+    // selection). The other flags are no-ops — nothing renders them any
+    // more, and calling `Ui.tryExpand()` just flips a flag that no
+    // surface observes. We keep them so Shortcuts.qml IPC handlers still
+    // resolve and don't break existing keybinds / scripts.
+    //
+    // Original precedence (no longer enforced):
     //   expanded > toast > volume > recording > focus > playing > idle
     //
     // expanded / recording / focus are user-driven (click, IPC). They

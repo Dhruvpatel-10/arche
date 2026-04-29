@@ -18,9 +18,14 @@ WingPopover {
 
     cardWidth:         Sizing.px(340)
     anchorRightMargin: Sizing.px(140)   // roughly under the BT pill
+    bodyHeight:        Sizing.px(320)
 
-    property var modelData
-    screen: modelData
+    // Sticky header — glyph + tint reflect adapter power state. Accent-
+    // alt (steel blue) signals the cool Bluetooth lane, keeping wifi's
+    // amber accent distinct at a glance.
+    title:     "Bluetooth"
+    titleIcon: Bt.powered ? "" : ""
+    titleIconColor: Bt.powered ? Colors.accentAlt : Colors.fgMuted
 
     // Refresh paired devices on open. Connections is non-visual; leaving
     // it at the WingPopover scope is safe.
@@ -36,27 +41,6 @@ WingPopover {
             id: body
             width: parent.width
             spacing: Spacing.md
-
-            // ─── Header ───────────────────────────────────────────────
-            Row {
-                width: parent.width
-                spacing: Spacing.sm
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Bt.powered ? "\uf293" : "\uf294"
-                    color: Bt.powered ? Colors.accentAlt : Colors.fgMuted
-                    font.family: Typography.fontMono
-                    font.pixelSize: Typography.fontLabel
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Bluetooth"
-                    color: Colors.fg
-                    font.family: Typography.fontSans
-                    font.pixelSize: Typography.fontBody
-                    font.weight: Typography.weightDemiBold
-                }
-            }
 
             // ─── Adapter toggle ───────────────────────────────────────
             Rectangle {
@@ -236,14 +220,26 @@ WingPopover {
                     wrapMode: Text.WordWrap
                 }
             }
+        }
+    }
 
-            // ─── Escape hatch → bluetui ───────────────────────────────
-            Rectangle { width: parent.width; height: 1; color: Colors.border; opacity: 0.5 }
+    // ─── Sticky footer: escape hatch → bluetui ────────────────────────
+    footerComponent: Component {
+        Column {
+            width: parent.width
+            spacing: 0
+
             Rectangle {
                 width: parent.width
-                height: Sizing.px(34)
-                radius: Shape.radiusSm
-                color: bluetuiMouse.containsMouse ? Colors.tileBgActive : Colors.tileBg
+                height: Shape.borderThin
+                color: Colors.border
+                opacity: Effects.opacitySubtle
+            }
+
+            Rectangle {
+                width: parent.width
+                height: Sizing.px(44)
+                color: bluetuiMouse.containsMouse ? Colors.tileBgActive : "transparent"
                 Behavior on color { CAnim { type: "fast" } }
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
@@ -252,14 +248,14 @@ WingPopover {
                     spacing: Spacing.sm
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf013"
+                        text: ""
                         color: Colors.fg
                         font.family: Typography.fontMono
                         font.pixelSize: Typography.fontCaption
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Open bluetui"
+                        text: "Pair new device"
                         color: Colors.fg
                         font.family: Typography.fontSans
                         font.pixelSize: Typography.fontCaption

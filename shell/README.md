@@ -38,5 +38,5 @@ Uses Nerd Font glyphs (MesloLGS Nerd Font Mono) — already on the system.
 ## Folded into arche
 
 Eventually: stow package at `stow/quickshell/.config/quickshell/` with theme values
-rendered from `themes/active` via envsubst templates. For now, iterate standalone
+rendered from `theming/themes/active` via envsubst templates. For now, iterate standalone
 here and symlink from `~/.config/quickshell/` → this repo.

@@ -1,69 +1,69 @@
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
-import Quickshell.Hyprland
 import ".."
 import "../theme"
 
-// CalendarPanel — the window-level concerns only:
-//   * StyledWindow + scrim
-//   * Open/close slide animation (offsetScale)
-//   * Ticking clock
-//   * Multi-monitor: bind `screen` to focused monitor (drawer follows focus)
-//   * Keyboard focus + Escape dismissal
-//   * viewMonth / viewYear / selectedDate state + nav helpers
-//   * Fade swap animation on month change
+// CalendarPanel — top-centered calendar popover.
 //
-// Everything visual is owned by CalendarView.qml.
-StyledWindow {
+// Built on ArcheDialog { mode: "popover"; anchorEdge: "center" }. Every
+// window-level concern — scrim, Esc dismissal, click-outside, focused-
+// monitor teleport, slide/fade animation, namespace — is inherited from
+// the base. See ArcheDialog.qml's header for the full pitfall checklist.
+//
+// CalendarPanel owns only the calendar-specific state:
+//   * viewMonth / viewYear / selectedDate (current render target)
+//   * clockTick (Timer driving the time readout)
+//   * swapAnim (paired fade on month / year change)
+//
+// The calendar's long-standing feel — the 500 ms spatial slide with a
+// gentle overshoot on landing — is now the popover-mode default on
+// ArcheDialog; every bar-wing popover inherits it too. This file is the
+// consumer; the base is where the motion lives.
+ArcheDialog {
     id: root
     name: "calendar"
 
-    // ─── Slide + fade driver (shared pattern with ControlCenter) ───────
-    readonly property bool shouldBeActive: Ui.calendarOpen
-    property real offsetScale: shouldBeActive ? 0 : 1
+    mode:       "popover"
+    anchorEdge: "center"
 
-    visible: shouldBeActive || offsetScale < 1
+    // Open follows the Ui flag; every dismissal path funnels into one
+    // action — clear the flag. ArcheDialog handles the rest (Esc,
+    // outside-click, monitor-change).
+    open: Ui.calendarOpen
+    onDismissed: Ui.calendarOpen = false
 
-    Behavior on offsetScale {
-        Anim { type: "spatial" }
-    }
-
-    // Multi-monitor: render on the currently-focused monitor. Same
-    // pattern as PickerDialog/ControlCenter — resolve the Hyprland
-    // monitor to the matching ShellScreen by name.
-    screen: {
-        const fm = Hyprland.focusedMonitor
-        if (!fm) return null
-        const list = Quickshell.screens
-        for (let i = 0; i < list.length; i++)
-            if (list[i].name === fm.name) return list[i]
-        return null
-    }
-
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-    exclusiveZone: 0
-
-    // OnDemand keyboard focus: the FocusScope below grabs focus and
-    // handles Escape dismissal.
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    // Card sized to the calendar grid. `view.calendarWidth` already
+    // includes the 2×Spacing.lg internal gutter; ArcheDialog's
+    // `contentPadding` default is the same Spacing.lg so the grid lands
+    // flush inside the card without double-padding.
+    cardWidth: view.calendarWidth
+    // Generous ceiling so the card never exceeds the screen. The
+    // ColumnLayout inside ArcheDialog already shrinks to
+    // `childrenRect.height` in popover mode — this just stops a
+    // hypothetical future content overflow.
+    cardMaxHeight: Math.max(Sizing.px(320),
+                            Math.round((root.height - root.anchorTopMargin)
+                                       * 0.85))
 
     // ─── View state ────────────────────────────────────────────────────
     property int viewMonth: new Date().getMonth()
     property int viewYear:  new Date().getFullYear()
     property var selectedDate: new Date()
 
-    // Reset on every open — land on today, select today.
-    onVisibleChanged: {
-        if (!visible) return
+    // Reset to today on every open. `open` is the user-intent flag, so
+    // this fires once per open — matching the old `onVisibleChanged`
+    // reset semantics without racing the animation tail (visible stays
+    // true during close-out).
+    onOpenChanged: {
+        if (!open) return
         const d = new Date()
         viewMonth = d.getMonth()
         viewYear  = d.getFullYear()
         selectedDate = d
     }
 
-    // ─── Clock + scrim + focus ────────────────────────────────────────
+    // ─── Ticking clock ────────────────────────────────────────────────
+    // Drives the time display inside CalendarView. Only runs while the
+    // card is on-screen (visible includes the close-out animation).
     Timer {
         id: clockTick
         property date time: new Date()
@@ -74,93 +74,59 @@ StyledWindow {
         onTriggered: time = new Date()
     }
 
-    // Note: no focused-monitor-changed dismiss handler. The `screen`
-    // binding above already follows Hyprland.focusedMonitor — the panel
-    // simply hops to the new monitor (matching PickerDialog's UX).
+    // ─── Paired fade-swap on month change ─────────────────────────────
+    // Leaving half uses the `accel` preset (standardAccel — drives *into*
+    // the exit), arriving half uses `decel` (standardDecel — eases *out
+    // of* the entrance). The animation target is the whole CalendarView
+    // so the grid + week column + nav move as one.
+    SequentialAnimation {
+        id: swapAnim
+        property int nextMonth: root.viewMonth
+        property int nextYear:  root.viewYear
 
-    // Escape dismissal. FocusScope pulls the layer's OnDemand keyboard
-    // focus so Esc fires here. Transparent; doesn't consume mouse events.
-    FocusScope {
-        anchors.fill: parent
-        focus: root.shouldBeActive
-        Keys.onEscapePressed: Ui.calendarOpen = false
-    }
-
-    // Scrim: left-click outside the card dismisses. Right-clicks fall
-    // through — the scrim shouldn't swallow context menus on whatever
-    // surface lives below us.
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onClicked: Ui.calendarOpen = false
-    }
-
-    // ─── Card ──────────────────────────────────────────────────────────
-    Rectangle {
-        id: card
-        anchors.top: parent.top
-        anchors.topMargin: Spacing.xs + (-card.height - Spacing.sm) * root.offsetScale
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: view.calendarWidth
-        height: view.implicitHeight + Spacing.lg * 2
-        color: Colors.card
-        radius: Shape.radiusLg
-        border.color: Colors.border
-        border.width: Shape.borderThin
-        opacity: 1 - root.offsetScale
-
-        // Swallow clicks so the scrim doesn't dismiss us.
-        MouseArea { anchors.fill: parent }
-
-        // Paired fade-swap animation on month change. Leaving half uses
-        // the `accel` preset (standardAccel — drives *into* the exit),
-        // arriving half uses `decel` (standardDecel — eases *out* of the
-        // entrance). The animation target is the whole CalendarView so
-        // the grid + week column + nav move as one.
-        SequentialAnimation {
-            id: swapAnim
-            property int nextMonth: root.viewMonth
-            property int nextYear:  root.viewYear
-
-            Anim { target: view; property: "opacity"; to: 0; type: "accel" }
-            ScriptAction {
-                script: {
-                    root.viewMonth = swapAnim.nextMonth
-                    root.viewYear  = swapAnim.nextYear
-                }
+        Anim { target: view; property: "opacity"; to: 0; type: "accel" }
+        ScriptAction {
+            script: {
+                root.viewMonth = swapAnim.nextMonth
+                root.viewYear  = swapAnim.nextYear
             }
-            Anim { target: view; property: "opacity"; to: 1; type: "decel" }
         }
+        Anim { target: view; property: "opacity"; to: 1; type: "decel" }
+    }
 
-        CalendarView {
-            id: view
-            anchors {
-                left: parent.left; right: parent.right
-                top: parent.top
-                margins: Spacing.lg
-            }
-            viewMonth:    root.viewMonth
-            viewYear:     root.viewYear
-            selectedDate: root.selectedDate
-            today:        clockTick.time
+    // ─── Content ──────────────────────────────────────────────────────
+    // Children of ArcheDialog go into the card's content area (an Item
+    // under the optional header / footer slots). CalendarView anchors
+    // left/right to span the content area and sets `height:
+    // implicitHeight` so the card can shrink to fit in popover mode
+    // (cardInterior's Layout.preferredHeight reads childrenRect.height).
+    CalendarView {
+        id: view
+        anchors.left:  parent.left
+        anchors.right: parent.right
+        height:        implicitHeight
 
-            onDayClicked: d => root.selectedDate = d
-            onNavRequested: (dm, dy) => {
-                let m = root.viewMonth + dm
-                let y = root.viewYear  + dy
-                while (m < 0)  { m += 12; y -= 1 }
-                while (m > 11) { m -= 12; y += 1 }
-                swapAnim.nextMonth = m
-                swapAnim.nextYear  = y
-                swapAnim.restart()
-            }
-            onTodayRequested: {
-                const d = new Date()
-                swapAnim.nextMonth = d.getMonth()
-                swapAnim.nextYear  = d.getFullYear()
-                swapAnim.restart()
-                root.selectedDate = d
-            }
+        viewMonth:    root.viewMonth
+        viewYear:     root.viewYear
+        selectedDate: root.selectedDate
+        today:        clockTick.time
+
+        onDayClicked: d => root.selectedDate = d
+        onNavRequested: (dm, dy) => {
+            let m = root.viewMonth + dm
+            let y = root.viewYear  + dy
+            while (m < 0)  { m += 12; y -= 1 }
+            while (m > 11) { m -= 12; y += 1 }
+            swapAnim.nextMonth = m
+            swapAnim.nextYear  = y
+            swapAnim.restart()
+        }
+        onTodayRequested: {
+            const d = new Date()
+            swapAnim.nextMonth = d.getMonth()
+            swapAnim.nextYear  = d.getFullYear()
+            swapAnim.restart()
+            root.selectedDate = d
         }
     }
 }

@@ -17,8 +17,16 @@ import "."
 //   fontDisplay  30  hero numerics only (clock, one big % in a card)
 QtObject {
     // ─── Families ──────────────────────────────────────────────────────
-    readonly property string fontSans: "IBM Plex Sans"
-    readonly property string fontMono: "MesloLGS Nerd Font Mono"
+    // Read from theme.json (emitted by theming engine). Fallback strings
+    // match Ember so the shell paints sanely when the file is missing.
+    readonly property string fontSans: {
+        const v = Colors._data.font && Colors._data.font.sans
+        return (typeof v === "string" && v.length > 0) ? v : "IBM Plex Sans"
+    }
+    readonly property string fontMono: {
+        const v = Colors._data.font && Colors._data.font.mono
+        return (typeof v === "string" && v.length > 0) ? v : "MesloLGS Nerd Font Mono"
+    }
 
     // ─── Size ladder ───────────────────────────────────────────────────
     // Logical pixels pre-scale; Sizing.fpx rounds after applying fontScale.
