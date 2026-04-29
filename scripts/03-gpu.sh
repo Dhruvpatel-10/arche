@@ -45,6 +45,27 @@ else
     log_ok "nvidia_drm.modeset=1 present on cmdline"
 fi
 
+# Enable VRAM save/restore services. Paired with NVreg_PreserveVideoMemoryAllocations=1
+# (linked in from system/etc/modprobe.d/nvidia.conf by link_system_all). Without these,
+# DPMS off → wake and suspend → wake leave the eDP panel black on Turing+ open-driver
+# laptops. Services are shipped by nvidia-utils; they're disabled by default.
+for svc in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service; do
+    if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+        log_warn "$svc already enabled"
+    else
+        sudo systemctl enable "$svc" >/dev/null 2>&1 && log_ok "Enabled: $svc"
+    fi
+done
+
+# modprobe.d changes only take effect after the nvidia module reloads — and
+# since nvidia is in MODULES=(), it's loaded from the UKI at boot, so the UKI
+# must be rebuilt to embed the new options file.
+if [[ -f /etc/modprobe.d/nvidia.conf ]] && ! sudo lsinitcpio /boot/EFI/Linux/arch-linux.efi 2>/dev/null | grep -q 'modprobe.d/nvidia.conf'; then
+    log_info "Rebuilding initramfs to embed modprobe.d/nvidia.conf..."
+    sudo mkinitcpio -P
+    log_ok "UKI rebuilt with nvidia modprobe options"
+fi
+
 # Verify nvidia-smi
 if command -v nvidia-smi &>/dev/null; then
     log_ok "nvidia-smi available"
