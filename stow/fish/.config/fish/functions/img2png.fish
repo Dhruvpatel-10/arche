@@ -1,5 +1,5 @@
 function img2png --description 'Convert image(s) to max-compression lossless PNG'
-    argparse h/help 'o/output=' -- $argv
+    argparse h/help 'r/resize=' 'o/output=' -- $argv
     or return 1
 
     if set -q _flag_help
@@ -15,12 +15,17 @@ function img2png --description 'Convert image(s) to max-compression lossless PNG
         printf "  img2png [options] <input> [input...]\n"
         printf "\n"
         printf "%sOPTIONS%s\n" $k $d
+        printf "  -r, --resize SPEC  downscale only if larger:\n"
+        printf "                       N        -> NxN bounding box (keep aspect)\n"
+        printf "                       WIDTHx   -> width-only (keep aspect)\n"
+        printf "                       WxH      -> WxH bounding box\n"
         printf "  -o, --output FILE  output path (single input only, .png appended if missing)\n"
         printf "  -h, --help         show this help\n"
         printf "\n"
         printf "%sEXAMPLES%s\n" $k $d
         printf "  img2png photo.jpg                  %s# photo.png%s\n" $m $d
         printf "  img2png *.jpg                      %s# one .png per input%s\n" $m $d
+        printf "  img2png -r 1080 photo.jpg          %s# cap at 1080 each side%s\n" $m $d
         printf "  img2png -o out photo.jpg           %s# out.png (ext appended)%s\n" $m $d
         return 0
     end
@@ -42,6 +47,13 @@ function img2png --description 'Convert image(s) to max-compression lossless PNG
         return 1
     end
 
+    set -l resize_args
+    if set -q _flag_resize
+        set -l spec $_flag_resize
+        string match -qr '^[0-9]+$' -- $spec; and set spec {$spec}x{$spec}
+        set resize_args -resize "$spec>"
+    end
+
     for f in $argv
         set -l out
         if set -q _flag_output
@@ -50,7 +62,7 @@ function img2png --description 'Convert image(s) to max-compression lossless PNG
         else
             set out (string replace -r '\.[^.]+$' '' -- $f).png
         end
-        magick $f -strip \
+        magick $f $resize_args -strip \
             -define png:compression-filter=5 \
             -define png:compression-level=9 \
             -define png:compression-strategy=1 \

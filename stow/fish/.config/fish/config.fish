@@ -39,10 +39,8 @@ alias ff "fzf --preview 'bat --style=numbers --color=always {}'"
 alias printaienv "printenv | grep -E 'GEMINI|OPENAI|GROQ|ANTHROPIC'"
 
 # ─── Machine-specific overrides (gitignored) ───
+# PATH and runtime exports live in conf.d/path.fish (auto-sourced).
+# Per-user / per-host overrides go in local.fish (gitignored).
 
 set -l local_config $__fish_config_dir/local.fish
 test -f $local_config; and source $local_config
-
-# bun
-set --export BUN_INSTALL "$HOME/.bun"
-set --export PATH $BUN_INSTALL/bin $PATH
