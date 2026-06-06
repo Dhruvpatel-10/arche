@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# arche-screenshot-ssh — region grab → stream over ssh to a remote box →
+# copy the *relative* remote path (as text) to the local clipboard.
+#
+# Use case: screenshot lands in a git-ignored dir on an ssh box, and the short
+# path (e.g. .clip/shot-20260607-141233.png) is now in your clipboard. Paste it
+# (Ctrl+Shift+V) into a Claude Code / terminal session running on that box and
+# the remote agent reads the image from disk. No clipboard-over-ssh, no scp.
+#
+# Config (per-user, gitignored): ~/.config/arche/screenshot-ssh.conf
+#   RUNE_SSH   ssh target — alias from ~/.ssh/config or user@host   (required)
+#   RUNE_DIR   upload dir on the remote box; ~ expands remotely     (default: ~/.clip)
+#   RUNE_REL   path prefix copied to clipboard                      (default: RUNE_DIR)
+#
+# The image travels over your existing ssh; nothing host-specific lives in the
+# repo. First run writes a stub config and exits so you can fill it in.
+
+set -euo pipefail
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/arche/screenshot-ssh.conf"
+
+notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Screenshot SSH" "$@"; }
+
+# First-run bootstrap: write a template, tell the user, bail.
+if [[ ! -f "$CONF" ]]; then
+    mkdir -p "$(dirname "$CONF")"
+    cat > "$CONF" <<'EOF'
+# arche-screenshot-ssh config. Per-user, not tracked in git.
+# RUNE_SSH: ssh alias (from ~/.ssh/config) or user@host
+# RUNE_DIR: remote dir to drop screenshots into; ~ expands on the remote box
+# RUNE_REL: optional — path prefix copied to your clipboard (default: RUNE_DIR)
+
+RUNE_SSH="dev@CHANGE_ME"
+RUNE_DIR="~/.clip"
+EOF
+    notify "Config created" "Edit $CONF — set RUNE_SSH, then retry."
+    echo "Wrote stub config: $CONF — set RUNE_SSH and retry." >&2
+    exit 1
+fi
+
+# shellcheck source=/dev/null
+source "$CONF"
+
+if [[ -z "${RUNE_SSH:-}" || "${RUNE_SSH}" == *CHANGE_ME* ]]; then
+    notify "Not configured" "Set RUNE_SSH in $CONF"
+    echo "RUNE_SSH unset/placeholder in $CONF" >&2
+    exit 1
+fi
+# Single-quoted assignment keeps the leading ~ LITERAL so it expands on the
+# remote box, not this machine's home. (An inline ${:-~/.clip} default would
+# tilde-expand to the local home — avoid it.) Config sets RUNE_DIR="~/.clip".
+# shellcheck disable=SC2088  # literal ~ is intentional — expands on the remote box
+[[ -z "${RUNE_DIR:-}" ]] && RUNE_DIR='~/.clip'
+RUNE_REL="${RUNE_REL:-$RUNE_DIR}"
+
+# Single-instance lock (kernel-held flock — freed on any exit, incl. crash).
+LOCK="${XDG_RUNTIME_DIR:-/tmp}/arche-screenshot-ssh.lock"
+exec 200>"$LOCK"
+flock -n 200 || exit 0
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+name="shot-$(date +%Y%m%d-%H%M%S).png"
+tmp="$(mktemp --suffix=.png)"
+trap 'rm -f "$tmp" "$LOCK"' EXIT
+
+# Freeze frame for a stable selection target (mirrors arche-screenshot).
+"$SCRIPT_DIR/wayfreeze" --hide-cursor &
+freeze_pid=$!
+sleep 0.1
+cleanup() {
+    kill "$freeze_pid" 2>/dev/null
+    wait "$freeze_pid" 2>/dev/null || true
+    rm -f "$tmp" "$LOCK"
+}
+trap cleanup EXIT
+
+geometry=$(slurp -d \
+    -b 00000066 \
+    -c c9943eff \
+    -s c9943e18 \
+    -B 00000066 \
+    -w 2) || exit 0
+
+# `timeout` guards grim against a DMA-fence hang (Hyprland + NVIDIA + wlr).
+timeout 10s grim -l 0 -s 1 -g "$geometry" "$tmp" || exit 0
+
+# Unfreeze before the (potentially slow) network upload.
+cleanup
+trap 'rm -f "$tmp" "$LOCK"' EXIT
+
+# Stream the PNG over ssh. mkdir -p is idempotent; cat writes the file.
+# RUNE_DIR/name are ours (config + date, no spaces) — left UNQUOTED on purpose so a
+# leading ~ expands on the remote box. SC2029: client-side expansion is intended.
+# shellcheck disable=SC2029
+if ! ssh "$RUNE_SSH" "mkdir -p $RUNE_DIR && cat > $RUNE_DIR/$name" < "$tmp"; then
+    notify "Upload failed" "$RUNE_SSH unreachable?"
+    echo "ssh upload failed → $RUNE_SSH" >&2
+    exit 1
+fi
+
+# Copy the relative path as TEXT — not the image. Detach so the selection
+# daemon outlives this script + the launch scope's cgroup teardown.
+relpath="$RUNE_REL/$name"
+# $1 is consumed inside the inner bash -c, not the outer shell — single quotes intended.
+# shellcheck disable=SC2016
+copy='printf %s "$1" | wl-copy --foreground'
+if command -v systemd-run >/dev/null 2>&1; then
+    systemd-run --user --collect --quiet -- bash -c "$copy" _ "$relpath"
+else
+    setsid -f -- bash -c "$copy" _ "$relpath"
+fi
+
+notify "Uploaded" "$relpath  (path in clipboard)"
