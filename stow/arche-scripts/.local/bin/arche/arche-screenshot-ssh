@@ -71,7 +71,9 @@ sleep 0.1
 cleanup() {
     kill "$freeze_pid" 2>/dev/null
     wait "$freeze_pid" 2>/dev/null || true
-    rm -f "$tmp" "$LOCK"
+    # Remove ONLY the lock here — $tmp holds the captured PNG the ssh upload
+    # still has to read. The final EXIT trap deletes $tmp after the upload.
+    rm -f "$LOCK"
 }
 trap cleanup EXIT
 
@@ -92,10 +94,14 @@ trap 'rm -f "$tmp" "$LOCK"' EXIT
 # Stream the PNG over ssh. mkdir -p is idempotent; cat writes the file.
 # RUNE_DIR/name are ours (config + date, no spaces) — left UNQUOTED on purpose so a
 # leading ~ expands on the remote box. SC2029: client-side expansion is intended.
+# Capture ssh's stderr so a failure shows the REAL reason (auth, host key,
+# timeout, network) instead of a generic "unreachable".
+ERRLOG="${XDG_RUNTIME_DIR:-/tmp}/arche-screenshot-ssh.log"
 # shellcheck disable=SC2029
-if ! ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "$RUNE_SSH" "mkdir -p $RUNE_DIR && cat > $RUNE_DIR/$name" < "$tmp"; then
-    notify "Upload failed" "$RUNE_SSH unreachable?"
-    echo "ssh upload failed → $RUNE_SSH" >&2
+if ! ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "$RUNE_SSH" "mkdir -p $RUNE_DIR && cat > $RUNE_DIR/$name" < "$tmp" 2>"$ERRLOG"; then
+    err=$(tr '\n' ' ' < "$ERRLOG" 2>/dev/null || true)
+    notify "Upload failed" "${err:-$RUNE_SSH unreachable?}"
+    echo "ssh upload failed → $RUNE_SSH: $err" >&2
     exit 1
 fi
 
