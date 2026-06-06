@@ -93,7 +93,7 @@ trap 'rm -f "$tmp" "$LOCK"' EXIT
 # RUNE_DIR/name are ours (config + date, no spaces) — left UNQUOTED on purpose so a
 # leading ~ expands on the remote box. SC2029: client-side expansion is intended.
 # shellcheck disable=SC2029
-if ! ssh "$RUNE_SSH" "mkdir -p $RUNE_DIR && cat > $RUNE_DIR/$name" < "$tmp"; then
+if ! ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "$RUNE_SSH" "mkdir -p $RUNE_DIR && cat > $RUNE_DIR/$name" < "$tmp"; then
     notify "Upload failed" "$RUNE_SSH unreachable?"
     echo "ssh upload failed → $RUNE_SSH" >&2
     exit 1
