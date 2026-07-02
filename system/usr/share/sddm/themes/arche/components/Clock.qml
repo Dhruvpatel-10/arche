@@ -3,11 +3,11 @@ import QtQuick 2.15
 Column {
     id: root
 
-    property string fontFamily: "IBM Plex Sans"
-    property string monoFamily: "MesloLGS Nerd Font Mono"
+    property string fontFamily: "MesloLGS Nerd Font Mono"
     property color textColor: "#cdc8bc"
     property color mutedColor: "#817c72"
     property int hourFormat: 24
+    property bool showSeconds: true
 
     spacing: 4
 
@@ -16,37 +16,41 @@ Column {
     function formatTime(d) {
         var h = d.getHours()
         var m = d.getMinutes()
+        var s = d.getSeconds()
         if (root.hourFormat === 12) {
             var suf = h >= 12 ? " PM" : " AM"
             h = h % 12; if (h === 0) h = 12
-            return two(h) + ":" + two(m) + suf
+            return two(h) + ":" + two(m) + (root.showSeconds ? ":" + two(s) : "") + suf
         }
-        return two(h) + ":" + two(m)
+        return two(h) + ":" + two(m) + (root.showSeconds ? ":" + two(s) : "")
     }
 
     function formatDate(d) {
-        var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-        var months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
-        return days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate()
+        var days = ["sun","mon","tue","wed","thu","fri","sat"]
+        return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()) + " " + days[d.getDay()]
     }
 
+    // Children sized intrinsically so Column.implicitWidth is non-zero;
+    // right-alignment is handled by the parent's anchor in Main.qml.
     Text {
         id: timeText
+        anchors.right: parent.right
         text: root.formatTime(new Date())
         color: root.textColor
-        font.family: root.monoFamily
-        font.pixelSize: 64
+        font.family: root.fontFamily
+        font.pixelSize: 48
         font.weight: Font.Light
-        font.letterSpacing: -2
+        font.letterSpacing: 1
     }
 
     Text {
+        id: dateText
+        width: timeText.width
+        horizontalAlignment: Text.AlignRight
         text: root.formatDate(new Date())
         color: root.mutedColor
         font.family: root.fontFamily
-        font.pixelSize: 15
-        font.weight: Font.Normal
-        opacity: 0.9
+        font.pixelSize: 12
     }
 
     Timer {
@@ -56,6 +60,7 @@ Column {
         onTriggered: {
             var d = new Date()
             timeText.text = root.formatTime(d)
+            dateText.text = root.formatDate(d)
         }
     }
 }

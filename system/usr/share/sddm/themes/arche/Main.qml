@@ -4,9 +4,6 @@ import "components"
 
 Rectangle {
     id: root
-    // SDDM loads the theme into a per-screen Window. Bind to the containing
-    // Window so each monitor's instance matches its own dimensions; fall
-    // back to Screen if the Window isn't yet ready.
     width: Window.window ? Window.window.width : Screen.width
     height: Window.window ? Window.window.height : Screen.height
     color: config.bgColor
@@ -14,232 +11,174 @@ Rectangle {
     LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
-    // ─── Selection state ───
     property int selectedUserIndex: userModel.lastIndex >= 0 ? userModel.lastIndex : 0
     property string selectedUserName: userModel.lastUser || ""
-    property string selectedRealName: ""
     property int selectedSessionIndex: sessionModel.lastIndex
     property bool busy: false
 
-    // ─── Background: soft vertical gradient for depth ───
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: config.bgColor }
-            GradientStop { position: 1.0; color: config.bgColorAlt }
-        }
+    // Multi-monitor: SDDM instantiates Main.qml per screen. Each instance has
+    // independent state — typing/clicks don't cross screens. We render full
+    // UI on every screen so the user can log in from whichever has focus.
+    // (SDDM's `screenModel.geometry()` is a model role, not an invokable —
+    // there is no reliable per-instance "am I the primary?" check, and
+    // hiding UI on secondaries would orphan input on those screens.)
+
+    function syncSelectedName() {
+        var n = picker.userNameAt(root.selectedUserIndex)
+        if (n && n.length > 0) root.selectedUserName = n
     }
 
-    // Background image — only instantiated when theme.conf provides a path, so
-    // an empty `background=` doesn't trigger a QML "Cannot open file:///…" error.
-    Loader {
-        id: backgroundLoader
-        anchors.fill: parent
-        active: config.background && config.background.length > 0
-        sourceComponent: Image {
-            source: config.background
-            fillMode: Image.PreserveAspectCrop
-            visible: status === Image.Ready
-            opacity: 0.55
-            asynchronous: true
-            smooth: true
-        }
-    }
-
-    // Faint amber wash — warmth without dominance. Hidden if a wallpaper is set.
+    // Background: very faint amber wash for warmth.
     Rectangle {
         anchors.centerIn: parent
         width: Math.max(parent.width, parent.height) * 0.9
         height: width
         radius: width / 2
-        opacity: 0.04
+        opacity: 0.025
         color: config.accentColor
-        visible: !backgroundLoader.active
-                 || (backgroundLoader.item && backgroundLoader.item.status !== Image.Ready)
     }
 
-    // ─── Top bar: hostname left, clock right ───
-    Text {
-        id: hostnameText
+    // Background boot log — top-left, fades down. Decorative.
+    BootLog {
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.margins: 40
-        text: sddm.hostName || ""
-        color: config.fgMuted
-        font.family: config.fontFamily
-        font.pixelSize: 13
-        font.weight: Font.Medium
-        opacity: 0.8
-        visible: config.showHostname === "true"
+        anchors.topMargin: 38
+        anchors.leftMargin: 32
+        textColor: config.fgDim
+        fontFamily: config.monoFontFamily
+        visible: config.showBootLog === "true"
+        z: 1
     }
 
+    // Top-left: sysinfo, layered above boot log.
+    Column {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 38
+        anchors.leftMargin: 32
+        spacing: 4
+        z: 2
+
+        Text {
+            text: "host: " + (sddm.hostName || "arche")
+            color: config.fgColor
+            font.family: config.monoFontFamily
+            font.pixelSize: 12
+        }
+        Text {
+            text: "os:   arch linux"
+            color: config.fgColor
+            font.family: config.monoFontFamily
+            font.pixelSize: 12
+        }
+        Text {
+            text: "ui:   hyprland · wayland"
+            color: config.fgColor
+            font.family: config.monoFontFamily
+            font.pixelSize: 12
+        }
+    }
+
+    // Top-right: clock.
     Clock {
-        id: clock
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.margins: 40
-        fontFamily: config.fontFamily
-        monoFamily: config.monoFontFamily
+        anchors.topMargin: 38
+        anchors.rightMargin: 40
+        fontFamily: config.monoFontFamily
         textColor: config.fgColor
         mutedColor: config.fgMuted
         hourFormat: parseInt(config.hourFormat) || 24
+        showSeconds: config.showSeconds === "true"
+        z: 2
     }
 
-    // ─── Center stack: users + greeting + password ───
-    // Single flat Column — every child uses `anchors.horizontalCenter: parent.horizontalCenter`
-    // so the whole stack lines up on one axis regardless of screen size.
+    // Center login stack — left-shifted from screen center per design.
     Column {
-        id: centerStack
-        anchors.centerIn: parent
-        spacing: 36
+        id: loginStack
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: parent.left
+        anchors.leftMargin: Math.max(80, root.width * 0.24)
+        spacing: 28
+        z: 3
 
-        // User row — a fixed-width Item so the Flickable has a known width to
-        // center its Row inside. Using a Column child with intrinsic width
-        // leaves the Row left-aligned inside a wide Flickable.
-        Item {
-            id: userArea
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(root.width - 80, 1100)
-            height: 180
+        Text {
+            text: "arche login —"
+            color: config.fgMuted
+            font.family: config.monoFontFamily
+            font.pixelSize: 13
+        }
 
-            Flickable {
-                id: userFlick
-                anchors.fill: parent
-                contentWidth: userRow.implicitWidth
-                contentHeight: userRow.implicitHeight
-                clip: true
-                flickableDirection: Flickable.HorizontalFlick
-                boundsBehavior: Flickable.StopAtBounds
+        UserPicker {
+            id: picker
+            model: userModel
+            selectedIndex: root.selectedUserIndex
+            accentColor: config.accentColor
+            fgColor: config.fgColor
+            fgMuted: config.fgMuted
+            fgDim: config.fgDim
+            fontFamily: config.monoFontFamily
+            fontSize: 32
 
-                Row {
-                    id: userRow
-                    spacing: 28
-                    // Center inside the Flickable when content fits, left-align when it overflows.
-                    x: userRow.implicitWidth < userFlick.width
-                       ? (userFlick.width - userRow.implicitWidth) / 2
-                       : 0
-                    y: (userFlick.height - userRow.implicitHeight) / 2
-
-                    Repeater {
-                        id: userRepeater
-                        model: userModel
-
-                        delegate: UserCard {
-                            userName: model.name
-                            realName: (model.realName !== undefined && model.realName.length > 0) ? model.realName : model.name
-                            selected: index === root.selectedUserIndex
-                            accentColor: config.accentColor
-                            surfaceColor: config.surfaceColor
-                            borderColor: config.borderColor
-                            fgColor: config.fgColor
-                            fgMuted: config.fgMuted
-                            fontFamily: config.fontFamily
-                            avatarSize: parseInt(config.avatarSize) || 112
-
-                            Component.onCompleted: {
-                                if (index === root.selectedUserIndex) {
-                                    root.selectedUserName = userName
-                                    root.selectedRealName = realName
-                                }
-                            }
-
-                            onClicked: {
-                                root.selectedUserIndex = index
-                                root.selectedUserName = userName
-                                root.selectedRealName = realName
-                                passwordField.clearPassword()
-                                passwordField.forceFocus()
-                                errorText.text = ""
-                            }
-                        }
-                    }
-                }
+            onUserSelected: function(index, userName) {
+                root.selectedUserIndex = index
+                root.selectedUserName = userName
+                prompt.clearPassword()
+                prompt.forceFocus()
+                errorText.text = ""
             }
         }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.selectedRealName.length > 0
-                  ? "Welcome back, " + root.selectedRealName
-                  : (root.selectedUserName.length > 0 ? "Welcome back, " + root.selectedUserName : "")
-            color: config.fgMuted
-            font.family: config.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.Normal
-            opacity: 0.85
-            visible: text.length > 0
-        }
+        Item { width: 1; height: 16 }
 
-        PasswordField {
-            id: passwordField
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 380
-            accentColor: config.accentColor
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
+        PromptField {
+            id: prompt
             fgColor: config.fgColor
             fgMuted: config.fgMuted
-            fontFamily: config.fontFamily
-            placeholder: "Enter password"
+            accentColor: config.accentColor
+            errorColor: config.errorColor
+            fontFamily: config.monoFontFamily
+            fontSize: 18
+            promptUser: root.selectedUserName.length > 0 ? root.selectedUserName : "user"
+            promptHost: config.shellHost || "arche"
             busy: root.busy
 
             onSubmitted: root.attemptLogin()
+            onPreviousUser: root.cyclePrevious()
+            onNextUser: root.cycleNext()
         }
 
         Text {
             id: errorText
-            anchors.horizontalCenter: parent.horizontalCenter
             text: ""
             color: config.errorColor
-            font.family: config.fontFamily
+            font.family: config.monoFontFamily
             font.pixelSize: 12
-            font.weight: Font.Medium
             opacity: text.length > 0 ? 1.0 : 0.0
             Behavior on opacity { NumberAnimation { duration: 180 } }
         }
     }
 
-    // ─── Bottom-left: session + layout chips ───
-    Row {
+    // Bottom-left: keyboard layout indicator.
+    Text {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        anchors.margins: 40
-        spacing: 10
-
-        Chip {
-            id: sessionChip
-            label: "Session"
-            value: "#" + (root.selectedSessionIndex + 1) + " / " + sessionModel.rowCount()
-            fgColor: config.fgColor
-            fgMuted: config.fgMuted
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
-            accentColor: config.accentColor
-            fontFamily: config.fontFamily
-            visible: sessionModel.rowCount() > 1
-
-            onClicked: {
-                root.selectedSessionIndex = (root.selectedSessionIndex + 1) % sessionModel.rowCount()
-            }
+        anchors.leftMargin: 32
+        anchors.bottomMargin: 32
+        text: {
+            if (!keyboard || !keyboard.layouts || keyboard.layouts.length === 0) return "[--]"
+            var i = keyboard.currentLayout
+            if (i < 0 || i >= keyboard.layouts.length) return "[--]"
+            var l = keyboard.layouts[i]
+            return "[" + (l && l.shortName ? l.shortName.toLowerCase() : "--") + "]"
         }
+        color: config.fgMuted
+        font.family: config.monoFontFamily
+        font.pixelSize: 11
 
-        Chip {
-            label: "Layout"
-            value: {
-                if (!keyboard || !keyboard.layouts || keyboard.layouts.length === 0) return ""
-                var i = keyboard.currentLayout
-                if (i < 0 || i >= keyboard.layouts.length) return ""
-                var l = keyboard.layouts[i]
-                return (l && l.shortName) ? l.shortName : ""
-            }
-            fgColor: config.fgColor
-            fgMuted: config.fgMuted
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
-            accentColor: config.accentColor
-            fontFamily: config.fontFamily
-            visible: keyboard && keyboard.layouts && keyboard.layouts.length > 1
-
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
             onClicked: {
                 if (keyboard && keyboard.layouts && keyboard.layouts.length > 0)
                     keyboard.currentLayout = (keyboard.currentLayout + 1) % keyboard.layouts.length
@@ -247,54 +186,49 @@ Rectangle {
         }
     }
 
-    // ─── Bottom-right: power controls ───
+    // Bottom-right: power controls.
     Row {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: 40
-        spacing: 10
+        anchors.rightMargin: 40
+        anchors.bottomMargin: 28
+        spacing: 24
 
         IconButton {
-            glyph: "\u23FB"   // power symbol
-            tooltip: "Shut down"
+            glyph: "⏻"
+            label: "POWEROFF"
             fgColor: config.fgColor
             fgMuted: config.fgMuted
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
             accentColor: config.accentColor
             fontFamily: config.fontFamily
+            monoFamily: config.monoFontFamily
             visible: sddm.canPowerOff
             onClicked: sddm.powerOff()
         }
-
         IconButton {
-            glyph: "\u21BB"   // circular arrow — restart
-            tooltip: "Restart"
+            glyph: "↻"
+            label: "REBOOT"
             fgColor: config.fgColor
             fgMuted: config.fgMuted
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
             accentColor: config.accentColor
             fontFamily: config.fontFamily
+            monoFamily: config.monoFontFamily
             visible: sddm.canReboot
             onClicked: sddm.reboot()
         }
-
         IconButton {
-            glyph: "\u263E"   // moon — suspend
-            tooltip: "Suspend"
+            glyph: "☾"
+            label: "SUSPEND"
             fgColor: config.fgColor
             fgMuted: config.fgMuted
-            surfaceColor: config.surfaceColor
-            borderColor: config.borderColor
             accentColor: config.accentColor
             fontFamily: config.fontFamily
+            monoFamily: config.monoFontFamily
             visible: sddm.canSuspend
             onClicked: sddm.suspend()
         }
     }
 
-    // ─── SDDM signals ───
     Connections {
         target: sddm
 
@@ -305,9 +239,9 @@ Rectangle {
 
         function onLoginFailed() {
             root.busy = false
-            errorText.text = "Authentication failed"
-            passwordField.clearPassword()
-            passwordField.forceFocus()
+            errorText.text = "auth: incorrect password"
+            prompt.clearPassword()
+            prompt.forceFocus()
         }
 
         function onInformationMessage(message) {
@@ -319,31 +253,30 @@ Rectangle {
         if (!root.selectedUserName) return
         root.busy = true
         errorText.text = ""
-        sddm.login(root.selectedUserName, passwordField.text, root.selectedSessionIndex)
+        sddm.login(root.selectedUserName, prompt.text, root.selectedSessionIndex)
     }
 
-    // ─── Keyboard navigation ───
-    focus: true
-    Keys.onPressed: function(event) {
-        if (event.key === Qt.Key_Left && userRepeater.count > 1) {
-            var next = root.selectedUserIndex - 1
-            if (next < 0) next = userRepeater.count - 1
-            root.selectedUserIndex = next
-            passwordField.clearPassword()
-            event.accepted = true
-        } else if (event.key === Qt.Key_Right && userRepeater.count > 1) {
-            var n = (root.selectedUserIndex + 1) % userRepeater.count
-            root.selectedUserIndex = n
-            passwordField.clearPassword()
-            event.accepted = true
-        } else if (event.key === Qt.Key_Escape) {
-            passwordField.clearPassword()
-            passwordField.forceFocus()
-            event.accepted = true
-        }
+    function cyclePrevious() {
+        var n = userModel.count
+        if (n <= 1) return
+        var idx = root.selectedUserIndex - 1
+        if (idx < 0) idx = n - 1
+        root.selectedUserIndex = idx
+        root.syncSelectedName()
+        prompt.clearPassword()
+    }
+
+    function cycleNext() {
+        var n = userModel.count
+        if (n <= 1) return
+        var idx = (root.selectedUserIndex + 1) % n
+        root.selectedUserIndex = idx
+        root.syncSelectedName()
+        prompt.clearPassword()
     }
 
     Component.onCompleted: {
-        passwordField.forceFocus()
+        root.syncSelectedName()
+        prompt.forceFocus()
     }
 }
