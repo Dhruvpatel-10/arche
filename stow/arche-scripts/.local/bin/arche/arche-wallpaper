@@ -15,8 +15,19 @@
 
 set -euo pipefail
 
-WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/.config/hypr/wallpapers}"
-STATE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/arche-wallpaper/current"
+# Shared by default so every user on the host sees the same wallpaper pool and
+# restores the same last-selected image. Keep env overrides for ad-hoc testing
+# or a deliberate per-user setup.
+SHARED_WALLPAPER_DIR="/opt/arche/stow/hypr/.config/hypr/wallpapers"
+LEGACY_WALLPAPER_DIR="$HOME/.config/hypr/wallpapers"
+WALLPAPER_DIR="${WALLPAPER_DIR:-$SHARED_WALLPAPER_DIR}"
+STATE_FILE="${ARCHE_WALLPAPER_STATE_FILE:-/opt/arche/run/wallpaper/current}"
+
+# Graceful migration path for machines that still keep wallpapers only under
+# the user's home and have not moved them into the shared arche repo yet.
+if [[ "$WALLPAPER_DIR" == "$SHARED_WALLPAPER_DIR" && ! -d "$WALLPAPER_DIR" && -d "$LEGACY_WALLPAPER_DIR" ]]; then
+    WALLPAPER_DIR="$LEGACY_WALLPAPER_DIR"
+fi
 
 # Transition knobs — override via env to taste.
 TRANSITION_TYPE="${ARCHE_WP_TRANSITION:-grow}"

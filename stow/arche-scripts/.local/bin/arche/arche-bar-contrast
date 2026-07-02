@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-STATE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/arche-wallpaper/current"
+STATE_FILE="${ARCHE_WALLPAPER_STATE_FILE:-/opt/arche/run/wallpaper/current}"
 
 # Output path matches services/WallpaperContrast.qml. Keep them in sync.
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/arche-shell-${USER}}/arche-shell"

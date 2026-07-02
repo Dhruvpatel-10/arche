@@ -29,7 +29,6 @@ svc_enable sddm
 
 # ─── Stow compositor configs ───
 stow_pkg hypr
-stow_pkg rofi
 stow_pkg cliphist
 stow_pkg hyprland-preview-share-picker
 

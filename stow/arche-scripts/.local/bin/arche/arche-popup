@@ -12,4 +12,60 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-exec uwsm-app -- kitty --class popup -e "$@"
+# newt/whiptail palette for newt-based TUIs (nmtui). Default newt theme
+# uses a hard red title + leaves window/root backgrounds at the terminal
+# default — which kitty renders translucent, so the wallpaper bleeds
+# through and the whole UI reads muddy + misaligned. We map every role to
+# a NAMED ANSI color (not hex): the names resolve through kitty's themed
+# 16-color palette, so this tracks the active arche theme automatically and
+# hardcodes no color values. Explicit (non-default) backgrounds also make
+# kitty draw those cells OPAQUE, killing the transparency bleed. Ignored by
+# non-newt TUIs, so it's safe to export for every popup from this one place.
+#
+#   black=bg-surface  gray=field-bg  lightgray=body-text  white=fg  brown=amber accent
+export NEWT_COLORS='
+root=lightgray,black
+border=brown,black
+window=lightgray,black
+shadow=black,black
+title=brown,black
+button=black,brown
+actbutton=black,yellow
+compactbutton=lightgray,black
+checkbox=lightgray,black
+actcheckbox=black,brown
+entry=white,gray
+disentry=gray,black
+label=lightgray,black
+listbox=lightgray,black
+actlistbox=black,brown
+sellistbox=white,gray
+actsellistbox=black,brown
+textbox=lightgray,black
+acttextbox=black,brown
+helpline=brown,black
+roottext=lightgray,black
+emptyscale=black,gray
+fullscale=black,brown
+'
+
+# newt/whiptail TUIs (nmtui) size their dialog to its CONTENT and center it —
+# they never fill the terminal. So the fixed 900x620 popup leaves wide empty
+# margins around nmtui no matter the font (bigger font just bloats it). Other
+# TUIs (btop, bluetui, …) paint the whole grid, so this only afflicts newt.
+# Fix: give newt its own class with NO forced size (popup-fit, see
+# windows.conf) and let kitty size the window to ~nmtui's dialog in cells, so
+# it floats snug with only a thin uniform margin. Detected by command name so
+# generic popups keep the standard fixed size.
+kitty_opts=()
+klass=popup
+case "${1##*/}" in
+    nmtui|nmtui-*|whiptail|dialog)
+        klass=popup-fit
+        kitty_opts+=(-o remember_window_size=no
+                     -o initial_window_width=70c
+                     -o initial_window_height=26c)
+        ;;
+esac
+
+exec uwsm-app -- kitty "${kitty_opts[@]}" --class "$klass" -e "$@"

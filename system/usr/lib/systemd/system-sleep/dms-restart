@@ -1,0 +1,28 @@
+#!/bin/sh
+# dms-restart — restart DankMaterialShell for every active user on resume.
+# Linked to /usr/lib/systemd/system-sleep/dms-restart by link_system_all. D032.
+#
+# Works around dms #2250: on NVIDIA, suspend/resume loses the QRhi/OpenGL
+# context ("QRhiGles2: Context is lost") and the shell freezes — but the
+# process stays ALIVE, so the unit's Restart=on-failure never fires. A clean
+# restart re-acquires the GPU context.
+#
+# system-sleep hooks run with user.slice FROZEN, so we must NOT block on the
+# user bus inside the hook. systemd-run --no-block enqueues the restart and
+# returns immediately; it actually runs once user.slice thaws after resume.
+# Loop over /run/user/* so it covers every logged-in user (stark, leanscale)
+# without hardcoding a UID.
+
+case "$1" in
+    post)
+        for runtime in /run/user/*; do
+            [ -S "$runtime/bus" ] || continue
+            uid=${runtime#/run/user/}
+            systemd-run --no-block \
+                --uid="$uid" \
+                --setenv=XDG_RUNTIME_DIR="$runtime" \
+                --setenv=DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" \
+                /usr/bin/systemctl --user restart dms.service 2>/dev/null || true
+        done
+        ;;
+esac

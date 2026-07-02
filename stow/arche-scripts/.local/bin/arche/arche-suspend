@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Manual suspend wrapper for the Hyprland session.
+#
+# The power menu used to call `systemctl suspend` directly. That requests
+# suspend correctly, but leaves recovery entirely to hypridle's hooks. Keep
+# this path self-contained so manual Sleep and idle/lid sleep have the same
+# lock + compositor/audio recovery behavior.
+
+set -u
+
+case "${1:-}" in
+    -h|--help)
+        echo "Usage: arche-suspend"
+        echo "Locks the session, suspends, then reloads Hyprland and audio after resume."
+        exit 0
+        ;;
+esac
+
+lock_session() {
+    loginctl lock-session >/dev/null 2>&1 || true
+}
+
+reload_hyprland() {
+    command -v hyprctl >/dev/null 2>&1 || return 0
+    hyprctl reload >/dev/null 2>&1 || true
+}
+
+restart_audio() {
+    systemctl --user restart pipewire pipewire-pulse wireplumber >/dev/null 2>&1 || true
+}
+
+lock_session
+sleep 0.5
+
+systemctl suspend
+status=$?
+
+# If suspend was denied or failed, still try to leave the session usable.
+sleep 1
+reload_hyprland
+restart_audio
+
+exit "$status"

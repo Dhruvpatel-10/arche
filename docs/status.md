@@ -25,7 +25,7 @@ Last updated: 2026-04-18
 | `starship`                           | Done    | Prompt config                                   |
 | `mpv`                                | Done    | Media player                                    |
 | `hypr`                               | Done    | Hyprland compositor config (D023 — restored)    |
-| `rofi`                               | Done    | Spotlight-style app launcher (D023 — restored)  |
+| ~~`rofi`~~                           | Removed | Replaced by Quickshell LauncherDialog (D031)    |
 | `cliphist`                           | Done    | Clipboard history (D023 — restored)             |
 | `hyprland-preview-share-picker`      | Done    | Screen-share source picker — AUR (D028 reverses D027) |
 | `arche-scripts`                      | Done    | User scripts: wallpaper, popup, powermenu, etc. |
@@ -54,9 +54,9 @@ Last updated: 2026-04-18
 | `packages/security.sh`     | Done   |                                                |
 | `packages/gpu-nvidia.sh`   | Done   |                                                |
 | `packages/audio.sh`        | Done   |                                                |
-| `packages/hyprland.sh`     | Done   | D023 — compositor, utils, SDDM, rofi           |
+| `packages/hyprland.sh`     | Done   | D023 — compositor, utils, SDDM (rofi removed D031) |
 | `packages/shell.sh`        | Done   |                                                |
-| `packages/panel.sh`        | Done   | D023 — quickshell + nm backend                 |
+| `packages/dms.sh`          | Done   | D032 — dms-shell + quickshell + nm (replaces panel.sh) |
 | `packages/runtimes.sh`     | Done   |                                                |
 | `packages/apps.sh`         | Done   | D023 — dolphin → nautilus; okular/gwenview kept |
 | `packages/appearance.sh`   | Done   | D023 — nwg-look for GTK theming                |
@@ -82,7 +82,7 @@ Last updated: 2026-04-18
 | `templates/legion/colors.toml.tmpl`                   | `~/.config/legion/colors.toml`                   | Done   |
 | `templates/mpv/font-opts.conf.tmpl`                   | `~/.config/mpv/font-opts.conf`                   | Done   |
 | `templates/qt6ct/qt6ct.conf.tmpl`                     | `~/.config/qt6ct/qt6ct.conf`                     | Done   |
-| `templates/rofi/theme.rasi.tmpl`                      | `~/.config/rofi/theme.rasi`                      | Done   |
+| ~~`templates/rofi/theme.rasi.tmpl`~~                  | —                                                | Removed (D031) |
 | `templates/starship/starship.toml.tmpl`               | `~/.config/starship/starship.toml`               | Done   |
 | `templates/tmux/colors.conf.tmpl`                     | `~/.config/tmux/colors.conf`                     | Done   |
 | ~~`templates/kde/*`~~                                 | —                                                | Removed (D023) |
@@ -98,11 +98,15 @@ Last updated: 2026-04-18
 | `arche-denoise`      | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 | `arche-denoise-mic`  | `tools/bin/` (pre-built)        | `/usr/local/bin/arche/` (symlink via system/)| Done   |
 
-## Quickshell Panel Source
+## Desktop Shell — dms (D032)
 
-| Source                  | Symlink target          | Status |
-|-------------------------|-------------------------|--------|
-| `/opt/arche/shell/`     | `~/.config/quickshell/` | Done (D029, supersedes D023) |
+| Source                       | Mechanism                              | Status |
+|------------------------------|----------------------------------------|--------|
+| `/usr/share/quickshell/dms/` | package-managed (`dms-shell`)          | Done (D032) |
+| theme                        | `theming/templates/dms/_emit.sh` → `/opt/arche/run/dms-theme.json` | Done |
+| service                      | `dms.service` user unit + resume hook  | Done |
+
+The hand-rolled `/opt/arche/shell/` panel (D029) was removed.
 
 ## System Configs
 
@@ -135,12 +139,12 @@ Last updated: 2026-04-18
 | `scripts/04-audio.sh`          | Done   |
 | `scripts/05-hyprland.sh`       | Done (D023) |
 | `scripts/06-shell.sh`          | Done   |
-| `scripts/07-panel.sh`          | Done (D023) |
 | `scripts/08-runtimes.sh`       | Done   |
 | `scripts/09-apps.sh`           | Done   |
 | `scripts/10-stow.sh`           | Done   |
 | `scripts/11-appearance.sh`     | Done   |
 | `scripts/12-boot.sh`           | Done (D024) |
+| `scripts/13-dms.sh`            | Done (D032) — desktop shell (dms) |
 | `helpers/tpm2-enroll.sh`       | Done (D024) |
 
 ## Known Issues

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# hypr-keybindings — show all Hyprland keybindings in Walker dmenu
-# Reads live bindings from hyprctl, resolves keycodes, displays in Walker.
+# arche-keybindings — show all Hyprland keybindings in a fuzzy picker.
+# Reads live bindings from hyprctl, resolves keycodes, displays in fzf
+# inside a kitty popup window (see CLAUDE.md "Popup Convention").
 
 set -euo pipefail
 
@@ -119,12 +120,10 @@ main() {
 
     if [[ "${1:-}" == "--print" || "${1:-}" == "-p" ]]; then
         echo "$output"
+    elif [[ "${1:-}" == "--inner" ]]; then
+        echo "$output" | column -t -s $'\t' | fzf --prompt='Keybindings ❯ ' --no-multi --layout=reverse
     else
-        local monitor_height
-        monitor_height=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .height')
-        local menu_height=$(( monitor_height * 40 / 100 ))
-
-        echo "$output" | rofi -dmenu -p 'Keybindings' -i
+        kitty --class popup -e bash -c "$(realpath "$0") --inner"
     fi
 }
 

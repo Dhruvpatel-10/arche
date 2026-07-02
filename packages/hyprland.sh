@@ -32,9 +32,6 @@ PACMAN_PKGS=(
     # Input / backlight / debug
     brightnessctl            # backlight control
     wev                      # input-events debug
-
-    # App launcher
-    rofi-wayland             # Spotlight-style launcher (combi mode)
 )
 
 AUR_PKGS=(

@@ -45,3 +45,459 @@ window, .background {
 @define-color warning_fg_color ${COLOR_BG};
 @define-color error_bg_color ${COLOR_CRITICAL};
 @define-color error_fg_color ${COLOR_FG};
+
+/* Document viewers: Papers / GTK4 reader surfaces — reading-room minimal */
+window.background {
+    font-family: "${FONT_SANS}";
+}
+
+/* Flat headerbar — hairline separator, no gradient, no shadow shelf */
+window.background headerbar,
+window.background toolbarview > box > headerbar,
+window.background toolbarview > box > actionbar {
+    background: ${COLOR_BG};
+    border-color: transparent;
+    box-shadow: inset 0 -1px 0 ${COLOR_BORDER};
+    min-height: 38px;
+}
+
+window.background headerbar .title,
+window.background headerbar windowtitle,
+window.background headerbar windowtitle > box > label.title {
+    font-weight: 500;
+    color: ${COLOR_FG};
+    letter-spacing: 0.01em;
+}
+
+window.background headerbar windowtitle > box > label.subtitle {
+    color: ${COLOR_FG_MUTED};
+    opacity: 0.85;
+}
+
+/* Ghost buttons — muted until hover, no fills, no borders */
+window.background headerbar button,
+window.background headerbar menubutton > button,
+window.background actionbar button,
+window.background .linked button {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 6px;
+    color: ${COLOR_FG_MUTED};
+    box-shadow: none;
+    min-height: 28px;
+    min-width: 28px;
+    padding: 2px 8px;
+}
+
+window.background headerbar button:hover,
+window.background headerbar menubutton > button:hover,
+window.background actionbar button:hover,
+window.background .linked button:hover {
+    background-color: alpha(${COLOR_FG}, 0.06);
+    color: ${COLOR_FG};
+}
+
+window.background headerbar button:active,
+window.background headerbar menubutton > button:active,
+window.background actionbar button:active {
+    background-color: alpha(${COLOR_FG}, 0.10);
+}
+
+window.background headerbar button:checked,
+window.background headerbar menubutton > button:checked,
+window.background .linked button:checked {
+    background: transparent;
+    color: ${COLOR_ACCENT};
+    box-shadow: inset 0 -2px 0 ${COLOR_ACCENT};
+    border-radius: 0;
+}
+
+/* Linked group — quiet hairline separators, no card */
+window.background .linked > button + button,
+window.background .linked > entry + button {
+    box-shadow: inset 1px 0 0 ${COLOR_BORDER};
+}
+
+/* Inputs — flat surface, hairline bottom, amber on focus */
+window.background entry,
+window.background searchentry,
+window.background spinbutton,
+window.background dropdown button {
+    background-color: alpha(${COLOR_FG}, 0.04);
+    border: none;
+    border-radius: 6px;
+    color: ${COLOR_FG};
+    caret-color: ${COLOR_ACCENT};
+    box-shadow: inset 0 -1px 0 ${COLOR_BORDER};
+}
+
+window.background entry:focus,
+window.background searchentry:focus,
+window.background spinbutton:focus-within {
+    box-shadow: inset 0 -1px 0 ${COLOR_ACCENT};
+    background-color: alpha(${COLOR_FG}, 0.06);
+}
+
+/* Reading canvas — dim room, not black void. Page floats in BG_ALT. */
+pps-view,
+pps-presentation-view {
+    background-color: ${COLOR_BG_ALT};
+    color: ${COLOR_FG};
+    padding: 24px;
+    border-radius: 0;
+}
+
+/* Highlight — subtle amber wash, preserve text color */
+pps-view:selected,
+pps-view selection {
+    background-color: alpha(${COLOR_ACCENT}, 0.28);
+    color: inherit;
+}
+
+/* The page itself — neutral warm white, hairline border, one soft shadow */
+pps-child,
+.document-page {
+    background-color: #faf8f3;
+    color: #1a1a1a;
+    border-radius: 1px;
+    box-shadow:
+        0 0 0 1px alpha(#000, 0.40),
+        0 1px 2px alpha(#000, 0.30),
+        0 12px 24px -8px alpha(#000, 0.35);
+}
+
+pps-presentation-view {
+    background-color: #000;
+    padding: 0;
+}
+
+/* Sidebar — same surface as window, hairline separator only */
+sidebar,
+.sidebar,
+.sidebar-pane,
+.navigation-sidebar,
+navigationview,
+navigationpage {
+    background-color: ${COLOR_BG};
+    color: ${COLOR_FG};
+}
+
+.sidebar-pane,
+paned > separator,
+paned separator {
+    border-color: transparent;
+    background-color: ${COLOR_BORDER};
+    min-width: 1px;
+}
+
+/* Sidebar rows (Papers thumb-list + libadwaita .navigation-sidebar) — flat, hairline-only */
+.sidebar listview row,
+.sidebar list row,
+.sidebar gridview child,
+.sidebar flowboxchild,
+.sidebar-pane listview row,
+.sidebar-pane gridview child,
+.sidebar-pane flowboxchild,
+.navigation-sidebar row,
+.navigation-sidebar listview row {
+    background: transparent;
+    border-radius: 6px;
+    margin: 2px 8px;
+    padding: 4px;
+    transition: background-color 120ms ease;
+}
+
+.sidebar listview row:hover,
+.sidebar list row:hover,
+.sidebar gridview child:hover,
+.sidebar flowboxchild:hover,
+.sidebar-pane listview row:hover,
+.sidebar-pane gridview child:hover,
+.sidebar-pane flowboxchild:hover,
+.navigation-sidebar row:hover,
+.navigation-sidebar listview row:hover {
+    background-color: alpha(${COLOR_FG}, 0.05);
+}
+
+.sidebar listview row:selected,
+.sidebar list row:selected,
+.sidebar gridview child:selected,
+.sidebar flowboxchild:selected,
+.sidebar-pane listview row:selected,
+.sidebar-pane gridview child:selected,
+.sidebar-pane flowboxchild:selected,
+.navigation-sidebar row:selected,
+.navigation-sidebar listview row:selected {
+    background-color: alpha(${COLOR_ACCENT}, 0.14);
+    color: ${COLOR_FG};
+    box-shadow: inset 2px 0 0 ${COLOR_ACCENT};
+}
+
+/* Papers thumbnail panel: amber ring on selected page preview */
+.sidebar gridview child picture,
+.sidebar flowboxchild picture,
+.sidebar-pane gridview child picture,
+.sidebar-pane flowboxchild picture {
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px ${COLOR_BORDER};
+}
+
+.sidebar gridview child:selected picture,
+.sidebar flowboxchild:selected picture,
+.sidebar-pane gridview child:selected picture,
+.sidebar-pane flowboxchild:selected picture {
+    box-shadow:
+        0 0 0 2px ${COLOR_ACCENT},
+        0 0 0 4px alpha(${COLOR_ACCENT}, 0.20);
+}
+
+/* Papers page-number labels — tabular nums, amber+bold when active */
+.sidebar gridview child label,
+.sidebar flowboxchild label,
+.sidebar-pane gridview child label,
+.sidebar-pane flowboxchild label {
+    font-feature-settings: "tnum";
+}
+
+.sidebar gridview child:selected label,
+.sidebar flowboxchild:selected label,
+.sidebar-pane gridview child:selected label,
+.sidebar-pane flowboxchild:selected label {
+    color: ${COLOR_ACCENT};
+    font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   File manager surface (Nautilus / GTK4 file browsers)
+   Editorial-dark: readable labels, quiet selection, unified chrome
+   ───────────────────────────────────────────────────────────────── */
+
+/* Unify split-header (kills the vertical seam between sidebar + content header) */
+.split-header-bar,
+.split-header-bar > headerbar,
+.split-header-bar > .start,
+.split-header-bar > .end,
+window.background headerbar.flat {
+    background: ${COLOR_BG};
+    border-color: transparent;
+    box-shadow: inset 0 -1px 0 ${COLOR_BORDER};
+}
+
+/* Nautilus left rail — clear hierarchy, generous padding */
+.navigation-sidebar {
+    background-color: ${COLOR_BG};
+    padding: 6px 0;
+}
+
+.navigation-sidebar > row,
+.navigation-sidebar row {
+    color: ${COLOR_FG};
+    border-radius: 8px;
+    margin: 2px 10px;
+    padding: 8px 12px;
+    min-height: 32px;
+    font-weight: 500;
+    letter-spacing: 0;
+    transition:
+        background-image 240ms cubic-bezier(.2,.7,.2,1),
+        background-color 160ms ease,
+        color 200ms ease,
+        box-shadow 240ms cubic-bezier(.2,.7,.2,1),
+        letter-spacing 240ms ease,
+        font-style 0ms;
+}
+
+.navigation-sidebar > row image,
+.navigation-sidebar row image {
+    color: ${COLOR_FG_MUTED};
+    -gtk-icon-size: 16px;
+    margin-right: 10px;
+    transition: color 200ms ease;
+}
+
+.navigation-sidebar > row:hover,
+.navigation-sidebar row:hover {
+    background-color: alpha(${COLOR_FG}, 0.04);
+    color: ${COLOR_FG};
+}
+
+.navigation-sidebar > row:hover image,
+.navigation-sidebar row:hover image {
+    color: ${COLOR_FG};
+}
+
+/* Selected — "lit-from-above": diagonal wash + soft top-left bloom,
+   italic accent label, no edge bars, no perimeter strokes */
+.navigation-sidebar > row:selected,
+.navigation-sidebar row:selected,
+.navigation-sidebar > row:selected:focus,
+.navigation-sidebar row:selected:focus,
+.navigation-sidebar > row:selected:hover,
+.navigation-sidebar row:selected:hover {
+    background-color: transparent;
+    background-image: linear-gradient(
+        118deg,
+        alpha(${COLOR_ACCENT}, 0.22) 0%,
+        alpha(${COLOR_ACCENT}, 0.10) 38%,
+        alpha(${COLOR_ACCENT}, 0.03) 72%,
+        transparent 100%
+    );
+    color: ${COLOR_ACCENT};
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.018em;
+    box-shadow:
+        inset 10px 8px 22px -12px alpha(${COLOR_ACCENT}, 0.45),
+        inset -14px -10px 28px -16px alpha(${COLOR_BG}, 0.55);
+}
+
+.navigation-sidebar > row:selected image,
+.navigation-sidebar row:selected image {
+    color: ${COLOR_ACCENT};
+}
+
+/* Sidebar section separators — hairline only */
+.navigation-sidebar separator,
+.navigation-sidebar > separator {
+    background-color: ${COLOR_BORDER};
+    min-height: 1px;
+    margin: 8px 16px;
+    opacity: 0.6;
+}
+
+/* Filename labels in the file grid — readable, characterful */
+gridview > child label,
+flowboxchild > box > label,
+gridview > child > box > label,
+.view gridview child label,
+.view flowboxchild label {
+    color: ${COLOR_FG};
+    font-size: 0.94em;
+    font-weight: 450;
+    letter-spacing: 0.005em;
+    padding-top: 4px;
+}
+
+/* Hover/select on icon tiles — soft pad, no harsh box */
+.view gridview > child,
+.view flowboxchild,
+gridview.view > child {
+    border-radius: 8px;
+    padding: 8px 6px;
+    transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.view gridview > child:hover,
+.view flowboxchild:hover,
+gridview.view > child:hover {
+    background-color: alpha(${COLOR_FG}, 0.04);
+}
+
+.view gridview > child:selected,
+.view flowboxchild:selected,
+gridview.view > child:selected {
+    background-color: alpha(${COLOR_ACCENT}, 0.14);
+    box-shadow: inset 0 0 0 1px alpha(${COLOR_ACCENT}, 0.45);
+    color: ${COLOR_FG};
+}
+
+.view gridview > child:selected label,
+.view flowboxchild:selected label,
+gridview.view > child:selected label {
+    color: ${COLOR_FG};
+    font-weight: 550;
+}
+
+/* List view rows — flat rhythm, amber underline on selected */
+.view listview > row,
+columnview > listview > row {
+    padding: 8px 10px;
+    border-radius: 0;
+    transition: background-color 120ms ease;
+}
+
+.view listview > row:hover,
+columnview > listview > row:hover {
+    background-color: alpha(${COLOR_FG}, 0.04);
+}
+
+.view listview > row:selected,
+columnview > listview > row:selected {
+    background-color: alpha(${COLOR_ACCENT}, 0.12);
+    color: ${COLOR_FG};
+    box-shadow: inset 2px 0 0 ${COLOR_ACCENT};
+}
+
+/* Column view header — quiet, editorial */
+columnview > header > button {
+    background: transparent;
+    color: ${COLOR_FG_MUTED};
+    font-weight: 500;
+    font-size: 0.88em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: inset 0 -1px 0 ${COLOR_BORDER};
+    border-radius: 0;
+}
+
+columnview > header > button:hover {
+    background-color: alpha(${COLOR_FG}, 0.04);
+    color: ${COLOR_FG};
+}
+
+/* Pathbar / location entry — minimalist breadcrumb feel */
+window.background headerbar entry.search,
+window.background headerbar .pathbar,
+window.background headerbar .toolbar > entry {
+    background-color: alpha(${COLOR_FG}, 0.05);
+    box-shadow: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    min-height: 28px;
+}
+
+window.background headerbar entry.search:focus,
+window.background headerbar .toolbar > entry:focus {
+    background-color: alpha(${COLOR_FG}, 0.08);
+    box-shadow: inset 0 0 0 1px alpha(${COLOR_ACCENT}, 0.45);
+}
+
+/* Scrollbar — thread-thin, fades in */
+window.background scrollbar {
+    background: transparent;
+    border: none;
+}
+
+window.background scrollbar slider {
+    background-color: alpha(${COLOR_FG}, 0.18);
+    border-radius: 999px;
+    min-width: 4px;
+    min-height: 4px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+window.background scrollbar slider:hover {
+    background-color: alpha(${COLOR_FG}, 0.32);
+}
+
+window.background scrollbar slider:active {
+    background-color: ${COLOR_ACCENT};
+}
+
+window.background popover,
+window.background popover contents,
+window.background menu,
+window.background .osd {
+    background-color: ${COLOR_BG_SURFACE};
+    border-color: ${COLOR_BORDER};
+    color: ${COLOR_FG};
+    border-radius: ${RADIUS}px;
+}
+
+pps-annotation-window,
+window.background textview,
+window.background textview text {
+    background-color: ${COLOR_BG_SURFACE};
+    color: ${COLOR_FG};
+}

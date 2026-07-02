@@ -1,1 +1,1 @@
-root=/dev/mapper/root rootfstype=btrfs rootflags=subvol=@ rw quiet loglevel=3 zswap.enabled=0 nvidia_drm.modeset=1
+root=/dev/mapper/root rootfstype=btrfs rootflags=subvol=@ rw quiet loglevel=3 zswap.enabled=0 nvidia_drm.modeset=1 nvidia.NVreg_PreserveVideoMemoryAllocations=1 nvidia.NVreg_TemporaryFilePath=/var/tmp

@@ -19,7 +19,7 @@ tpm-enroll:
 # — the primary user already did those. Runtime managers (fnm, bun, rustup) are
 # intentionally NOT included; run 'just runtimes' separately if you want them.
 # Each underlying script is idempotent and safe to re-run.
-# Full per-user setup: stow + shell + audio + panel + apps + appearance + theme.
+# Full per-user setup: stow + shell + audio + dms + apps + appearance + theme.
 [group: 'helpers']
 secondary-user:
     #!/usr/bin/env bash
@@ -67,7 +67,7 @@ secondary-user:
     run_step "Stow all packages"                          scripts/10-stow.sh
     run_step "Shell (fish default + fisher + prompt)"     scripts/06-shell.sh
     run_step "Audio (pipewire user services)"             scripts/04-audio.sh
-    run_step "Panel (quickshell → /opt/arche/shell)"      scripts/07-panel.sh
+    run_step "Shell (DankMaterialShell / dms)"            scripts/13-dms.sh
     run_step "Apps (docker/syncthing/bluetooth/denoise)"  scripts/09-apps.sh
     run_step "Appearance (fonts + GTK/Qt templates)"      scripts/11-appearance.sh
     run_step "Theme apply (render all templates)"         theming/engine.sh apply

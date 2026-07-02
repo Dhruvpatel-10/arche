@@ -5,6 +5,94 @@ Newest entries at the top.
 
 ---
 
+## D032 — Adopt DankMaterialShell (dms), retire the hand-rolled Quickshell panel
+
+**Date:** 2026-06-22
+**Status:** Accepted (on probation — see watch-items)
+**Supersedes:** D029 (vendored `/opt/arche/shell/` panel), D031's launcher, and
+D023's notification/OSD layer — all of which were our own QML.
+
+The hand-rolled Quickshell shell at `/opt/arche/shell/` was unreliable
+(network dropdown, notifications, crashes). Research across the 2026 Wayland
+shell landscape concluded: the Quickshell *framework* is the right bet (vaxry
+endorses it; end-4 and Caelestia migrated to it), but a maintained shell beats
+our own implementation. Waybar trades our bugs for multi-year IPC/tray bugs;
+HyprPanel is archived; AGS/Astal has an active wifi SIGSEGV. **DankMaterialShell
+(dms)** is the only Quickshell shell in the official Arch `extra` repo
+(`dms-shell` + `dms-shell-hyprland`), with versioned releases, a Go backend for
+system integration (NetworkManager/IWD/systemd-networkd, BlueZ, notifications),
+and a `Restart=on-failure` user service.
+
+**Integration (the arche way):**
+- `packages/dms.sh` — registry entry.
+- `theming/templates/dms/_emit.sh` — emits `/opt/arche/run/dms-theme.json` from
+  the active theme (arche schema → MD3 roles). Theme switching re-paints dms;
+  matugen disabled. Colors-only; fonts seeded into per-user `settings.json`.
+- `scripts/13-dms.sh` (`just dms`) — install, link, emit theme, seed settings,
+  enable service. Per-user like `07-panel.sh`.
+- `system/etc/systemd/user/dms.service.d/arche.conf` — `DMS_DISABLE_MATUGEN=1`
+  (arche drives colors), `DMS_DISABLE_POLKIT=1` (keep hyprpolkitagent).
+- `system/usr/lib/systemd/system-sleep/dms-restart` — restarts dms for every
+  active user on resume, working around #2250 (NVIDIA QRhi context-loss freeze:
+  process stays alive so `Restart=on-failure` never fires).
+- `stow/hypr/.config/hypr/autostart.conf` — quickshell exec-once swapped for
+  `systemctl --user start dms.service` (old line kept commented for revert).
+
+**Watch-items (why "on probation"):**
+- #2569: dms holds the BlueZ adapter in permanent `Discovering=true`. On this
+  host's BT headphones audio was clean in testing, but if A2DP degradation or a
+  reconnect loop appears in daily use, revert. No upstream fix as of v1.4.6.
+- #2250: NVIDIA post-suspend freeze — mitigated by the resume hook above, not
+  fixed upstream.
+
+`/opt/arche/shell/` is left in the tree (not deleted) so revert is one line in
+autostart.conf plus `systemctl --user disable dms`.
+
+## D031 — Drop rofi, Quickshell `LauncherDialog` is the app launcher
+
+**Date:** 2026-04-30
+**Status:** Accepted
+**Reverses:** the launcher portion of D023 (which restored rofi after the
+KDE-era D016 detour) and D009 (rofi replaces Walker+Elephant). Clipboard,
+window-switcher, and emoji bindings that piggy-backed on rofi go too.
+
+The Quickshell panel already ships first-class pickers — `LauncherDialog`
+(Super+Space → `qs ipc call launcher toggle`), `ClipboardDialog`
+(Super+V), and `PowerMenu`. They share the `PickerDialog` base, the
+arche theme tokens, and the same animation envelope. Keeping rofi
+alongside meant maintaining a second visual stack (rasi template
+rendered out of `theming/templates/rofi/`), a separate Hyprland
+`namespace rofi` blur layerrule, and a second icon-cache code path that
+went stale per-user — leanscale's drun cache was missing zed/youtube
+icons while stark's was fresh, prompting this cleanup.
+
+**Removed:**
+- `stow/rofi/`, `theming/templates/rofi/`, `rofi-wayland` in
+  `packages/hyprland.sh`, `stow_pkg rofi` in `scripts/05-hyprland.sh`,
+  `bootstrap.sh` description string.
+- `match:namespace rofi` layerrules in `stow/hypr/.config/hypr/looknfeel.conf`.
+- `stow/arche-scripts/.local/bin/arche/cliphist-rofi-img` (unbound, dead).
+- Hyprland keybinds that called rofi: `Super+Shift+V` (clipboard delete —
+  the QS clipboard picker has its own delete affordance),
+  `Super+Ctrl+E` (emoji), `Super+Tab` (window switcher).
+  Re-add inside Quickshell if needed; punting until the use-case shows up.
+- `arche-keybindings` switched from `rofi -dmenu` to `kitty --class popup
+  -e fzf` per the D008 popup convention.
+
+**Manual cleanup on existing hosts:**
+```
+paru -Rns rofi-wayland   # uninstall pacman side
+rm -rf ~/.config/rofi/   # stow symlink + rendered theme
+```
+Both are idempotent and re-running `bash bootstrap.sh` afterwards is a
+no-op.
+
+**Rollback:** restore the stow/template/package files from git history
+and re-add the three keybinds. The Quickshell launcher stays — it owns
+Super+Space regardless.
+
+---
+
 ## D030 — Drop USBGuard
 
 **Date:** 2026-04-28
@@ -194,8 +282,11 @@ Wayland Wallpaper Woes" vs. "A Solution to…").
 - `stow/arche-scripts/.local/bin/arche/arche-wallpaper` — fully rewritten:
   `ensure_daemon` checks `awww query`, starts `awww-daemon` with
   `setsid -f` if missing; `set_wallpaper` calls `awww img` with transition
-  flags; current wallpaper tracked in `$XDG_CACHE_HOME/arche-wallpaper/current`
-  (plain-text cache, no more awk-parsing of a config file).
+  flags; wallpaper images default to the shared repo dir
+  `/opt/arche/stow/hypr/.config/hypr/wallpapers`; current wallpaper tracked
+  in `/opt/arche/run/wallpaper/current` so every user restores the same
+  last-selected image (plain-text cache, no more awk-parsing of a config
+  file).
 - `stow/hypr/.config/hypr/autostart.conf` — comment updated; the single
   `exec-once = arche-wallpaper random` still does the work because
   `ensure_daemon` auto-starts `awww-daemon` on first call.

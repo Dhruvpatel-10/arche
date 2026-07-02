@@ -32,6 +32,12 @@ PACMAN_PKGS=(
     plocate                  # locate
     tree-sitter-cli
 
+    # Remote desktop
+    remmina                  # RDP/VNC/SPICE client GUI
+    freerdp                  # RDP backend (xfreerdp3) — Remmina's RDP plugin links here
+    gnome-keyring            # secret-service backend — Remmina stores RDP passwords encrypted, not plaintext
+    seahorse                 # GUI to manage gnome-keyring secrets
+
     # Desktop apps
     qbittorrent
     kdeconnect               # phone integration
@@ -44,8 +50,10 @@ PACMAN_PKGS=(
     bluez-utils
     bluetui                  # TUI for pairing/managing bluetooth (Super+Ctrl+B)
 
-    # Network TUI
-    impala                   # TUI for WiFi (Super+Ctrl+W)
+    # Network TUI — nmtui ships with networkmanager (panel.sh); no pkg here.
+    # Was `impala`, dropped: impala speaks to iwd, but the backend is
+    # NetworkManager + wpa_supplicant (D: panel.sh) so it errored with
+    # net.connman.iwd.NotSupported. Super+Ctrl+W now launches nmtui.
 
     # Docker
     # Rootless is preferred (no docker group = no root-equivalent access), but

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# arche-screenshot — freeze → dim → select → capture → edit
+# arche-screenshot [region|full] — capture → copy → notify/edit
+#   region (default) — freeze → dim → select → capture
+#   full             — whole-screen grab, no freeze/selection
 
 set -euo pipefail
 
@@ -13,55 +15,87 @@ exec 200>"$SCREENSHOT_LOCK"
 flock -n 200 || exit 0
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Detach a long-lived command (clipboard daemon, notification handler) so it
+# survives BOTH this script's exit and the teardown of the transient scope
+# Hyprland launches the keybind in. `setsid -f` only starts a new *session* —
+# it does NOT leave the cgroup, so when systemd tears down the launching
+# scope it SIGKILLs every process still in that cgroup, our detached child
+# included. That raced against wl-copy reading the PNG off stdin: small
+# screenshots finished the read and forked their serving daemon before the
+# teardown and survived, but multi-MB captures lost the race and were killed
+# mid-read — the image silently never reached the clipboard. A transient
+# systemd user unit gets its OWN cgroup, immune to the launch scope's
+# teardown. Fall back to setsid -f only where systemd-run is unavailable.
+detach() {
+    if command -v systemd-run >/dev/null 2>&1; then
+        systemd-run --user --collect --quiet -- "$@"
+    else
+        setsid -f -- "$@"
+    fi
+}
+
 dir="$HOME/Pictures/Screenshots"
 mkdir -p "$dir"
 f="$dir/$(date +%Y%m%d_%H%M%S).png"
+mode="${1:-region}"
 
-# Freeze screen — PID-based for clean lifecycle control
-"$SCRIPT_DIR/wayfreeze" --hide-cursor &
-freeze_pid=$!
-sleep 0.1
+# Base trap — always release the lockfile on exit (flock itself is freed by
+# the kernel when fd 200 closes; the rm is just tidiness).
+trap 'rm -f "$SCREENSHOT_LOCK"' EXIT
 
-# Single EXIT trap — cleans both freeze process and lockfile, on any path.
-cleanup() {
-    kill "$freeze_pid" 2>/dev/null
-    wait "$freeze_pid" 2>/dev/null || true
-    rm -f "$SCREENSHOT_LOCK"
-}
-trap cleanup EXIT
+# `timeout` on every grim guards against it blocking indefinitely on a DMA
+# fence (observed with Hyprland + NVIDIA + wlr screencopy) — without it a hang
+# would leave wayfreeze (region mode) on screen and the flock held until the
+# process was killed by hand. grim normally finishes in well under a second;
+# 10s is generous enough to absorb a slow frame without being user-visible.
+if [[ "$mode" == "full" ]]; then
+    # Whole-screen grab — no freeze, no selection.
+    timeout 10s grim -l 0 "$f" || exit 0
+else
+    # Freeze screen — PID-based for clean lifecycle control.
+    "$SCRIPT_DIR/wayfreeze" --hide-cursor &
+    freeze_pid=$!
+    sleep 0.1
 
-# Region select on frozen frame
-# Dark overlay signals "screenshot mode" (like Windows/KDE dim effect)
-geometry=$(slurp -d \
-    -b 00000066 \
-    -c c9943eff \
-    -s c9943e18 \
-    -B 00000066 \
-    -w 2) || exit 0
+    # Extend cleanup to also kill the freeze process, on any path.
+    cleanup() {
+        kill "$freeze_pid" 2>/dev/null
+        wait "$freeze_pid" 2>/dev/null || true
+        rm -f "$SCREENSHOT_LOCK"
+    }
+    trap cleanup EXIT
 
-# Capture from frozen frame. `timeout` guards against grim blocking
-# indefinitely on a DMA fence (observed with Hyprland + NVIDIA + wlr
-# screencopy) — without it a hang would leave wayfreeze on screen and
-# the flock held until the process was killed by hand. grim normally
-# finishes in well under a second; 10s is generous enough to absorb
-# a slow frame without being user-visible when things misbehave.
-timeout 10s grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
+    # Region select on frozen frame. Dark overlay signals "screenshot mode".
+    geometry=$(slurp -d \
+        -b 00000066 \
+        -c c9943eff \
+        -s c9943e18 \
+        -B 00000066 \
+        -w 2) || exit 0
 
-# Unfreeze immediately — don't wait for clipboard/notification
-cleanup
-trap - EXIT
+    timeout 10s grim -l 0 -s 1 -g "$geometry" "$f" || exit 0
 
-# Copy to clipboard — setsid -f detaches wl-copy into its own session so it
-# survives after this script (and its systemd scope) exit. Without this, the
-# wl-copy daemon that holds the clipboard selection gets reaped along with
-# the script, and the image silently disappears from the clipboard.
-setsid -f wl-copy --type image/png < "$f"
+    # Unfreeze immediately — don't wait for clipboard/notification.
+    cleanup
+    trap 'rm -f "$SCREENSHOT_LOCK"' EXIT
+fi
 
-# Notify + handle Edit action in a detached subshell. notify-send -A blocks
-# until the user clicks an action (or the notification times out) — we don't
-# want this script to hang around waiting, both to keep things clean and so
-# repeated screenshots don't pile up stale processes.
-setsid -f bash -c '
+# Copy to clipboard. wl-copy runs `--foreground` so the unit's main process
+# IS the selection-serving daemon (no internal fork for systemd to lose track
+# of), reading the PNG from the file opened inside the unit. `detach` puts it
+# in its own cgroup so the launch scope's teardown can't kill it mid-read —
+# the bug that made large screenshots silently miss the clipboard. wl-copy
+# exits on its own once another client takes the selection; --collect GCs it.
+detach bash -c 'exec wl-copy --foreground --type image/png < "$1"' _ "$f"
+
+# Notify + handle Edit action in a detached unit. notify-send -A blocks until
+# the user clicks an action (or the notification times out) — we don't want
+# this script to hang around waiting, both to keep things clean and so
+# repeated screenshots don't pile up stale processes. Detached into its own
+# cgroup for the same reason as the copy: a launch-scope teardown must not
+# kill the handler before the user clicks Edit.
+detach bash -c '
     action=$(notify-send -i "$1" \
         -a "Screenshot" \
         -A "edit=Edit" \
@@ -73,4 +107,4 @@ setsid -f bash -c '
             --copy-command "wl-copy --type image/png" \
             2>/dev/null
     fi
-' _ "$f" </dev/null >/dev/null 2>&1
+' _ "$f"

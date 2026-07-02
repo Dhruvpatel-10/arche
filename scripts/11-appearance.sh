@@ -27,6 +27,18 @@ if command -v xdg-mime &>/dev/null && [[ -f /usr/share/applications/org.gnome.Pa
     log_ok "Papers set as default document viewer"
 fi
 
+# Papers is a GTK4/libadwaita app, so it picks up gtk-4.0/gtk.css. These
+# defaults make the first-open document layout match the themed reader chrome.
+if command -v gsettings &>/dev/null && gsettings list-schemas | grep -qx 'org.gnome.Papers.Default'; then
+    if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}${XDG_RUNTIME_DIR:-}" ]]; then
+        gsettings set org.gnome.Papers.Default show-sidebar true 2>/dev/null || true
+        gsettings set org.gnome.Papers.Default sidebar-page 'thumbnails' 2>/dev/null || true
+        gsettings set org.gnome.Papers.Default sizing-mode 'automatic' 2>/dev/null || true
+        gsettings set org.gnome.Papers.Default continuous true 2>/dev/null || true
+        log_ok "Papers reader defaults applied"
+    fi
+fi
+
 # Render appearance templates — propagates palette to GTK3/4 + Electron.
 # theme_render also calls gsettings to flip libadwaita + xdg-portal into dark mode.
 theme_render gtk-3.0 gtk-4.0 electron-flags

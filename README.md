@@ -28,11 +28,13 @@ users on the same machine (e.g. personal + work). Each user gets a per-user
 hardcodes `~/arche` keeps working. See `docs/decisions.md` D014 for the full
 reasoning. To add a second user later, see [Multi-user setup](#multi-user-setup).
 
-`scripts/05-hyprland.sh` installs Hyprland, SDDM (default Breeze theme), rofi,
-and the Wayland utility stack. `scripts/07-panel.sh` installs Quickshell and
-symlinks `~/.config/quickshell/` to `/opt/arche/shell/` — the QML source for
-the bar, control-center, notifications, and OSD lives there, versioned with
-the rest of the repo. See `docs/decisions.md` D029 (supersedes D023).
+`scripts/05-hyprland.sh` installs Hyprland, SDDM (default Breeze theme), and
+the Wayland utility stack. `scripts/13-dms.sh` installs and configures
+**DankMaterialShell (dms)** — the maintained Quickshell-based shell (from the
+official Arch `extra` repo) that provides the bar, control-center,
+notifications, OSD, launcher, clipboard, and power menu. arche drives its
+colors via `theming/templates/dms/`. See `docs/decisions.md` D032 (supersedes
+the hand-rolled panel of D029).
 
 ## Multi-user setup
 
@@ -66,7 +68,7 @@ versions, so each user opts in via `just runtimes` if they want them.
 | Compositor    | Hyprland (Wayland) via uwsm                                  |
 | Greeter       | SDDM — default Breeze theme                                  |
 | Panel / OSD   | Quickshell (arche-shell) — bar + control-center + toasts     |
-| Launcher      | rofi-wayland                                                 |
+| Launcher      | Quickshell LauncherDialog (Super+Space)                      |
 | Notifications | Quickshell ToastLayer / NotificationsList                    |
 | Lock / Idle   | hyprlock + hypridle                                          |
 | Wallpaper     | hyprpaper                                                    |
@@ -116,8 +118,9 @@ Two consumption tiers, both fed from the same exported vars on each apply:
 
 - Foreign apps (kitty, hypr, gtk, mpv, …) — `*.tmpl` files rendered via
   envsubst into `~/.config/<app>/`.
-- Arche-owned (Quickshell panel, future arche tools) — canonical
-  `/opt/arche/run/theme.json` emitted by `theming/templates/arche/_emit.sh`.
+- Arche-owned (dms shell, future arche tools) — canonical JSON in
+  `/opt/arche/run/` emitted by each component's `_emit.sh` (e.g.
+  `dms/_emit.sh` → `dms-theme.json`, `arche/_emit.sh` → `theme.json`).
   Path is system-shared (the `users` group can write under `/opt/arche`),
   so a switch by any user re-paints every running panel on the host —
   Quickshell's FileView watches mtime and hot-reloads on change.

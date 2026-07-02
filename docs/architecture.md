@@ -24,7 +24,6 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 ├── theming/templates/              # .tmpl files rendered by theme engine (envsubst)
 │   ├── kitty/              # terminal colors + fonts
 │   ├── hypr/               # colors, envs, hyprlock fonts/colors (D023)
-│   ├── rofi/               # launcher theme (D023)
 │   ├── gtk-3.0/            # GTK3 settings (theme, icons, cursor, fonts)
 │   ├── gtk-4.0/            # GTK4 settings + CSS overrides
 │   ├── qt6ct/              # Qt6 config (icons, fonts)
@@ -53,7 +52,6 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
     ├── starship/           # prompt config
     ├── mpv/                # media player
     ├── hypr/               # Hyprland compositor (D023 — restored)
-    ├── rofi/               # launcher (D023 — restored)
     ├── cliphist/           # clipboard history (D023 — restored)
     ├── hyprland-preview-share-picker/  # screen-share picker (D023)
     ├── arche-scripts/      # user scripts (wallpaper, popup, powermenu, …)
@@ -152,7 +150,7 @@ Does not: clone repo, configure SSH, set up secrets.
 | Panel        | Quickshell / arche-shell (D023) — bar + control-center |
 | Notifications| Quickshell ToastLayer / NotificationsList              |
 | OSD          | Quickshell                                             |
-| Launcher     | rofi-wayland                                           |
+| Launcher     | Quickshell LauncherDialog (D031)                       |
 | Lock / idle  | hyprlock / hypridle                                    |
 | Wallpaper    | awww (swww successor — D026)                           |
 | Shell        | fish + atuin + fisher + starship (D018)                |

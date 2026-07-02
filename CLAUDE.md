@@ -2,7 +2,7 @@
 
 ## Who I Am
 - User: stark
-- Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland (Wayland) + Quickshell panel
+- Host: Arch Linux 6.x | Lenovo Legion Pro 5 16ARX8 | RTX 4060 Laptop | AMD Ryzen | Hyprland (Wayland) + DankMaterialShell (dms)
 - Primary interface: Claude Code (terminal, TUI-first)
 - Shell: Fish + Atuin (Ctrl-R) + Fisher (plugins) | Prompt: Starship | Terminal: Kitty
 - Dotfiles: `/opt/arche` (shared across users), per-user `~/arche` → `/opt/arche` symlink. Managed with GNU Stow 2.4.1. See D014.
@@ -65,8 +65,9 @@ Full architecture and decision records in `docs/`.
 │       ├── arche-denoise     # Rust CLI — file/pipe GPU noise suppression
 │       └── arche-denoise-mic # C daemon — PipeWire virtual mic (Maxine)
 │
-├── shell/                    # Quickshell panel QML (bar + control-center + OSD + toasts)
-│                             # Symlinked to ~/.config/quickshell/ by 07-panel.sh. See D029.
+│   # NOTE: desktop shell is dms (DankMaterialShell), package-managed at
+│   # /usr/share/quickshell/dms/, set up by scripts/13-dms.sh — see D032.
+│   # The old hand-rolled shell/ panel was removed.
 │
 └── stow/                     # behavior configs — symlinked via GNU Stow to $HOME
     ├── fish/                 # shell config (D018 — restored from D003)
@@ -74,7 +75,6 @@ Full architecture and decision records in `docs/`.
     ├── starship/             # prompt config
     ├── mpv/                  # media player
     ├── hypr/                 # Hyprland compositor config (D023 — restored from D021)
-    ├── rofi/                 # Spotlight-style app launcher
     ├── cliphist/             # clipboard history
     ├── arche-scripts/        # user scripts (wallpaper, popup, powermenu, etc.)
     ├── nvim/                 # LazyVim + catppuccin
@@ -123,8 +123,8 @@ Active theme: `theming/themes/ember.sh` (warm amber on deep charcoal).
 
 | Tier | Mechanism | Path |
 |---|---|---|
-| Foreign apps (kitty, hypr, gtk, mpv, rofi, …) | envsubst `*.tmpl` → app's required format | `~/.config/<app>/` |
-| Arche-owned (Quickshell panel, future tools) | `_emit.sh` writes canonical JSON; consumed via FileView | `/opt/arche/run/theme.json` (system-shared) |
+| Foreign apps (kitty, hypr, gtk, mpv, …) | envsubst `*.tmpl` → app's required format | `~/.config/<app>/` |
+| Arche-owned (dms shell, future tools) | `_emit.sh` writes canonical JSON | `/opt/arche/run/{theme.json, dms-theme.json}` (system-shared) |
 
 **Per-component sidecar convention:**
 
@@ -162,10 +162,10 @@ per-user `~/.config/arche/`. Per-user state — config, history, secrets —
 still lives under each user's `~/.config/` and `~/.local/state/`.
 
 Why system-shared: the active theme symlink (`theming/themes/active`)
-is already global, every Hyprland session on the host runs the same
-`/opt/arche/shell/` Quickshell source (D029), and `theming/templates/<app>/`
+is already global, every Hyprland session on the host runs the same dms shell
+(`/usr/share/quickshell/dms/`, D032), and `theming/templates/<app>/`
 is the single source of truth for visuals — making the rendered JSON
-per-user only created drift. One emit, one read, every panel re-paints.
+per-user only created drift. One emit, one read, every shell re-paints.
 
 ---
 
@@ -286,13 +286,29 @@ chain (`/usr/local/bin/arche/X → system/usr/local/bin/arche/X → tools/bin/X`
 
 ---
 
-## Quickshell Panel Source (`shell/`)
+## Desktop Shell — DankMaterialShell (dms)
 
-Quickshell panel source (bar + control-center + notifications + OSD + clipboard
-picker + calendar) lives at `/opt/arche/shell/`, versioned with repo.
-`scripts/07-panel.sh` symlinks `~/.config/quickshell/` → `/opt/arche/shell/` for every
-user — one source of truth, no per-user clone. Hot-reload on file save works
-(quickshell watches file mtimes). See D029 (supersedes D023's external-repo bit).
+The bar + control-center + notifications + OSD + launcher + clipboard + power
+menu are all provided by **DankMaterialShell (dms)** — a maintained
+Quickshell-based shell from the official Arch `extra` repo (`dms-shell`,
+`dms-shell-hyprland`). It replaced the hand-rolled `/opt/arche/shell/` panel
+(deleted). See D032.
+
+- Shell source: `/usr/share/quickshell/dms/` (package-managed, not in repo).
+- Started via its systemd **user service** `dms.service` (Type=dbus, owns
+  `org.freedesktop.Notifications`, `Restart=on-failure`). autostart.conf does
+  `systemctl --user start dms.service`.
+- Setup: `scripts/13-dms.sh` (`just dms`) — install, link service drop-in +
+  resume hook, emit theme, seed per-user `settings.json`, enable service.
+- Theme: arche drives colors. `theming/templates/dms/_emit.sh` renders
+  `/opt/arche/run/dms-theme.json` from the active theme; dms consumes it via
+  `settings.json { currentThemeName: "custom", customThemeFile: … }`. Matugen
+  disabled. Fonts seeded into per-user `settings.json`.
+- Keybinds: Hyprland `bindings.conf` calls `dms ipc call <target> …`
+  (spotlight, clipboard, powermenu, notifications, inhibit, bar).
+- NVIDIA suspend freeze (#2250) worked around by
+  `system/usr/lib/systemd/system-sleep/dms-restart`.
+- Built-in polkit is OFF (`DMS_DISABLE_POLKIT=1`); hyprpolkitagent stays.
 
 ---
 
@@ -374,9 +390,11 @@ glow, dust, btop, nvtop, jq, yq, gum, just, aria2, gh, stow
 
 ### Desktop Stack
 - Hyprland (Wayland compositor), uwsm session wrapper, SDDM (Breeze theme)
-- Quickshell panel (bar + control-center + notifications + toasts + OSD) — QML source
-  at `/opt/arche/shell/`, symlinked to `~/.config/quickshell/` by `07-panel.sh`. See D029.
-- rofi-wayland (app launcher), grim + slurp + satty (screenshots)
+- DankMaterialShell (dms) — bar + control-center + notifications + OSD +
+  launcher + clipboard + power-menu in one Quickshell-based shell. Package-managed
+  (`dms-shell`), runs as `dms.service` user unit, set up by `scripts/13-dms.sh`. See D032.
+- App launcher / clipboard / power-menu are dms's built-ins, bound via
+  `dms ipc call …` in bindings.conf (D032). grim + slurp + satty (screenshots)
 - hyprlock (lock screen), hypridle (idle management), hyprsunset (night light)
 - awww (wallpaper — successor to swww), cliphist (clipboard history), hyprpolkitagent (auth)
 - xdg-desktop-portal-hyprland + xdg-desktop-portal-gtk (Hyprland portal implements Screenshot/ScreenCast/GlobalShortcuts only — Settings/FileChooser/etc fall through to portal-gtk, which also bridges gsettings `color-scheme` → xdg `color-scheme` D-Bus property for Electron/Chromium/Vivaldi)
@@ -426,7 +444,7 @@ Infrastructure: bootstrap.sh, Justfile, lib.sh, theming/engine.sh, tests/run.sh,
 Scripts: 13 numbered scripts (00-preflight through 12-boot)
 Packages: 11 registry files (base, security, gpu-nvidia, audio, hyprland, shell, panel, runtimes, apps, appearance, boot)
 Themes: theming/themes/ember.sh (default), theming/themes/frost.sh, theming/themes/schema.sh
-Templates: theming/templates/{arche, btop, electron-flags, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, rofi, starship, tmux}
+Templates: theming/templates/{arche, btop, electron-flags, fish, glow, gtk-3.0, gtk-4.0, hypr, hyprland-preview-share-picker, kitty, legion, mpv, starship, tmux}
 Stow: see Repository Structure above
 System: pacman.conf, 3 pacman hooks, 3 system binaries, sddm.conf.d/10-arche.conf
 
@@ -470,7 +488,7 @@ See `docs/status.md` for full table.
 - Do not hardcode /home/stark — use `$HOME` or `~`
 - Do not suggest storing secrets in dotfiles — `~/.config/fish/local.fish` is pattern (gitignored)
 - Do not reference KDE Plasma, KWin, KRunner, Plasma Login Manager, Spectacle, kscreenlocker, Powerdevil, Klipper, kde-gtk-config — removed in D023, Hyprland is desktop
-- Do not reference Waybar, Mako, SwayOSD, syshud — Quickshell (arche-shell) replaces bar/notifications/OSD in one layer (D023)
-- Do not install dunst — its user unit is `Type=dbus` with `BusName=org.freedesktop.Notifications`, so D-Bus auto-activates it and races Quickshell's `NotificationServer` (`Notifs.qml`) for the name, leaving every toast rendered in dunst's default blue-bubble style (D023)
+- Do not reference Waybar, Mako, SwayOSD, syshud — dms (DankMaterialShell) provides bar/notifications/OSD in one layer (D032, supersedes D023)
+- Do not install dunst, mako, or swaync — dms's `dms.service` is `Type=dbus` owning `org.freedesktop.Notifications`; any other notification daemon races it for the bus name on D-Bus auto-activation and hijacks toasts (D032, supersedes D023)
 - Do not reference plasma-login-manager — SDDM is greeter (D023 reverts D022)
 - Do not vendor SilentSDDM or any SDDM theme — default Breeze ships with sddm, that what we use (D023)

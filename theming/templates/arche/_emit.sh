@@ -63,6 +63,7 @@ cat > "${_arche_json}.tmp" <<EOF
 }
 EOF
 
-mv "${_arche_json}.tmp" "$_arche_json"
+chmod 664 "${_arche_json}.tmp"
+mv -f "${_arche_json}.tmp" "$_arche_json"
 log_ok "Emitted /opt/arche/run/theme.json"
 unset _arche_json _arche_run

@@ -19,9 +19,9 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `security.sh` | `02-security.sh` | Firewall, SSH, sandboxing, USB security |
 | `gpu-nvidia.sh` | `03-gpu.sh` | NVIDIA open kernel module, CUDA, VA-API |
 | `audio.sh` | `04-audio.sh` | Full PipeWire stack, TUI mixer |
-| `hyprland.sh` | `05-hyprland.sh` | Hyprland, portals, SDDM, rofi, Wayland utils |
+| `hyprland.sh` | `05-hyprland.sh` | Hyprland, portals, SDDM, Wayland utils |
 | `shell.sh` | `06-shell.sh` | Fish, Starship, Kitty, tmux |
-| `panel.sh` | `07-panel.sh` | Quickshell + NetworkManager backend |
+| `dms.sh` | `13-dms.sh` | DankMaterialShell + Quickshell + NetworkManager |
 | `runtimes.sh` | `08-runtimes.sh` | Rust, Go, cmake, clang, Bun |
 | `apps.sh` | `09-apps.sh` | Neovim, Vivaldi, Nautilus, mpv, Docker, Bluetooth |
 | `appearance.sh` | `11-appearance.sh` | Fonts, icons, nwg-look |
@@ -48,19 +48,20 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **PipeWire stack:** pipewire, pipewire-alsa, pipewire-jack, pipewire-pulse, wireplumber
 - **Extras:** gst-plugin-pipewire, alsa-utils, pamixer, wiremix (TUI mixer), playerctl, sof-firmware
 
-### hyprland.sh — Hyprland Desktop (pacman: ~18, AUR: 1)
+### hyprland.sh — Hyprland Desktop (pacman: ~17, AUR: 1)
 - **Compositor / session:** hyprland, hyprlock, hypridle, hyprpicker, hyprsunset, hyprpolkitagent, uwsm, xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk (Settings + FileChooser — brings dark-mode signal to Electron/Chromium/Vivaldi)
 - **Login manager:** sddm, qt6-svg, qt5-wayland, qt6-wayland (default Breeze theme — see D023)
 - **Wayland utils:** awww (wallpaper — swww successor), grim, slurp, satty (screenshots), cliphist (clipboard)
 - **Input / backlight:** brightnessctl, wev
-- **Launcher:** rofi-wayland
+- **Launcher:** dms spotlight (Super+Space → `dms ipc call spotlight toggle`); rofi removed in D031, dms adopted in D032
 - **AUR:** hyprland-preview-share-picker-git (xdph's `custom_picker_binary` with live previews — D028 reverses D027)
 
-### panel.sh — Quickshell Panel (pacman: 2)
-- **Shell runtime:** quickshell (QML-based Wayland layer shell)
-- **Service backend:** networkmanager (nmcli, used by Quickshell's Net service)
-- **Note:** The QML source lives at `/opt/arche/shell/` and is symlinked to
-  `~/.config/quickshell/` by `07-panel.sh`. Not installed via pacman. See D029.
+### dms.sh — DankMaterialShell (pacman: 4)
+- **Shell:** dms-shell, dms-shell-hyprland (official `extra` repo)
+- **Runtime:** quickshell (QML Wayland shell dms is built on; also a dms dep)
+- **Service backend:** networkmanager (dms talks to it over D-Bus)
+- **Note:** Shell source is package-managed at `/usr/share/quickshell/dms/`,
+  not in the repo. Set up by `13-dms.sh`. See D032 (supersedes D029's panel).
 
 ### shell.sh — Shell (pacman: 5)
 - fish, atuin, starship, kitty, tmux
@@ -107,8 +108,8 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 These are installed outside the package registry:
 - **arche-denoise** — custom binary in `tools/bin/`, deployed via systemd service
 - **arche-legion** — custom binary in `tools/bin/`, deployed to `~/.local/bin/arche/`
-- **Quickshell panel source** — QML under `/opt/arche/shell/`, symlinked to
-  `~/.config/quickshell/` by `07-panel.sh` (D029; supersedes D023)
+- **dms shell source** — package-managed QML at `/usr/share/quickshell/dms/`
+  (dms-shell pkg); set up by `13-dms.sh` (D032; supersedes D029's panel)
 - **fisher** — fish plugin manager, installed from upstream curl into `~/.config/fish/functions/fisher.fish` by `06-shell.sh` (D018)
 - **fnm** — Node version manager (curl script in `08-runtimes.sh`)
 - **Bun** — JS runtime (official curl script in `08-runtimes.sh`)
