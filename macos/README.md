@@ -25,13 +25,31 @@ Package list: [`Brewfile`](./Brewfile). Configs come from the shared
 
 ## Usage
 
-```sh
-# 1. Install Homebrew first (if you don't have it):
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+Install Homebrew first if you don't have it:
 
-# 2. Run the bootstrap:
+```sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+**Quick (one-liner)** — clones to `~/arche` and bootstraps. `bash <(...)`
+keeps your terminal attached so sudo / brew prompts work (a plain
+`curl | bash` would break them):
+
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/Dhruvpatel-10/arche/main/macos/install.sh)
+```
+
+Override the clone location with `ARCHE_DIR=/path bash <(curl …)`.
+
+**Manual** — if you've already cloned the repo:
+
+```sh
+cd /path/to/arche
 bash macos/bootstrap.sh
 ```
+
+> The clone is permanent — stow symlinks (`~/.config/*`) point back into it,
+> so keep it where it is (don't delete or move it after install).
 
 The script is idempotent — safe to re-run. It:
 
