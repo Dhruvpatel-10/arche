@@ -4,8 +4,11 @@
 
 # ─── Fonts ───
 
-font-family = ${FONT_MONO}
-font-size   = ${FONT_SIZE_TERMINAL}
+# No font-family on purpose: Ghostty defaults to SF Mono (the macOS system
+# monospace) and pulls Nerd Font icon glyphs from its built-in symbol
+# fallback. Only the size is theme-driven. To pin a different family, add
+# `font-family = ...` to ~/.config/ghostty/config (loaded after this file).
+font-size = ${FONT_SIZE_TERMINAL}
 
 # ─── Base colors ───
 

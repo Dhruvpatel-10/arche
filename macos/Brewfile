@@ -1,6 +1,7 @@
 # Brewfile — arche macOS package registry (CLI + terminal only).
-# Declarative counterpart to packages/*.sh. Installed idempotently with:
-#   brew bundle --file=macos/Brewfile
+# Declarative counterpart to packages/*.sh. macos/bootstrap.sh reads this file
+# and installs each entry with live [n/total] progress (skipping installed
+# ones). `brew bundle --file=macos/Brewfile` also works if you prefer.
 #
 # Scope: the cross-platform tools shared with the Linux setup — shell,
 # terminal, editor, and CLI utilities. No window-manager / system-level
@@ -57,5 +58,6 @@ brew "uv"          # Python package manager (conf.d/uv.fish)
 cask "ghostty"     # terminal emulator — native macOS feel, themed via the engine
 cask "mpv"         # media player (stowed config)
 
-# ─── Fonts (theme uses this family) ───
-cask "font-jetbrains-mono-nerd-font"  # FONT_MONO — JetBrainsMono Nerd Font Mono
+# No font cask: the terminal uses SF Mono (macOS built-in), and Ghostty
+# fills in Nerd Font icon glyphs (starship, eza, lazygit) from its own
+# bundled symbol-fallback font — so icons render without installing anything.

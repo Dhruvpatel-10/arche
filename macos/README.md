@@ -17,7 +17,8 @@ between both platforms, themed by the same engine.
 - **CLI tools:** eza, bat, ripgrep, fd, fzf, zoxide, dust, btop, jq, yq,
   tealdeer, gum, lazygit, lazydocker, glow, aria2, fastfetch, gh, tree-sitter
 - **Media:** mpv (with the stowed config)
-- **Fonts:** JetBrainsMono Nerd Font Mono (the family the active themes use)
+- **Terminal font:** SF Mono (macOS built-in) — Ghostty renders Nerd Font
+  icons via its bundled symbol fallback, so nothing to install
 
 Package list: [`Brewfile`](./Brewfile). Configs come from the shared
 [`stow/`](../stow) packages — only the portable ones are linked:
@@ -53,7 +54,8 @@ bash macos/bootstrap.sh
 
 The script is idempotent — safe to re-run. It:
 
-1. `brew bundle` installs everything in the Brewfile.
+1. Installs each package from the Brewfile with live `[n/total]` progress
+   (already-installed packages are skipped, so re-runs are fast).
 2. Stows the cross-platform config packages to `$HOME`.
 3. Sets fish as the login shell and installs fisher plugins.
 4. Renders the active theme via `theming/engine.sh apply` — the same

@@ -48,9 +48,58 @@ if ! command -v brew &>/dev/null; then
     exit 1
 fi
 
-log_info "Installing packages from Brewfile (idempotent)..."
-brew bundle --file="$MACOS_DIR/Brewfile"
-log_ok "Brew packages installed"
+# Install per-package (reading the Brewfile as the source of truth) instead of
+# one opaque `brew bundle` call — that downloads every bottle silently up front
+# and looks frozen for minutes. This shows clean [n/total] progress and skips
+# anything already installed. (macOS ships bash 3.2 — no mapfile/readarray, so
+# we collect with a plain read loop.)
+BREWFILE="$MACOS_DIR/Brewfile"
+
+# Don't re-check the whole tap on every install; we accept slightly staler
+# formulae in exchange for fast, quiet, predictable output.
+export HOMEBREW_NO_AUTO_UPDATE=1
+export HOMEBREW_NO_ENV_HINTS=1
+
+formulae=()
+while IFS= read -r name; do formulae+=("$name"); done \
+    < <(sed -nE 's/^[[:space:]]*brew "([^"]+)".*/\1/p' "$BREWFILE")
+casks=()
+while IFS= read -r name; do casks+=("$name"); done \
+    < <(sed -nE 's/^[[:space:]]*cask "([^"]+)".*/\1/p' "$BREWFILE")
+
+total=$(( ${#formulae[@]} + ${#casks[@]} ))
+n=0
+failed=()
+log_info "Installing $total Homebrew packages (${#formulae[@]} formulae, ${#casks[@]} casks)..."
+echo
+
+for f in "${formulae[@]}"; do
+    n=$(( n + 1 ))
+    if brew list --formula --versions "$f" &>/dev/null; then
+        log_warn "[$n/$total] $f — already installed"
+    else
+        log_info "[$n/$total] Installing ${f}..."
+        brew install --formula "$f" || failed+=("$f")
+    fi
+done
+
+for c in "${casks[@]}"; do
+    n=$(( n + 1 ))
+    if brew list --cask --versions "$c" &>/dev/null; then
+        log_warn "[$n/$total] $c — already installed"
+    else
+        log_info "[$n/$total] Installing cask ${c}..."
+        brew install --cask "$c" || failed+=("$c")
+    fi
+done
+
+echo
+if [[ ${#failed[@]} -gt 0 ]]; then
+    log_warn "Failed to install: ${failed[*]}"
+    log_warn "Re-run the bootstrap to retry — installed packages are skipped."
+else
+    log_ok "All $total Homebrew packages installed"
+fi
 
 # gettext (envsubst) and coreutils are keg-only — put them on PATH so the
 # theme engine and any GNU-tool assumptions resolve for this run.
