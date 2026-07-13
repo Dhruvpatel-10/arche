@@ -1,0 +1,55 @@
+# arche Ghostty theme — rendered by theming/engine.sh from the active theme.
+# Do not edit — edit theming/templates/ghostty/theme.conf.tmpl and re-apply.
+# Source: theming/templates/ghostty/theme.conf.tmpl
+
+# ─── Fonts ───
+
+font-family = ${FONT_MONO}
+font-size   = ${FONT_SIZE_TERMINAL}
+
+# ─── Base colors ───
+
+background = ${COLOR_BG}
+foreground = ${COLOR_FG}
+# Translucency (native blur is enabled in config). 1.0 = fully opaque.
+background-opacity = ${KITTY_OPACITY}
+
+cursor-color = ${COLOR_CURSOR}
+cursor-text  = ${COLOR_BG}
+
+selection-background = ${COLOR_ACCENT}
+selection-foreground = ${COLOR_BG}
+
+# ─── 16-color palette ───
+
+# black
+palette = 0=${COLOR_BG_SURFACE}
+palette = 8=${COLOR_SURFACE2}
+
+# red
+palette = 1=${COLOR_CRITICAL}
+palette = 9=${COLOR_CRITICAL}
+
+# green
+palette = 2=${COLOR_SUCCESS}
+palette = 10=${COLOR_SUCCESS}
+
+# yellow
+palette = 3=${COLOR_WARN}
+palette = 11=${COLOR_PEACH}
+
+# blue
+palette = 4=${COLOR_ACCENT_ALT}
+palette = 12=${COLOR_SKY}
+
+# magenta
+palette = 5=${COLOR_PINK}
+palette = 13=${COLOR_MAUVE}
+
+# cyan
+palette = 6=${COLOR_TEAL}
+palette = 14=${COLOR_TEAL}
+
+# white
+palette = 7=${COLOR_SUBTEXT1}
+palette = 15=${COLOR_FG}

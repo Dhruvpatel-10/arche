@@ -1,0 +1,51 @@
+# arche — Ghostty config (behavior + macOS-native feel).
+# Visual theme (colors + fonts) lives in theme.conf, rendered by
+# theming/engine.sh from the active theme — do not put colors/fonts here.
+# Reload after edits: ⌘⇧, (Ghostty's default reload keybind on macOS).
+
+# Load the rendered arche theme. Relative path resolves next to this file
+# (~/.config/ghostty/theme.conf).
+config-file = theme.conf
+
+# ─── Window ───
+
+window-padding-x       = 16
+window-padding-y       = 12
+window-padding-balance = true
+window-save-state      = always
+window-colorspace      = display-p3
+confirm-close-surface  = false
+
+# ─── macOS native feel ───
+
+# Tabs live in the title bar, like Finder/Safari — the most native look.
+macos-titlebar-style = tabs
+# Make ⌥ behave as Alt so fish/nvim word-motions (⌥←/⌥→) work.
+macos-option-as-alt  = true
+macos-window-shadow  = true
+# Translucency + native background blur (visible when the theme sets
+# background-opacity < 1, e.g. frost). Harmless at full opacity.
+background-blur      = true
+# Slightly thicker glyphs — matches macOS's native font weight on Retina.
+font-thicken         = true
+
+# ─── Cursor ───
+
+cursor-style       = block
+cursor-style-blink = false
+mouse-hide-while-typing = true
+# Don't let shell integration override the cursor shape (mirrors the
+# kitty `shell_integration no-cursor` behavior).
+shell-integration-features = no-cursor
+
+# ─── Scrollback ───
+
+# ~10 MB of scrollback (Ghostty measures this in bytes, not lines).
+scrollback-limit = 10000000
+
+# ─── Keybinds ───
+#
+# Ghostty ships excellent native macOS defaults (⌘T tab, ⌘N window, ⌘D
+# split, ⌘C/⌘V, ⌘+/⌘- font size, ⌘K clear, ⌘F search, ⌘⇧, reload), so we
+# intentionally add nothing here — overriding them would break the native
+# muscle memory. Add project-specific binds below if ever needed.

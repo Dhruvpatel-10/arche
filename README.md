@@ -22,6 +22,13 @@ cd /opt/arche
 bash bootstrap.sh
 ```
 
+### macOS
+
+A minimal cross-platform slice (fish, nvim, ghostty, tmux, starship, btop,
+CLI tools — no desktop layer) lives under [`macos/`](./macos). Apple Silicon
++ current macOS only. Install Homebrew, then `bash macos/bootstrap.sh`.
+See [`macos/README.md`](./macos/README.md).
+
 The repo lives at `/opt/arche` so it can be shared between multiple human
 users on the same machine (e.g. personal + work). Each user gets a per-user
 `~/arche` → `/opt/arche` symlink for backward compat — anything that
