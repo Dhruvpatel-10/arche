@@ -9,7 +9,7 @@
 #   bash helpers/install-sf-pro.sh /path/SF-Pro.dmg  # use local dmg
 
 set -euo pipefail
-source "$(dirname "$0")/../scripts/lib.sh"
+source "$(dirname "$0")/../core/lib.sh"
 
 DMG_URL="https://devimages-cdn.apple.com/design/resources/download/SF-Pro.dmg"
 DEST="/usr/share/fonts/SF-Pro"

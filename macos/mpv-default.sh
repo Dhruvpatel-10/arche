@@ -20,7 +20,7 @@ set -euo pipefail
 
 MACOS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARCHE="$(cd "$MACOS_DIR/.." && pwd)"
-source "$ARCHE/scripts/lib.sh"
+source "$ARCHE/core/lib.sh"
 
 # ─── Config: the famous, unambiguous, non-web video containers we claim ───
 # Add/remove here — keep it to real video formats you actually want mpv to own.

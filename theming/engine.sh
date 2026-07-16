@@ -15,7 +15,7 @@
 #       *.tmpl                  — envsubst input
 #       _emit.sh                — custom emitter (replaces .tmpl rendering)
 #       _reload.sh              — live-reload hook (run after render)
-source "$(dirname "$0")/../scripts/lib.sh"
+source "$(dirname "$0")/../core/lib.sh"
 
 cmd="${1:-apply}"
 shift 2>/dev/null || true
