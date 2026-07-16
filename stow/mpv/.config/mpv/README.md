@@ -101,6 +101,14 @@ Scripts used:
 
 Configuration files for these scripts can be found in the `script-opts` folder. I also modified some of these scripts' default keybindings. To see my modifications, look for script keybindings in `input.conf`.
 
+## Keyboard Shortcuts
+
+Press `?` to toggle an on-screen list of every active key binding, defaults
+and everything custom in `input.conf`, with `/` to search it while it is
+open. This is mpv's built-in `stats.lua` (page 4), no extra script needed.
+`?` is bound explicitly in `input.conf` for documentation, though it is
+already mpv's default binding for this.
+
 ## Shaders
 
 The shaders included in the `shaders` folder:
