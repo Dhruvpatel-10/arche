@@ -1,4 +1,0 @@
-# uosc helper binaries: never apply text/EOL filters
-stow/mpv/.config/mpv/scripts/uosc/bin/ziggy-* binary
-stow/mpv/.config/mpv/fonts/uosc_*.otf binary
-stow/mpv/.config/mpv/fonts/uosc_*.ttf binary

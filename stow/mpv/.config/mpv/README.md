@@ -76,12 +76,13 @@ Scripts used:
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-profile)\
   Cycles through a list of profiles sent via a script message and prints the profile-desc to the OSD. More details at the top of the file.
 
-* [uosc](scripts/uosc): [source](https://github.com/tomasklaen/uosc)\
-  A clean, modern on-screen controller (timeline, controls, menus). It is
-  vendored here and skinned with the arche theme via `script-opts/uosc.conf`,
-  rendered by the theme engine. The `bin/ziggy-*` helpers power the file browser
-  and downloads; only the macOS and Linux ones are kept. The built-in mpv OSC
-  stays disabled (`osc=no`).
+* [modernz.lua](scripts/modernz.lua): [source](https://github.com/Samillion/ModernZ)\
+  A clean, minimal bottom control bar OSC (title, seekbar, one row of
+  controls), no window chrome. It is vendored here and skinned with the
+  arche theme via `script-opts/modernz.conf`, rendered by the theme engine.
+  Window controls (minimize, maximize, close) are turned off. Needs
+  `fonts/modernz-icons.ttf`, also vendored here. The built-in mpv OSC stays
+  disabled (`osc=no`).
 
 * [mpv-gif.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mpv-gif.lua):
   [source](https://github.com/Scheliux/mpv-gif-generator)\
