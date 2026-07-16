@@ -76,10 +76,11 @@ Scripts used:
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-profile)\
   Cycles through a list of profiles sent via a script message and prints the profile-desc to the OSD. More details at the top of the file.
 
-* [modernx.lua](scripts/modernx.lua):
-  [source](https://github.com/zydezu/ModernX)\
-  A modern OSC (on-screen controller) UI for mpv. In arche it is styled by the
-  theme engine, which renders `script-opts/modernx.conf` from the active theme.
+* [arche-osc.lua](scripts/arche-osc.lua):
+  A custom on-screen controller written for arche from scratch. It draws a
+  minimal, translucent control bar (seek, play/pause, skip, volume, fullscreen)
+  with vector icons, so it needs no icon font. Colors come from the active theme
+  via `script-opts/arche-osc.conf`, rendered by the theme engine.
 
 * [mpv-gif.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mpv-gif.lua):
   [source](https://github.com/Scheliux/mpv-gif-generator)\
