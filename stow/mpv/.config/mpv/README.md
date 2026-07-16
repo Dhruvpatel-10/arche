@@ -92,9 +92,6 @@ Scripts used:
   [source](https://github.com/dexeonify/mpv-config/blob/main/scripts/seek-to.lua)\
   Seek to an absolute timestamp specified via keyboard input or pasted from clipboard.
 
-* [sponsorblock-minimal.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/sponsorblock-minimal.lua) — [source](https://codeberg.org/jouni/mpv_sponsorblock_minimal)\
-  Skip sponsor segments in YouTube videos.
-
 * [thumbfast.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/thumbfast.lua) — [source](https://github.com/po5/thumbfast)\
   High-performance on-the-fly thumbnailer for mpv. **The script does not display thumbnails on its own**, it is meant to be used alongside a UI script that calls thumbfast.
 
