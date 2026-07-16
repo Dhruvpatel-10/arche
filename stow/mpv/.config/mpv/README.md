@@ -76,11 +76,12 @@ Scripts used:
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-profile)\
   Cycles through a list of profiles sent via a script message and prints the profile-desc to the OSD. More details at the top of the file.
 
-* [arche-osc.lua](scripts/arche-osc.lua):
-  A custom on-screen controller written for arche from scratch. It draws a
-  minimal, translucent control bar (seek, play/pause, skip, volume, fullscreen)
-  with vector icons, so it needs no icon font. Colors come from the active theme
-  via `script-opts/arche-osc.conf`, rendered by the theme engine.
+* [uosc](scripts/uosc): [source](https://github.com/tomasklaen/uosc)\
+  A clean, modern on-screen controller (timeline, controls, menus). It is
+  vendored here and skinned with the arche theme via `script-opts/uosc.conf`,
+  rendered by the theme engine. The `bin/ziggy-*` helpers power the file browser
+  and downloads; only the macOS and Linux ones are kept. The built-in mpv OSC
+  stays disabled (`osc=no`).
 
 * [mpv-gif.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mpv-gif.lua):
   [source](https://github.com/Scheliux/mpv-gif-generator)\

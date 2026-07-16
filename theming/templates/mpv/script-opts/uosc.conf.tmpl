@@ -1,0 +1,27 @@
+# uosc, skinned with the arche theme. Rendered by the theme engine into
+# ~/.config/mpv/script-opts/uosc.conf. Upstream: github.com/tomasklaen/uosc
+#
+# Only colors are theme-driven. Layout and behaviour use uosc's own (already
+# refined) defaults, with a few size and rounding tweaks for a larger, premium
+# feel. Edit sizes here; edit colors in the active theme.
+
+# Colors from the active theme (RRGGBB, no #):
+#   foreground      = filled timeline, active controls (the accent)
+#   foreground_text = text drawn on foreground-colored areas
+#   background      = element backgrounds and inactive track
+#   background_text = text on backgrounds
+#   curtain         = dim behind menus
+color=foreground=${COLOR_ACCENT_NOHASH},foreground_text=${COLOR_BG_NOHASH},background=${COLOR_BG_NOHASH},background_text=${COLOR_FG_NOHASH},curtain=${COLOR_CRUST_NOHASH},success=${COLOR_SUCCESS_NOHASH},error=${COLOR_CRITICAL_NOHASH}
+
+# Layout: uosc's minimal line timeline, title in a borderless top bar.
+timeline_style=line
+timeline_line_width=3
+timeline_size=48
+top_bar=no-border
+top_bar_size=46
+top_bar_title=yes
+controls_size=34
+controls_spacing=3
+border_radius=6
+font_scale=1.05
+text_border=1.4
