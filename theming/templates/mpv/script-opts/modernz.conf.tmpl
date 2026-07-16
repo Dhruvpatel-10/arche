@@ -46,6 +46,12 @@ download_button=no
 cache_info=no
 cache_info_speed=no
 
+# Do not summon the whole control bar on a keyboard seek. Tapping the arrow
+# keys to skip should not pop the full OSC (title, buttons, seekbar) every
+# time — it reads as clutter. With this off, seeking shows only mpv's slim
+# osd seek bar (enabled in mpv.conf), a quiet fade instead of the full bar.
+osc_on_seek=no
+
 # Animation: eased fade in/out instead of an abrupt pop, and a short but
 # not instant hide timeout. keep_with_cursor stops the bar from hiding out
 # from under the pointer while it rests on the bar; minmousemove filters
