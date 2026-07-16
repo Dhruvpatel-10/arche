@@ -25,7 +25,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 | `runtimes.sh` | `08-runtimes.sh` | Rust, Go, cmake, clang, Bun |
 | `apps.sh` | `09-apps.sh` | Neovim, Vivaldi, Nautilus, mpv, Docker, Bluetooth |
 | `appearance.sh` | `11-appearance.sh` | Fonts, icons, nwg-look |
-| `boot.sh` | `12-boot.sh` | Plymouth splash, TPM2 tools |
+| `boot.sh` | `12-boot.sh` | TPM2 unlock tooling (no graphical splash) |
 
 ## Package Inventory
 
@@ -37,8 +37,8 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Note:** `shellcheck` installed as static binary by `01-base.sh` (pacman version
   pulls 56 Haskell packages for a 4 MB tool — upstream ships a static binary).
 
-### security.sh — Security (pacman: 6)
-- ufw, openssh, tailscale, firejail, usbguard, fail2ban
+### security.sh — Security (pacman: 5)
+- ufw, openssh, tailscale, firejail, fail2ban
 
 ### gpu-nvidia.sh — NVIDIA GPU (pacman: 7)
 - nvidia-open-dkms, nvidia-utils, nvidia-settings, lib32-nvidia-utils
@@ -56,10 +56,10 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Launcher:** dms spotlight (Super+Space → `dms ipc call spotlight toggle`); rofi removed in D031, dms adopted in D032
 - **AUR:** hyprland-preview-share-picker-git (xdph's `custom_picker_binary` with live previews — D028 reverses D027)
 
-### dms.sh — DankMaterialShell (pacman: 4)
+### dms.sh — DankMaterialShell (pacman: 3)
 - **Shell:** dms-shell, dms-shell-hyprland (official `extra` repo)
-- **Runtime:** quickshell (QML Wayland shell dms is built on; also a dms dep)
 - **Service backend:** networkmanager (dms talks to it over D-Bus)
+- **Note:** quickshell is not a direct entry; it comes in transitively via dms-shell.
 - **Note:** Shell source is package-managed at `/usr/share/quickshell/dms/`,
   not in the repo. Set up by `13-dms.sh`. See D032 (supersedes D029's panel).
 
@@ -79,7 +79,7 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **Files:** nautilus, syncthing
 - **Media:** mpv, imagemagick, papers (PDF/EPUB, libadwaita), loupe (images, libadwaita), kdenlive (video)
 - **Recording:** obs-studio, v4l2loopback-dkms
-- **Utils:** fastfetch, glow, aria2, tldr, github-cli, plocate, tree-sitter-cli
+- **Utils:** fastfetch, glow, aria2, github-cli, plocate, tree-sitter-cli (tldr command comes from tealdeer in base.sh)
 - **Desktop:** qbittorrent, kdeconnect
 - **Bluetooth:** bluez, bluez-utils
 - **Docker:** docker, docker-buildx, docker-compose, rootlesskit, slirp4netns
@@ -93,14 +93,13 @@ Data-only files declaring what to install. No logic, no functions, no side effec
 - **GTK tool:** nwg-look (GTK3/4 configurator — there is no KDE to set GTK theming on Hyprland, D023)
 - **Qt:** nothing. We dropped all Qt apps (okular → papers, gwenview → loupe) so no Qt theming is needed. If a Qt app is added later, install qt6ct + set `QT_QPA_PLATFORMTHEME` then.
 
-### boot.sh — Pre-boot UI + TPM2 (pacman: 2)
-- **Plymouth:** plymouth (script-module splash — custom `arche` theme lives in `tools/plymouth/arche/`)
+### boot.sh — TPM2 unlock (pacman: 1)
 - **TPM2:** tpm2-tools (systemd-cryptenroll backend; tpm2-tss is already pulled by systemd)
-- **Note:** the Plymouth theme requires `ttf-ibm-plex` (in appearance.sh) and `imagemagick` (in apps.sh) to render the ARCHE wordmark at install time — `12-boot.sh` fails fast if they're missing.
+- **Note:** this branch boots to a plain kernel TTY. There is no Plymouth splash.
 
 ## Totals
 
-- **Pacman:** ~85 packages across 11 files
+- **Pacman:** ~82 packages across 11 files
 - **AUR:** 1 package (hyprland-preview-share-picker-git)
 
 ## Not Managed Here

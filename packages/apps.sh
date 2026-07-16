@@ -27,8 +27,7 @@ PACMAN_PKGS=(
     fastfetch
     glow                     # markdown viewer
     aria2                    # download manager
-    tldr
-    github-cli
+    github-cli               # note: tldr client comes from tealdeer (base.sh); do not add extra/tldr, it collides on /usr/bin/tldr
     plocate                  # locate
     tree-sitter-cli
 
