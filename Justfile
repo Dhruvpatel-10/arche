@@ -13,7 +13,22 @@ import 'just/util.just'       # restow, relink, backup, sddm-preview
 
 # ─── Bootstrap ───
 
-# Run full bootstrap (all scripts in order)
+# Run the full install (picks the right profile for this machine)
 [group: 'bootstrap']
 install:
     bash {{dotfiles}}/bootstrap.sh
+
+# Run the full install without asking before each step
+[group: 'bootstrap']
+install-yes:
+    bash {{dotfiles}}/bootstrap.sh --yes
+
+# Check the setup is healthy (add repair=1 to fix: just doctor repair=1)
+[group: 'bootstrap']
+doctor repair='':
+    bash {{dotfiles}}/bootstrap.sh doctor {{ if repair == '1' { '--repair' } else { '' } }}
+
+# Unlink the config files arche created (safe, reversible)
+[group: 'bootstrap']
+clean:
+    bash {{dotfiles}}/bootstrap.sh clean

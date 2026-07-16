@@ -8,7 +8,7 @@ restow pkg:
 # Re-symlink all system files (/etc/, /usr/local/bin/arche/, profile.d/)
 [group: 'utilities']
 relink:
-    bash -c 'source {{dotfiles}}/scripts/lib.sh && link_system_all'
+    bash -c 'source {{dotfiles}}/core/lib.sh && link_system_all'
 
 # Snapshot ~/.config before destructive operations
 [group: 'utilities']
@@ -31,7 +31,7 @@ sddm-preview:
 # restart systemd-resolved, flush caches. Same flow bootstrap uses.
 [group: 'utilities']
 dns:
-    bash {{dotfiles}}/scripts/dns.sh
+    bash {{dotfiles}}/profiles/linux-hyprland/steps/dns.sh
 
 # Fetch + install Apple SF Pro fonts to /usr/share/fonts/SF-Pro.
 # Optional arg: path to a pre-downloaded SF-Pro.dmg (skips Apple CDN download).

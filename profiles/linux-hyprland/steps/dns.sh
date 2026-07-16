@@ -19,9 +19,9 @@
 
 set -euo pipefail
 
-ARCHE="${ARCHE:-$(cd "$(dirname "$0")/.." && pwd)}"
-# shellcheck source=scripts/lib.sh
-source "$ARCHE/scripts/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 # Load NEXTDNS_ID from secrets.sh (gitignored). secrets.sh.example
 # documents the expected shape.

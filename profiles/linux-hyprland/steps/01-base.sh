@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 01-base.sh — install core system packages
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Installing base packages..."
-install_group "$ARCHE/packages/base.sh"
+registry_install arch base
 
 # ─── shellcheck (static binary from upstream) ───
 # The pacman shellcheck package pulls ~56 Haskell runtime packages for a single

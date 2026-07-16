@@ -15,7 +15,9 @@
 # helper. The passphrase / PIN prompt appears on the plain kernel TTY — no
 # graphical splash.
 
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Configuring sd-encrypt + UKI..."
 
@@ -45,7 +47,7 @@ log_info "Writing /etc/crypttab.initramfs: $crypttab_line"
 echo "$crypttab_line" | sudo tee /etc/crypttab.initramfs >/dev/null
 sudo chmod 600 /etc/crypttab.initramfs
 
-install_group "$ARCHE/packages/boot.sh"
+registry_install arch boot
 
 # ─── Rebuild UKIs ──────────────────────────────────────────────────────────
 # Legacy loader entries are archived AFTER the UKI build succeeds — if

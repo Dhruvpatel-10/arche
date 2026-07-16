@@ -6,10 +6,12 @@
 # Per-user by design (like 07-panel.sh): run once per human user. The autostart
 # swap (quickshell → dms) lives in stow/hypr/.config/hypr/autostart.conf and is
 # applied by `just stow`. Independently runnable: `bash scripts/13-dms.sh`.
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up DankMaterialShell (dms)..."
-install_group "$ARCHE/packages/dms.sh"
+registry_install arch dms
 
 # ─── System links: service drop-in (matugen/polkit off) + resume hook ───
 # These are also covered by link_system_all in 00-preflight; linked here too

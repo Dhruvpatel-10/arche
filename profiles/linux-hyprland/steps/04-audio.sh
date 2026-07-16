@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 04-audio.sh — PipeWire audio stack
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up audio..."
-install_group "$ARCHE/packages/audio.sh"
+registry_install arch audio
 
 # Enable PipeWire user services
 svc_enable --user pipewire

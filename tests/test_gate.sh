@@ -7,9 +7,11 @@
 
 test_gate() {
 
-    section "Gate: Bash syntax (scripts)"
+    section "Gate: Bash syntax (core + steps)"
 
-    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/bootstrap.sh; do
+    for f in "$ARCHE"/core/*.sh "$ARCHE"/core/adapters/*.sh \
+             "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
+             "$ARCHE"/bootstrap.sh; do
         [[ -f "$f" ]] || continue
         local rel="${f#$ARCHE/}"
         if bash -n "$f" 2>/dev/null; then
@@ -19,17 +21,24 @@ test_gate() {
         fi
     done
 
-    section "Gate: Package files parse"
+    section "Gate: Package registry parses"
 
-    for f in "$ARCHE"/packages/*.sh; do
-        local name
-        name="$(basename "$f")"
-        if (PACMAN_PKGS=(); AUR_PKGS=(); source "$f") 2>/dev/null; then
-            pass "packages/$name"
-        else
-            fail "packages/$name won't source — install_group will fail"
-        fi
+    local gate_reg_bad=""
+    for rf in "$ARCHE"/packages/*.reg; do
+        [[ -f "$rf" ]] || continue
+        while IFS= read -r line; do
+            line="${line%%#*}"
+            [[ -z "${line// /}" ]] && continue
+            # shellcheck disable=SC2086
+            set -- $line
+            [[ "${1:-}" == "tool" && -n "${2:-}" ]] || gate_reg_bad+=" $(basename "$rf")"
+        done < "$rf"
     done
+    if [[ -z "$gate_reg_bad" ]]; then
+        pass "package registry parses"
+    else
+        fail "malformed registry files:$gate_reg_bad — install will fail"
+    fi
 
     section "Gate: Theme can render"
 

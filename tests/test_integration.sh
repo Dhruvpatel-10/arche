@@ -29,7 +29,7 @@ test_integration() {
     if [[ -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
         pass "fisher installed"
     else
-        fail "fisher missing — run scripts/06-shell.sh"
+        fail "fisher missing — run: bootstrap.sh --profile linux-hyprland --only shell"
     fi
 
     # ── Core tools ──

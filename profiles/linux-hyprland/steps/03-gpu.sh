@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 03-gpu.sh — NVIDIA open kernel module + CUDA
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 # Skip entirely if no NVIDIA GPU detected
 if ! lspci 2>/dev/null | grep -qi nvidia; then
@@ -9,7 +11,7 @@ if ! lspci 2>/dev/null | grep -qi nvidia; then
 fi
 
 log_info "Setting up NVIDIA GPU..."
-install_group "$ARCHE/packages/gpu-nvidia.sh"
+registry_install arch gpu-nvidia
 
 # Ensure nvidia modules are in initramfs for early KMS
 mkinitcpio_conf="/etc/mkinitcpio.conf"

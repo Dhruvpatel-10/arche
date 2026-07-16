@@ -44,7 +44,7 @@ _doctor_theme() {
     fi
     if [[ "$_DOCTOR_REPAIR" == "1" ]]; then
         _chk_fix "Re-rendering theme files"
-        bash "$ARCHE/theming/engine.sh" apply "${PROFILE_THEME[@]}" >/dev/null 2>&1 \
+        bash "$ARCHE/theming/engine.sh" apply ${PROFILE_THEME[@]+"${PROFILE_THEME[@]}"} >/dev/null 2>&1 \
             && _chk_ok "Theme files re-rendered" \
             || _chk_warn "Theme render reported problems"
     fi

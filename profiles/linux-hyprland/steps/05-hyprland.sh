@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 05-hyprland.sh — Hyprland compositor + Wayland utilities + SDDM greeter
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up Hyprland..."
-install_group "$ARCHE/packages/hyprland.sh"
+registry_install arch hyprland
 
 # ─── SDDM login manager ───
 # Custom arche theme at /usr/share/sddm/themes/arche/ (symlinked from

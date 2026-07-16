@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 09-apps.sh — desktop applications and tools
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Installing applications..."
-install_group "$ARCHE/packages/apps.sh"
+registry_install arch apps
 
 # ─── Docker ───
 # Rootless is preferred (daemon runs as your user, no docker group needed),

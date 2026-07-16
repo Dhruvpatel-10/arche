@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 00-preflight.sh — sanity checks, system config, pacman, mirrors, update
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Running preflight checks..."
 

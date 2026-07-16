@@ -9,7 +9,9 @@
 #   Encrypted DNS, Kernel hardening, Lid close, MAC randomization,
 #   Firejail, LUKS/TPM2 enrollment
 
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 # link_system_file is provided by lib.sh
 
@@ -19,7 +21,7 @@ source "$(dirname "$0")/lib.sh"
 
 log_section "Security Packages"
 log_info "Installing security tooling (ufw, openssh, tailscale, gnome-keyring, firejail)"
-install_group "$ARCHE/packages/security.sh"
+registry_install arch security
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. Firewall — UFW with default deny
@@ -149,7 +151,7 @@ fi
 #     just dns
 # ─────────────────────────────────────────────────────────────────────────────
 
-bash "$ARCHE/scripts/dns.sh"
+bash "$ARCHE/profiles/linux-hyprland/steps/dns.sh"
 svc_enable systemd-resolved
 
 # ─────────────────────────────────────────────────────────────────────────────

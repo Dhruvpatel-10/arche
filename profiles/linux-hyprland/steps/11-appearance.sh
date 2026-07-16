@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 11-appearance.sh — fonts, icons, cursors, GTK/Qt theming
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up appearance..."
-install_group "$ARCHE/packages/appearance.sh"
+registry_install arch appearance
 
 # Rebuild font cache after installing new fonts
 if command -v fc-cache &>/dev/null; then

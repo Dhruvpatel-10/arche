@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 08-runtimes.sh — development languages and toolchains
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up runtimes..."
-install_group "$ARCHE/packages/runtimes.sh"
+registry_install arch runtimes
 
 # fnm (Node version manager) — installed via its own script
 if ! command -v fnm &>/dev/null; then

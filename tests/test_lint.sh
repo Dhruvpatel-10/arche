@@ -8,7 +8,9 @@ test_lint() {
 
     section "Lint: Bash syntax"
 
-    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/packages/*.sh "$ARCHE"/theming/themes/*.sh \
+    for f in "$ARCHE"/core/*.sh "$ARCHE"/core/adapters/*.sh \
+             "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
+             "$ARCHE"/theming/theme-lib.sh "$ARCHE"/theming/themes/*.sh \
              "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
         [[ -f "$f" ]] || continue
         local rel="${f#$ARCHE/}"
@@ -46,14 +48,16 @@ test_lint() {
 
     section "Lint: Scripts use strict mode"
 
-    for f in "$ARCHE"/scripts/*.sh "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
+    # Entrypoints (steps + the two top-level scripts) must be strict. The core/*.sh
+    # libraries are sourced into bootstrap's strict context, so they are exempt.
+    for f in "$ARCHE"/profiles/*/steps/*.sh "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
         [[ -f "$f" ]] || continue
         local rel="${f#$ARCHE/}"
-        # lib.sh has set -euo pipefail, so sourcing it counts
-        if grep -q 'set -euo pipefail' "$f" || grep -q 'source.*lib.sh' "$f"; then
-            pass "$rel has strict mode or sources lib.sh"
+        # steps source core/lib.sh (which is strict); bootstrap is strict; install uses set -eu.
+        if grep -q 'set -euo pipefail' "$f" || grep -q 'source.*core/lib.sh' "$f" || grep -qE '^set -eu' "$f"; then
+            pass "$rel has strict mode or sources the core"
         else
-            fail "$rel missing set -euo pipefail"
+            fail "$rel missing strict mode"
         fi
     done
 
@@ -62,7 +66,9 @@ test_lint() {
     section "Lint: Shellcheck"
 
     if command -v shellcheck &>/dev/null; then
-        for f in "$ARCHE"/scripts/*.sh "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
+        for f in "$ARCHE"/core/*.sh "$ARCHE"/core/adapters/*.sh \
+                 "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
+                 "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
             [[ -f "$f" ]] || continue
             local rel="${f#$ARCHE/}"
             if shellcheck -x -s bash "$f" 2>/dev/null; then
@@ -75,46 +81,69 @@ test_lint() {
         skip "shellcheck not installed"
     fi
 
-    # ── Package arrays ──
+    # ── Package registry (tool DSL) ──
 
-    section "Lint: Package files — arrays only"
+    section "Lint: Package registry is well-formed"
 
-    for f in "$ARCHE"/packages/*.sh; do
-        local name
-        name="$(basename "$f")"
-        if (
-            PACMAN_PKGS=()
-            AUR_PKGS=()
-            source "$f"
-            [[ ${#PACMAN_PKGS[@]} -ge 0 && ${#AUR_PKGS[@]} -ge 0 ]]
-        ); then
-            pass "packages/$name declares valid arrays"
-        else
-            fail "packages/$name failed to source"
-        fi
+    local reg_bad=""
+    for rf in "$ARCHE"/packages/*.reg; do
+        [[ -f "$rf" ]] || continue
+        local rfname; rfname="$(basename "$rf")"
+        while IFS= read -r line; do
+            line="${line%%#*}"
+            [[ -z "${line// /}" ]] && continue
+            # shellcheck disable=SC2086
+            set -- $line
+            if [[ "${1:-}" != "tool" || -z "${2:-}" ]]; then
+                reg_bad+=" [$rfname: '$line']"; continue
+            fi
+            shift 2
+            local tok
+            for tok in "$@"; do
+                case "$tok" in
+                    arch=pacman:*|arch=aur:*|macos=brew:*|macos=cask:*) : ;;
+                    *) reg_bad+=" [$rfname: bad token '$tok']" ;;
+                esac
+            done
+        done < "$rf"
     done
-
-    # ── Duplicate packages ──
-
-    section "Lint: No duplicate packages"
-
-    local all_pkgs
-    all_pkgs=$(
-        for f in "$ARCHE"/packages/*.sh; do
-            (
-                PACMAN_PKGS=()
-                AUR_PKGS=()
-                source "$f"
-                printf '%s\n' "${PACMAN_PKGS[@]}" "${AUR_PKGS[@]}"
-            )
-        done | sort
-    )
-    local dupes
-    dupes=$(echo "$all_pkgs" | uniq -d)
-    if [[ -z "$dupes" ]]; then
-        pass "No duplicate packages across registry"
+    if [[ -z "$reg_bad" ]]; then
+        pass "All registry lines are well-formed"
     else
-        fail "Duplicate packages: $dupes"
+        fail "Registry problems:$reg_bad"
+    fi
+
+    # ── No duplicate tool names ──
+
+    section "Lint: No duplicate registry tools"
+
+    local dupe_tools
+    dupe_tools=$(grep -hE '^[[:space:]]*tool[[:space:]]' "$ARCHE"/packages/*.reg 2>/dev/null \
+        | awk '{print $2}' | sort | uniq -d)
+    if [[ -z "$dupe_tools" ]]; then
+        pass "No duplicate tool names in the registry"
+    else
+        fail "Duplicate tool names: $dupe_tools"
+    fi
+
+    # ── mpv must be a formula on macOS, never a cask (the drift we are guarding against) ──
+
+    section "Lint: mpv is a Homebrew formula on macOS"
+
+    if grep -hE '^[[:space:]]*tool[[:space:]]+mpv[[:space:]]' "$ARCHE"/packages/*.reg 2>/dev/null | grep -q 'macos=cask:'; then
+        fail "mpv is declared as a cask — it must be macos=brew:mpv (the cask is deprecated/Gatekeeper-blocked)"
+    else
+        pass "mpv is not a cask"
+    fi
+
+    # ── Known package conflicts (e.g. tealdeer vs tldr on /usr/bin/tldr) ──
+
+    section "Lint: No known conflicting packages"
+
+    if grep -hE '(pacman|brew):tldr([[:space:]]|$)' "$ARCHE"/packages/*.reg 2>/dev/null | grep -q .; then
+        fail "The 'tldr' package is present — it conflicts with tealdeer on /usr/bin/tldr"
+    else
+        pass "No tealdeer/tldr conflict"
     fi
 
     # ── Theme validation (schema-driven) ──

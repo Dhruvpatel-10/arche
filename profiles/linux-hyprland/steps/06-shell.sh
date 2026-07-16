@@ -6,10 +6,12 @@
 # ~/.config/fish/functions/fisher.fish — not from AUR (D018 keeps D016's
 # supply-chain principle: no AUR PKGBUILDs for shell-layer tooling).
 
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Setting up shell..."
-install_group "$ARCHE/packages/shell.sh"
+registry_install arch shell
 
 # ── Set fish as default shell ──
 

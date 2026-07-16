@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 10-stow.sh — stow all remaining packages
-source "$(dirname "$0")/lib.sh"
+ARCHE="${ARCHE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+export ARCHE
+source "$ARCHE/core/lib.sh"
 
 log_info "Stowing all packages..."
 
@@ -20,4 +22,7 @@ for pkg_dir in "$stow_dir"/*/; do
     stow_pkg "$pkg"
 done
 
-log_ok "All stow packages linked"
+# mpv ships one shared config that includes a per-OS file; point it at Linux.
+select_platform_variant "$HOME/.config/mpv/platform.conf" platform.linux.conf platform.macos.conf
+
+log_ok "All config packages linked"
