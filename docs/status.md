@@ -2,19 +2,37 @@
 
 Tracks what's built, what's planned, and what's blocked.
 
-Last updated: 2026-04-18
+Last updated: 2026-07-16
 
 ## Infrastructure
 
-| Component          | Status  | Notes                              |
-|--------------------|---------|------------------------------------|
-| `scripts/lib.sh`   | Done    | Shared primitives for all scripts  |
-| `theming/engine.sh` | Done    | Theme engine: apply/switch/list    |
-| `bootstrap.sh`     | Done    | Orchestrator                       |
-| `Justfile`         | Done    | Day-to-day interface               |
-| `tests/run.sh`     | Done    | Lint/stow/integration test runner  |
-| `docs/`            | Done    | Architecture, decisions, status    |
-| `theming/themes/schema.sh` | Done    | Variable registry — names, types, defaults |
+Reorganized into a shared core + platform profiles + package DSL (D033).
+
+| Component            | Status  | Notes                                            |
+|----------------------|---------|--------------------------------------------------|
+| `core/lib.sh`        | Done    | Portable primitives — every step sources this    |
+| `core/registry.sh`   | Done    | Package DSL parser + resolver (registry_install) |
+| `core/runner.sh`     | Done    | Step-manifest executor (prompt/--yes/reboot)     |
+| `core/doctor.sh`     | Done    | `bootstrap.sh doctor [--repair]`                 |
+| `core/clean.sh`      | Done    | `bootstrap.sh clean [--system|--packages]`       |
+| `core/adapters/arch.sh` | Done | pacman/paru, systemd, /etc linking               |
+| `core/adapters/macos.sh` | Done | Homebrew formula/cask, dscl, no-op services     |
+| `theming/engine.sh`  | Done    | Theme engine: apply/switch/list (unchanged)      |
+| `theming/theme-lib.sh` | Done  | Portable theme fns, shared by engine + core      |
+| `install.sh`         | Done    | OS-detecting curl installer                      |
+| `bootstrap.sh`       | Done    | Single entrypoint (install/doctor/clean)         |
+| `Justfile`           | Done    | Day-to-day interface                             |
+| `tests/run.sh`       | Done    | Lint/stow/integration + registry drift-guard     |
+| `docs/`              | Done    | Architecture, decisions, status, redesign        |
+| `theming/themes/schema.sh` | Done | Variable registry — names, types, defaults    |
+
+## Profiles
+
+| Profile          | Status | Notes                                                        |
+|------------------|--------|--------------------------------------------------------------|
+| `linux-hyprland` | Done   | Full Arch + Hyprland desktop (default on Arch); steps 00–13  |
+| `macos`          | Done   | macOS Apple Silicon: CLI, Ghostty, editor, shell, theme      |
+| `server`         | Done   | Headless Arch CLI skeleton (base + shell only)               |
 
 ## Stow Packages
 
@@ -46,21 +64,25 @@ Last updated: 2026-04-18
 | ~~`swayosd` / `syshud`~~             | Removed | Replaced by Quickshell OSD (D023)               |
 | ~~`zathura`~~                        | Removed | Replaced by okular as PDF viewer (D023)         |
 
-## Package Registry
+## Package Registry (tool DSL, `.reg`)
+
+Migrated from two-array `packages/*.sh` files to the `tool` DSL (D033):
+`tool <name> arch=kind:pkg macos=kind:pkg`. Parsed by `core/registry.sh`.
 
 | File                       | Status | Notes                                          |
 |----------------------------|--------|------------------------------------------------|
-| `packages/base.sh`         | Done   |                                                |
-| `packages/security.sh`     | Done   |                                                |
-| `packages/gpu-nvidia.sh`   | Done   |                                                |
-| `packages/audio.sh`        | Done   |                                                |
-| `packages/hyprland.sh`     | Done   | D023 — compositor, utils, SDDM (rofi removed D031) |
-| `packages/shell.sh`        | Done   |                                                |
-| `packages/dms.sh`          | Done   | D032 — dms-shell + quickshell + nm (replaces panel.sh) |
-| `packages/runtimes.sh`     | Done   |                                                |
-| `packages/apps.sh`         | Done   | D023 — dolphin → nautilus; okular/gwenview kept |
-| `packages/appearance.sh`   | Done   | D023 — nwg-look for GTK theming                |
-| `packages/boot.sh`         | Done   | D024 — plymouth + tpm2-tools                   |
+| `packages/base.reg`        | Done   | Shared with macos + server profiles            |
+| `packages/security.reg`    | Done   |                                                |
+| `packages/gpu-nvidia.reg`  | Done   |                                                |
+| `packages/audio.reg`       | Done   |                                                |
+| `packages/hyprland.reg`    | Done   | D023 — compositor, utils, SDDM (rofi removed D031) |
+| `packages/shell.reg`       | Done   | Shared with macos + server profiles            |
+| `packages/dms.reg`         | Done   | D032 — dms-shell + quickshell + nm             |
+| `packages/runtimes.reg`    | Done   |                                                |
+| `packages/apps.reg`        | Done   | D023 — dolphin → nautilus; okular/gwenview replaced |
+| `packages/appearance.reg`  | Done   | D023 — nwg-look for GTK theming                |
+| `packages/boot.reg`        | Done   | D024 — tpm2-tools                              |
+| `packages/macos.reg`       | Done   | D033 — macOS-only brew/cask (replaces Brewfile) |
 
 ## Templates
 
@@ -128,23 +150,27 @@ The hand-rolled `/opt/arche/shell/` panel (D029) was removed.
 | `system/etc/mkinitcpio.d/linux.preset`   | `/etc/mkinitcpio.d/linux.preset`| Done (D024) |
 | `system/etc/kernel/cmdline`              | `/etc/kernel/cmdline`           | Done (D024) |
 
-## Scripts
+## Steps (profiles/linux-hyprland/steps/)
 
-| Script                         | Status |
+Moved from the old top-level `scripts/` under the linux-hyprland profile (D033);
+each now sources `$ARCHE/core/lib.sh` and installs via `registry_install`.
+
+| Step                           | Status |
 |--------------------------------|--------|
-| `scripts/00-preflight.sh`      | Done   |
-| `scripts/01-base.sh`           | Done   |
-| `scripts/02-security.sh`       | Done   |
-| `scripts/03-gpu.sh`            | Done   |
-| `scripts/04-audio.sh`          | Done   |
-| `scripts/05-hyprland.sh`       | Done (D023) |
-| `scripts/06-shell.sh`          | Done   |
-| `scripts/08-runtimes.sh`       | Done   |
-| `scripts/09-apps.sh`           | Done   |
-| `scripts/10-stow.sh`           | Done   |
-| `scripts/11-appearance.sh`     | Done   |
-| `scripts/12-boot.sh`           | Done (D024) |
-| `scripts/13-dms.sh`            | Done (D032) — desktop shell (dms) |
+| `steps/00-preflight.sh`        | Done   |
+| `steps/01-base.sh`             | Done   |
+| `steps/02-security.sh`         | Done   |
+| `steps/03-gpu.sh`              | Done   |
+| `steps/04-audio.sh`            | Done   |
+| `steps/05-hyprland.sh`         | Done (D023) |
+| `steps/06-shell.sh`            | Done   |
+| `steps/08-runtimes.sh`         | Done   |
+| `steps/09-apps.sh`             | Done   |
+| `steps/10-stow.sh`             | Done   |
+| `steps/11-appearance.sh`       | Done   |
+| `steps/12-boot.sh`             | Done (D024) |
+| `steps/13-dms.sh`              | Done (D032) — desktop shell (dms) |
+| `steps/dns.sh`                 | Done   |
 | `helpers/tpm2-enroll.sh`       | Done (D024) |
 
 ## Known Issues

@@ -2,19 +2,22 @@
 
 ## Overview
 
-This is a personal Arch Linux dotfiles repository. The goal: clone on a fresh
-Arch install, run `bootstrap.sh`, get a fully configured system. Every decision
-is **minimal**, **idempotent**, **declarative**, and **auditable**.
+A personal, cross-platform dotfiles repository built as a **shared core +
+platform adapters + profiles** (D033). The goal: clone on a fresh machine, run
+`bootstrap.sh`, get a fully configured system. The default target is Arch Linux
++ Hyprland; macOS (Apple Silicon) and a headless server are additional profiles.
+Every decision is **minimal**, **idempotent**, **declarative**, and **auditable**.
 
 ## Repository Layout
 
 ```
-/opt/arche/                  # ~/arche → /opt/arche per user, see D014
-├── bootstrap.sh            # orchestrator — runs all scripts in order
+/opt/arche/                  # ~/arche -> /opt/arche per user, see D014
+├── install.sh              # OS-detecting curl installer -> clone -> exec bootstrap
+├── bootstrap.sh            # single entrypoint: install / doctor / clean subcommands
 ├── Justfile                # day-to-day interface: just <target>
 ├── CLAUDE.md               # AI assistant standing instructions
 │
-├── docs/                   # decision records, architecture, status
+├── docs/                   # decision records, architecture, status, redesign
 │
 ├── theming/themes/                 # source of truth for all visual values
 │   ├── schema.sh           # variable registry — names, types, defaults
@@ -31,18 +34,27 @@ is **minimal**, **idempotent**, **declarative**, and **auditable**.
 │   └── ...                 # btop, tmux, starship, legion
 │
 ├── packages/               # package registry — data only, no logic
-│   └── *.sh                # each file: PACMAN_PKGS=() and AUR_PKGS=()
+│   └── *.reg               # tool DSL: tool <name> arch=kind:pkg macos=kind:pkg
 │
-├── scripts/                # numbered setup scripts + shared library
-│   ├── lib.sh              # shared primitives (log, install, stow, etc.)
-│   ├── theme.sh            # theme engine: apply / switch / list
-│   └── 00-preflight.sh ... 11-appearance.sh
+├── core/                   # platform-agnostic engine (bash 3.2 safe)
+│   ├── lib.sh              # portable primitives (log, stow, shell/fisher helpers)
+│   ├── registry.sh         # package DSL parser + resolver (registry_install)
+│   ├── runner.sh           # step-manifest executor (prompt/--yes/reboot/summary)
+│   ├── doctor.sh           # health checks; clean.sh unlinks configs
+│   └── adapters/           # per-OS seam: arch.sh (pacman/systemd), macos.sh (brew/dscl)
 │
-├── tools/                  # custom binaries
+├── profiles/               # ordered steps + stow/theme manifests, per platform
+│   ├── linux-hyprland/     # full Arch + Hyprland desktop (default on Arch)
+│   │   ├── profile.sh      # PROFILE_STOW/PROFILE_THEME + profile_steps()
+│   │   └── steps/          # 00-preflight ... 13-dms (moved from old scripts/)
+│   ├── macos/              # macOS CLI + terminal + theme (Homebrew)
+│   └── server/             # headless Arch CLI skeleton
+│
+├── tools/                  # custom binaries (Linux)
 │   └── bin/                # pre-built binaries from external repos
 │       └── arche-legion    # Lenovo Vantage replacement
 │
-├── system/                 # system configs (/etc/) — symlinked by scripts
+├── system/                 # system configs (/etc/) — symlinked by the arch adapter
 │   ├── etc/
 │   └── usr/local/bin/
 │
@@ -95,23 +107,30 @@ Examples: `~/.config/kitty/theme.conf`, `~/.config/btop/arche.theme`
 - Appearance: `CURSOR_THEME`, `CURSOR_SIZE`, `ICON_THEME`, `GTK_THEME`
 
 `theming/themes/schema.sh` is the single source of truth for variable names, types, and defaults.
-`theming/engine.sh` renders all templates and reloads affected services.
-nvim is excluded — it uses catppuccin/nvim plugin directly.
-Quickshell theme values live in the external arche-shell repo (`Theme.qml`) —
-kept in sync with ember manually for now (see status.md Q1).
+`theming/engine.sh` renders all templates and reloads affected services; the
+portable theme functions live in `theming/theme-lib.sh`, shared by the engine and
+`core/lib.sh`. nvim is excluded — it uses catppuccin/nvim plugin directly.
+The dms desktop shell is themed by `theming/templates/dms/_emit.sh`, which
+renders `/opt/arche/run/dms-theme.json` from the active theme (D032).
 
 ## Package Management
 
-Each `packages/*.sh` file declares two arrays:
+Each `packages/*.reg` file is a **tool DSL** — one tool per line mapping a
+logical name to a per-platform provider and install kind:
 
-```bash
-PACMAN_PKGS=( ... )
-AUR_PKGS=( ... )
+```
+tool ripgrep  arch=pacman:ripgrep     macos=brew:ripgrep
+tool gh       arch=pacman:github-cli  macos=brew:gh        # name differs per OS
+tool mpv      arch=pacman:mpv         macos=brew:mpv       # never a cask
 ```
 
-`lib.sh` provides `install_group <file>` to install both arrays idempotently.
-Scripts never call `pacman` or `paru` directly. Removal is always manual
-(`paru -Rns`).
+`core/registry.sh` parses these; steps call `registry_install <platform>
+<group>`, which batches by kind and dispatches to the adapter's `pkg_backend`
+(pacman/paru on Arch, brew formula/cask on macOS). This one source of truth
+across platforms is what prevents provider drift like the deprecated `cask mpv`.
+Steps never call `pacman`/`paru`/`brew` directly. Removal is always manual
+(`paru -Rns` on Arch). A `tests/` drift-guard lint enforces well-formed lines,
+no duplicate tools, mpv-never-a-cask, and no tealdeer/tldr conflict.
 
 ## Stow Convention
 
@@ -123,34 +142,40 @@ stow/fish/.config/fish/config.fish →  ~/.config/fish/config.fish
 stow/mpv/.config/mpv/mpv.conf      →  ~/.config/mpv/mpv.conf
 ```
 
-The `stow_pkg` function in `lib.sh`:
+The `stow_pkg` function in `core/lib.sh` symlinks a package into `$HOME`,
+cleaning broken links and backing up real files that would conflict (suffix
+`.pre-stow`), so it is safe to re-run. Its core is:
 
 ```bash
-stow_pkg() { stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$1"; }
+stow -d "$ARCHE/stow" -t "$HOME" --no-folding "$pkg"
 ```
 
 ## Bootstrap Flow
 
-`bootstrap.sh` runs numbered scripts `00` through `11` in order. Each script
-is independently runnable (`bash scripts/05-hyprland.sh`). Each section
-prompts before running (y/N/a for all). The orchestrator captures exit codes
+`bootstrap.sh` is one entrypoint with subcommands (`install` default, `doctor
+[--repair]`, `clean [--system|--packages]`) plus `--yes` / `--profile NAME` /
+`--only ID`. It auto-selects the profile by platform (arch -> linux-hyprland,
+macos -> macos), re-execs under a modern bash if present, loads the profile, and
+hands its ordered step list to `core/runner.sh`. Each step is independently
+runnable (`bash profiles/linux-hyprland/steps/05-hyprland.sh`) and prompts
+before running (y/N/a for all, unless `--yes`); the runner captures exit codes
 and prints a final summary table.
 
-Assumes: repo cloned, user has sudo, running on Arch Linux.
+Assumes: repo cloned, user has sudo (on Linux).
 Does not: clone repo, configure SSH, set up secrets.
 
-## System Stack
+## System Stack (linux-hyprland profile)
 
 | Layer        | Tool                                                   |
 |--------------|--------------------------------------------------------|
 | OS           | Arch Linux (btrfs, systemd-boot with UKIs)             |
 | Pre-boot UI  | Plymouth + `arche` theme, TPM2+PIN via sd-encrypt (D024)|
 | Compositor   | Hyprland (Wayland) via uwsm (D023)                     |
-| Greeter      | SDDM, custom `arche` theme (D025)                      |
-| Panel        | Quickshell / arche-shell (D023) — bar + control-center |
-| Notifications| Quickshell ToastLayer / NotificationsList              |
-| OSD          | Quickshell                                             |
-| Launcher     | Quickshell LauncherDialog (D031)                       |
+| Greeter      | SDDM, default Breeze theme (D023)                      |
+| Shell / panel| DankMaterialShell (dms) — bar + control-center (D032)  |
+| Notifications| dms (owns org.freedesktop.Notifications) (D032)        |
+| OSD          | dms (D032)                                             |
+| Launcher     | dms spotlight, bound via `dms ipc call` (D032)         |
 | Lock / idle  | hyprlock / hypridle                                    |
 | Wallpaper    | awww (swww successor — D026)                           |
 | Shell        | fish + atuin + fisher + starship (D018)                |

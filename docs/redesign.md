@@ -1,7 +1,9 @@
 # Arche Redesign — Shared Core + Platform Profiles
 
-**Status:** proposal (awaiting approval)
+**Status:** implemented on the `redesign` branch (big-bang reorg per stark's call). Static-verified on macOS; Arch runtime validation pending before merge to main.
 **Goal:** one linear, easy install that works across **Arch/Hyprland**, **macOS**, and a future **headless server**, with a single source of truth for packages and steps so drift like `cask mpv` can't recur.
+
+**Delivered:** `core/` (lib + adapters + registry + runner + doctor + clean), `packages/*.reg` tool DSL, `profiles/{linux-hyprland,macos,server}/`, one `bootstrap.sh` (install/doctor/clean) and one `install.sh`, updated tests (registry lint) and Justfile. The scope below was the plan; §9 decisions were resolved as: big-bang, custom DSL, plus a `doctor` (repair) and `clean` command, all with plain-language output.
 
 ---
 

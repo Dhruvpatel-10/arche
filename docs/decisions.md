@@ -5,6 +5,69 @@ Newest entries at the top.
 
 ---
 
+## D033 — Shared core + platform profiles + package DSL
+
+**Date:** 2026-07-16
+**Status:** Accepted
+**Design doc:** `docs/redesign.md` (full rationale, the "no more cask mpv" audit,
+and the phased migration plan).
+
+The repo grew from "one Arch bootstrap with a bolted-on macOS path" into a
+**shared core + platform adapters + profiles** design. The old shape had two
+divergent orchestrators (`bootstrap.sh` and `macos/bootstrap.sh`) re-implementing
+the same install/stow/shell/fisher loops, a `lib.sh` that fused portable and
+Linux-only code, and two unrelated package formats (`packages/*.sh` arrays vs
+`macos/Brewfile`) with no shared source of truth. That last gap is exactly how
+the deprecated, Gatekeeper-blocked `cask mpv` drifted from the `mpv` **formula**
+the config actually needs.
+
+**The new layout:**
+
+- **`core/`** — platform-agnostic engine, kept bash 3.2 safe (macOS still ships
+  3.2). `core/lib.sh` (logging, `stow_pkg`/`unstow_pkg`, `set_login_shell`,
+  `setup_fisher`, `curl_install_checked`, `select_platform_variant`, platform
+  detection) sources the right adapter and the registry. `core/runner.sh` is the
+  step-manifest executor (prompt / `--yes` / `--only` / reboot gate / summary).
+  `core/doctor.sh` and `core/clean.sh` back the new subcommands.
+- **`core/adapters/{arch,macos}.sh`** — the one per-OS seam: `pkg_backend`,
+  `svc_enable`, `link_system_*`, `read_login_shell`, `arche_root`, `pkg_installed`.
+  Everything that touches pacman/systemd/`/etc` (Arch) or Homebrew/dscl (macOS)
+  lives here, never in the core.
+- **`theming/theme-lib.sh`** — the portable theme functions (`theme_validate`,
+  `theme_render`, `_theme_apply_gsettings`) moved out of the old lib.sh so both
+  `theming/engine.sh` and `core/lib.sh` source them. The theme engine, templates,
+  and themes are otherwise **unchanged** — it was already the correct shared
+  boundary.
+- **`packages/*.reg`** — one unified registry in a small **tool DSL**:
+  `tool <name> arch=<kind>:<pkg> macos=<kind>:<pkg>` (kinds: arch = pacman|aur,
+  macos = brew|cask). One logical name per tool across platforms; the install
+  kind is explicit and reviewed, so `cask mpv` can never be introduced silently
+  again. `core/registry.sh` parses it; steps call `registry_install <platform>
+  <group>`. The old two-array `packages/*.sh` files are deleted.
+- **`profiles/`** — ordered steps + stow/theme manifests as data.
+  `linux-hyprland/` holds the full Arch + Hyprland desktop (`profile.sh` +
+  `steps/NN-*.sh`, the old `scripts/NN-*.sh` moved in and repointed to
+  `$ARCHE/core/lib.sh` + `registry_install`). `macos/` and `server/` are the
+  macOS and headless-CLI profiles — both first-class, reusing the same core,
+  adapters, and registry.
+- **`bootstrap.sh`** — one entrypoint with subcommands: `install` (default),
+  `doctor [--repair]`, `clean [--system|--packages]`, plus `--yes`,
+  `--profile NAME`, `--only ID`. It auto-selects the profile by platform and
+  re-execs under a modern bash when one is installed.
+- **`install.sh`** — one OS-detecting curl installer (clones to `/opt/arche` on
+  Arch, `$HOME/arche` on macOS, then execs bootstrap), replacing the separate
+  top-level and `macos/install.sh` scripts.
+
+**Drift prevention, not just a one-time fix:** a `tests/` registry lint fails CI
+on any malformed `.reg` line, duplicate tool names, mpv-as-cask, and the
+tealdeer/tldr file conflict. The install gate re-parses every `.reg` before a run.
+
+**Removed:** `scripts/` and `scripts/lib.sh`, `packages/*.sh`, `macos/bootstrap.sh`,
+`macos/install.sh`, and `macos/Brewfile`. `macos/mpv-default.sh` stays (called by
+the macos profile's `player` step). Justfile script targets now point at
+`profiles/linux-hyprland/steps/`, and new `doctor` / `clean` / `install-yes`
+targets were added.
+
 ## D032 — Adopt DankMaterialShell (dms), retire the hand-rolled Quickshell panel
 
 **Date:** 2026-06-22
