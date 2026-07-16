@@ -23,9 +23,15 @@ tools/*/target/
 *.pre-stow
 *.original.md
 
-# Generated output (rendered by theme.sh — never committed)
-# These live in ~/.config/<component>/ and are recreated by `just theme`
+# Generated output (rendered by the theme engine, never committed).
+# These live in ~/.config/<component>/ and are recreated by `just theme-apply`.
 .audit/
+
+# macOS junk
+.DS_Store
+
+# Local worktree storage (EnterWorktree creates isolated checkouts here)
+.claude/worktrees/
 
 # Arche shared runtime state — emitted by theming/engine.sh, consumed by
 # arche-owned tools (Quickshell panel, future TUIs). Lives at /opt/arche/run/

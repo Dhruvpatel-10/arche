@@ -57,42 +57,43 @@ Here are the steps to install mpv and to use my configuration files on Linux:
 ## Scripts
 
 Scripts used:
-* [audio-visualizer.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/audio_visualizer.lua) —
+* [audio-visualizer.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/audio_visualizer.lua):
   [source](https://github.com/mfcc64/mpv-scripts#visualizerlua)\
   Various audio visualization. It only works if you open audio files.
   
-* [autoload.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/autoload.lua) —
+* [autoload.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/autoload.lua):
   [source](https://github.com/mpv-player/mpv/blob/master/TOOLS/lua/autoload.lua)\
   Automatically load playlist entries before and after the currently playing file, by scanning the directory.
 
-* [copy-time.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/copy-time.lua) — [source](https://github.com/linguisticmind/mpv-scripts/tree/master/copy-time)\
+* [copy-time.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/copy-time.lua): [source](https://github.com/linguisticmind/mpv-scripts/tree/master/copy-time)\
   Copies current timecode in HH:MM:SS.MS format to clipboard. Cross-platform (Mac, Windows, Linux).
 
-* [cycle-commands.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/cycle-commands.lua) —
+* [cycle-commands.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/cycle-commands.lua):
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-commands)\
   Cycles through a series of commands on a keypress. Each iteration of the cycle can contain as many commands as one wants. Syntax details are at the top of the file.
 
-* [cycle-profile.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/cycle-profile.lua) —
+* [cycle-profile.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/cycle-profile.lua):
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-profile)\
   Cycles through a list of profiles sent via a script message and prints the profile-desc to the OSD. More details at the top of the file.
 
-* [mordenx.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mordenx.lua) —
-  [source](https://github.com/cyl0/mpv-osc-morden-x)\
-  A modern OSC UI replacement for MPV that retains the functionality of the default OSC.
+* [modernx.lua](scripts/modernx.lua):
+  [source](https://github.com/zydezu/ModernX)\
+  A modern OSC (on-screen controller) UI for mpv. In arche it is styled by the
+  theme engine, which renders `script-opts/modernx.conf` from the active theme.
 
-* [mpv-gif.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mpv-gif.lua) —
+* [mpv-gif.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/mpv-gif.lua):
   [source](https://github.com/Scheliux/mpv-gif-generator)\
   Script to generate GIFs from video playback. Requires FFmpeg with libass enabled. The exporting GIFs with subtitled currently doesn't work properly.
 
-* [playlistmanager.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/playlistmanager.lua) —
+* [playlistmanager.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/playlistmanager.lua):
   [source](https://github.com/jonniek/mpv-playlistmanager)\
   Allows you to see and interact with your playlist in an intuitive way.
 
-* [seek-to.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/seek-to.lua) —
+* [seek-to.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/seek-to.lua):
   [source](https://github.com/dexeonify/mpv-config/blob/main/scripts/seek-to.lua)\
   Seek to an absolute timestamp specified via keyboard input or pasted from clipboard.
 
-* [thumbfast.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/thumbfast.lua) — [source](https://github.com/po5/thumbfast)\
+* [thumbfast.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/thumbfast.lua): [source](https://github.com/po5/thumbfast)\
   High-performance on-the-fly thumbnailer for mpv. **The script does not display thumbnails on its own**, it is meant to be used alongside a UI script that calls thumbfast.
 
 Configuration files for these scripts can be found in the `script-opts` folder. I also modified some of these scripts' default keybindings. To see my modifications, look for script keybindings in `input.conf`.
@@ -101,20 +102,20 @@ Configuration files for these scripts can be found in the `script-opts` folder. 
 
 The shaders included in the `shaders` folder:
 
-* [FSRCNNX_x2_16-0-4-1](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/FSRCNNX_x2_16-0-4-1.glsl) — [source](https://github.com/igv/FSRCNN-TensorFlow/releases)\
+* [FSRCNNX_x2_16-0-4-1](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/FSRCNNX_x2_16-0-4-1.glsl): [source](https://github.com/igv/FSRCNN-TensorFlow/releases)\
   Used for luma upscaling.
   
-* [nnedi3-nns256-win8x4](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/nnedi3-nns256-win8x4.hook) — [source](https://github.com/bjin/mpv-prescalers/tree/master)\
+* [nnedi3-nns256-win8x4](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/nnedi3-nns256-win8x4.hook): [source](https://github.com/bjin/mpv-prescalers/tree/master)\
   Used for luma upscaling.
 
-* [nnedi3-nns128-win8x4](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/nnedi3-nns128-win8x4.hook) — [source](https://github.com/bjin/mpv-prescalers/tree/master)\
+* [nnedi3-nns128-win8x4](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/nnedi3-nns128-win8x4.hook): [source](https://github.com/bjin/mpv-prescalers/tree/master)\
   Used for luma upscaling.
   
-* [SSimDownscaler](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/SSimDownscaler.glsl) —
+* [SSimDownscaler](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/SSimDownscaler.glsl):
   [source](https://gist.github.com/igv)\
   Used for luma downscaling.
 
-* [KrigBilateral](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/KrigBilateral.glsl) —
+* [KrigBilateral](https://github.com/noelsimbolon/mpv-config/blob/main/shaders/KrigBilateral.glsl):
   [source](https://gist.github.com/igv)\
   Used for chroma upscaling and downscaling.
 
