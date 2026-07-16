@@ -1,0 +1,8 @@
+# shell — fish (primary) + prompt + terminal. Install step: scripts/06-shell.sh
+# fisher is installed from upstream curl by 06-shell.sh — not a package (D018).
+
+tool fish      arch=pacman:fish      macos=brew:fish       # friendly interactive shell, default login shell
+tool atuin     arch=pacman:atuin     macos=brew:atuin      # SQLite-backed fuzzy history + Ctrl-R
+tool starship  arch=pacman:starship  macos=brew:starship   # cross-shell prompt
+tool kitty     arch=pacman:kitty                           # terminal emulator (macOS uses Ghostty — macos.reg)
+tool tmux      arch=pacman:tmux      macos=brew:tmux        # terminal multiplexer

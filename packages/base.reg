@@ -1,0 +1,40 @@
+# base — core tools expected on every install. Install step: scripts/01-base.sh
+# (shellcheck is installed as a static binary in 01-base.sh, not from a package.)
+
+# Core utilities
+tool base-devel     arch=pacman:base-devel
+tool git            arch=pacman:git            macos=brew:git
+tool stow           arch=pacman:stow           macos=brew:stow
+tool just           arch=pacman:just           macos=brew:just
+tool curl           arch=pacman:curl
+tool wget           arch=pacman:wget           macos=brew:wget
+tool unzip          arch=pacman:unzip
+tool p7zip          arch=pacman:p7zip          macos=brew:p7zip
+
+# Modern CLI replacements
+tool eza            arch=pacman:eza            macos=brew:eza          # ls
+tool bat            arch=pacman:bat            macos=brew:bat          # cat
+tool ripgrep        arch=pacman:ripgrep        macos=brew:ripgrep      # grep
+tool fd             arch=pacman:fd             macos=brew:fd           # find
+tool fzf            arch=pacman:fzf            macos=brew:fzf          # fuzzy finder
+tool zoxide         arch=pacman:zoxide         macos=brew:zoxide       # cd
+tool dust           arch=pacman:dust           macos=brew:dust         # du
+tool btop           arch=pacman:btop           macos=brew:btop         # top
+tool nvtop          arch=pacman:nvtop                                  # GPU monitor
+tool jq             arch=pacman:jq             macos=brew:jq           # JSON
+tool yq             arch=pacman:yq             macos=brew:yq           # YAML
+tool tealdeer       arch=pacman:tealdeer       macos=brew:tealdeer     # tldr — simplified man pages
+tool gum            arch=pacman:gum            macos=brew:gum          # CLI formatting (prompts, spinners)
+tool lazygit        arch=pacman:lazygit        macos=brew:lazygit      # TUI git client
+tool lazydocker     arch=pacman:lazydocker     macos=brew:lazydocker   # TUI docker client
+
+# System
+tool linux-headers  arch=pacman:linux-headers                         # kernel headers (DKMS modules like nvidia-open)
+tool man-db         arch=pacman:man-db
+tool man-pages      arch=pacman:man-pages
+tool amd-ucode      arch=pacman:amd-ucode                             # AMD CPU microcode (Spectre/Meltdown)
+tool reflector      arch=pacman:reflector                             # mirror ranking
+tool snapper        arch=pacman:snapper                               # btrfs snapshots
+
+# Wayland CLI
+tool wl-clipboard   arch=pacman:wl-clipboard                          # wl-copy / wl-paste for terminal scripts

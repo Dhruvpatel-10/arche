@@ -1,0 +1,7 @@
+# security — firewall, SSH hardening, sandboxing. Install step: scripts/02-security.sh
+
+tool ufw        arch=pacman:ufw
+tool openssh    arch=pacman:openssh
+tool tailscale  arch=pacman:tailscale
+tool firejail   arch=pacman:firejail    # sandbox for untrusted apps and AppImages
+tool fail2ban   arch=pacman:fail2ban    # brute-force protection (SSH jail)

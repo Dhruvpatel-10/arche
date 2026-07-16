@@ -1,0 +1,19 @@
+# appearance — fonts, icons, cursors, GTK/Qt theming tools.
+# Install step: scripts/11-appearance.sh
+
+# Fonts
+tool ttf-ibm-plex             arch=pacman:ttf-ibm-plex             # IBM Plex Sans — UI sans-serif font
+tool ttf-meslo-nerd           arch=pacman:ttf-meslo-nerd           # MesloLGS Nerd Font — primary mono (Menlo lineage)
+tool ttf-jetbrains-mono-nerd  arch=pacman:ttf-jetbrains-mono-nerd  # JetBrainsMono Nerd Font — fallback mono
+tool ttf-lato                 arch=pacman:ttf-lato                 # Lato — Slack's bundled UI font
+tool noto-fonts               arch=pacman:noto-fonts               # Noto Sans/Serif — web fallback
+tool noto-fonts-emoji         arch=pacman:noto-fonts-emoji         # Emoji fallback
+
+# Icons
+tool papirus-icon-theme  arch=pacman:papirus-icon-theme           # Clean icon theme for GTK apps
+
+# GTK themes
+tool gnome-themes-extra  arch=pacman:gnome-themes-extra           # real Adwaita-dark GTK3 theme files
+
+# GTK theming tool (Hyprland stack — no KDE to handle GTK config)
+tool nwg-look  arch=pacman:nwg-look                               # GTK3/4 theme configurator

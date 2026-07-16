@@ -1,193 +1,99 @@
 #!/usr/bin/env bash
-# bootstrap.sh — orchestrator for fresh Arch Linux setup
-# Run: bash bootstrap.sh
+# bootstrap.sh — the one command for arche.
 #
-# Each section prompts before running (y/N). Safe to skip any step.
-# Use 'a' at any prompt to run ALL remaining sections without asking.
+#   bash bootstrap.sh                 set everything up (asks before each step)
+#   bash bootstrap.sh --yes           set everything up without asking
+#   bash bootstrap.sh doctor          check the setup is healthy
+#   bash bootstrap.sh doctor --repair check and fix what is safe to fix
+#   bash bootstrap.sh clean           unlink the config files it created
+#   bash bootstrap.sh --profile NAME  force a profile (linux-hyprland | macos | server)
+#
+# It picks the right profile for your system automatically. On macOS it runs
+# under a modern bash when one is installed.
+
 set -euo pipefail
 
 ARCHE="$(cd "$(dirname "$0")" && pwd)"
 export ARCHE
 
-source "$ARCHE/scripts/lib.sh"
-log_init
-
-log_info "=== arche bootstrap ==="
-log_info "ARCHE=$ARCHE"
-log_info "Log: $ARCHE_LOG_FILE"
-echo
-
-# ─── Pre-install safety gate ───
-
-log_info "Running pre-install checks..."
-echo
-if bash "$ARCHE/tests/run.sh" gate; then
-    log_ok "All pre-install checks passed"
-else
-    log_err "Pre-install checks failed — fix the issues above before running bootstrap"
-    log_info "Run 'just test' for the full test suite, or 'bash tests/run.sh gate' to re-check"
-    exit 1
-fi
-echo
-
-# ─── Script descriptions (shown at each prompt) ───
-
-declare -A descriptions=(
-    [00-preflight]="System checks, pacman config, mirror ranking, full update"
-    [01-base]="Core packages (CLI tools, base-devel, git, stow)"
-    [02-security]="Firewall, SSH hardening, Tailscale, DNS, kernel hardening"
-    [03-gpu]="NVIDIA open driver + CUDA (skipped if no NVIDIA GPU)"
-    [04-audio]="PipeWire + WirePlumber audio stack"
-    [05-hyprland]="Hyprland compositor, Wayland utils, SDDM (default Breeze theme)"
-    [06-shell]="Fish + atuin + fisher + starship"
-    [08-runtimes]="Node.js (fnm), Go, Rust, Bun, Docker"
-    [09-apps]="Desktop apps (browser, media, file manager, etc.)"
-    [10-stow]="Symlink all stow packages to \$HOME"
-    [11-appearance]="Fonts, icons, cursors, GTK theming (nwg-look)"
-    [12-boot]="sd-encrypt + UKI (rebuilds UKIs; enroll TPM2 separately)"
-    [13-dms]="DankMaterialShell desktop shell (bar + control-center + notifications + launcher)"
-)
-
-# ─── Run all scripts in order ───
-
-scripts=(
-    00-preflight
-    01-base
-    02-security
-    03-gpu
-    04-audio
-    05-hyprland
-    06-shell
-    08-runtimes
-    09-apps
-    10-stow
-    11-appearance
-    12-boot
-    13-dms
-)
-
-auto_yes=false
-results=()
-
-for script in "${scripts[@]}"; do
-    script_path="$ARCHE/scripts/${script}.sh"
-    if [[ ! -f "$script_path" ]]; then
-        log_warn "Script not found: $script_path — skipping"
-        results+=("$script SKIP")
-        continue
-    fi
-
-    desc="${descriptions[$script]:-}"
-
-    if [[ "$auto_yes" != true ]]; then
-        echo ""
-        log_section "$script"
-        [[ -n "$desc" ]] && log_info "$desc"
-        echo ""
-        printf "  Run this section? [y/N/a(ll)] "
-        read -r choice
-
-        case "$choice" in
-            [aA])
-                auto_yes=true
-                log_info "Running all remaining sections"
-                ;;
-            [yY])
-                ;;
-            *)
-                log_warn "Skipped $script"
-                results+=("$script SKIP")
-                continue
-                ;;
-        esac
-    else
-        echo ""
-        log_info "━━━ Running $script ━━━"
-    fi
-
-    rc=0
-    bash "$script_path" || rc=$?
-
-    if [[ $rc -eq 0 ]]; then
-        results+=("$script OK")
-    elif [[ $rc -eq 2 && "$script" == "00-preflight" ]]; then
-        # Kernel was upgraded — reboot required before continuing.
-        results+=("$script OK (reboot required)")
-        echo
-        log_warn "═══════════════════════════════════════════════════════════════"
-        log_warn "  Kernel was upgraded. Bootstrap is pausing — reboot required."
-        log_warn "  Re-run 'bash bootstrap.sh' after reboot; 00-preflight will be"
-        log_warn "  a fast no-op and bootstrap will continue with 01-base onward."
-        log_warn "═══════════════════════════════════════════════════════════════"
-        echo
-        printf "  Reboot now? [y/N] "
-        read -r choice
-        if [[ "$choice" =~ ^[yY]$ ]]; then
-            log_info "Rebooting..."
-            sudo systemctl reboot
-            # reboot terminates the script; exit for safety if it doesn't.
-            exit 0
-        else
-            log_info "Exiting. Reboot manually, then re-run bootstrap.sh."
-            exit 0
-        fi
-    else
-        results+=("$script FAIL")
-        log_err "$script failed — continuing..."
-    fi
-done
-
-# ─── Apply theme ───
-
-echo ""
-if [[ "$auto_yes" != true ]]; then
-    log_section "theme apply"
-    log_info "Render all templates with current theme (ember)"
-    echo ""
-    printf "  Run this section? [y/N] "
-    read -r choice
-    if [[ ! "$choice" =~ ^[yYaA]$ ]]; then
-        log_warn "Skipped theme apply"
-        results+=("theme SKIP")
-    else
-        if bash "$ARCHE/theming/engine.sh" apply; then
-            results+=("theme OK")
-        else
-            results+=("theme FAIL")
-        fi
-    fi
-else
-    log_info "━━━ Applying theme ━━━"
-    if bash "$ARCHE/theming/engine.sh" apply; then
-        results+=("theme OK")
-    else
-        results+=("theme FAIL")
-    fi
+# ─── Prefer a modern bash ───
+# macOS still ships bash 3.2. The core is written to survive it, but if a current
+# bash is already installed we re-exec under it. We do NOT install bash here (that
+# would surprise a plain `doctor` run); the installer adds it via packages/macos.reg,
+# so later runs pick it up. This block stays POSIX-plain so 3.2 can execute it.
+if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
+    for _b in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+        [ -x "$_b" ] && exec "$_b" "$0" "$@"
+    done
 fi
 
-# ─── Summary ───
+# ─── Load the core ───
+source "$ARCHE/core/lib.sh"
+source "$ARCHE/core/runner.sh"
+source "$ARCHE/core/doctor.sh"
+source "$ARCHE/core/clean.sh"
 
-echo
-log_info "=== Bootstrap Summary ==="
-echo
-printf '  %-25s %s\n' "SCRIPT" "STATUS"
-printf '  %-25s %s\n' "─────────────────────────" "──────"
-for result in "${results[@]}"; do
-    name="${result% *}"
-    status="${result##* }"
-    case "$status" in
-        OK)   printf '  %-25s \033[1;32m%s\033[0m\n' "$name" "$status" ;;
-        FAIL) printf '  %-25s \033[1;31m%s\033[0m\n' "$name" "$status" ;;
-        SKIP) printf '  %-25s \033[1;33m%s\033[0m\n' "$name" "$status" ;;
+show_help() {
+    # Print the leading comment block (minus the shebang), stripped of "# ".
+    awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"
+}
+
+# ─── Parse subcommand + flags ───
+cmd="install"
+case "${1:-}" in
+    install|doctor|clean) cmd="$1"; shift ;;
+    -h|--help)            show_help; exit 0 ;;
+esac
+
+ARCHE_YES=0
+ARCHE_ONLY=""
+ARCHE_PROFILE=""
+EXTRA_ARGS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --yes|-y)     ARCHE_YES=1 ;;
+        --only)       ARCHE_ONLY="${2:-}"; shift ;;
+        --only=*)     ARCHE_ONLY="${1#*=}" ;;
+        --profile)    ARCHE_PROFILE="${2:-}"; shift ;;
+        --profile=*)  ARCHE_PROFILE="${1#*=}" ;;
+        *)            EXTRA_ARGS+=("$1") ;;
     esac
+    shift
 done
-echo
+export ARCHE_YES ARCHE_ONLY
 
-# Check for any failures
-if printf '%s\n' "${results[@]}" | grep -q "FAIL"; then
-    log_err "Some scripts failed — review output above"
-    exit 1
+# ─── Pick the profile for this machine ───
+if [ -z "$ARCHE_PROFILE" ]; then
+    case "$ARCHE_PLATFORM" in
+        arch)  ARCHE_PROFILE="linux-hyprland" ;;
+        macos) ARCHE_PROFILE="macos" ;;
+        *)     log_err "No profile for this platform ($ARCHE_PLATFORM). Pass --profile NAME."; exit 1 ;;
+    esac
 fi
 
-log_ok "Bootstrap complete!"
-log_info "Full log: $ARCHE_LOG_FILE"
+PROFILE_DIR="$ARCHE/profiles/$ARCHE_PROFILE"
+if [ ! -f "$PROFILE_DIR/profile.sh" ]; then
+    log_err "Profile not found: $ARCHE_PROFILE  (looked in $PROFILE_DIR)"
+    exit 1
+fi
+export PROFILE_DIR
+# shellcheck source=/dev/null
+source "$PROFILE_DIR/profile.sh"
+
+# ─── Dispatch ───
+case "$cmd" in
+    install)
+        log_init
+        log_info "arche installer"
+        log_info "Profile: $PROFILE_NAME"
+        log_info "Log file: $ARCHE_LOG_FILE"
+        profile_steps
+        run_profile
+        ;;
+    doctor)
+        run_doctor ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
+        ;;
+    clean)
+        run_clean ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
+        ;;
+esac

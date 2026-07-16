@@ -1,0 +1,13 @@
+# audio — full PipeWire stack. Install step: scripts/04-audio.sh
+
+tool pipewire             arch=pacman:pipewire
+tool pipewire-alsa        arch=pacman:pipewire-alsa
+tool pipewire-jack        arch=pacman:pipewire-jack
+tool pipewire-pulse       arch=pacman:pipewire-pulse
+tool wireplumber          arch=pacman:wireplumber
+tool gst-plugin-pipewire  arch=pacman:gst-plugin-pipewire   # GStreamer integration
+tool alsa-utils           arch=pacman:alsa-utils            # amixer, aplay, etc.
+tool pamixer              arch=pacman:pamixer               # CLI volume control
+tool wiremix              arch=pacman:wiremix               # TUI audio mixer for PipeWire
+tool playerctl            arch=pacman:playerctl             # MPRIS media controls
+tool sof-firmware         arch=pacman:sof-firmware          # Sound Open Firmware

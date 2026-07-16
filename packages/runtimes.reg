@@ -1,0 +1,21 @@
+# runtimes — languages and toolchains. Install step: scripts/08-runtimes.sh
+# fnm, bun, rustup, uv are installed via their own install scripts, not packages.
+# (fnm + uv appear on macOS as brew formulae — see macos.reg.)
+
+tool rust   arch=pacman:rust    # Rust via pacman (or use rustup manually)
+tool go     arch=pacman:go      # Go toolchain
+tool cmake  arch=pacman:cmake
+tool clang  arch=pacman:clang
+tool gdb    arch=pacman:gdb
+
+# Android / React Native — JDK pinned to 17 for current Gradle + Expo
+tool jdk17-openjdk  arch=pacman:jdk17-openjdk   # required by Android SDK build-tools and Gradle
+tool android-udev   arch=pacman:android-udev    # udev rules so non-root users see Android devices for adb
+
+# Android SDK split — installs to /opt/android-sdk (group: android-sdk).
+# adb comes from android-sdk-platform-tools — do NOT also install extra/android-tools,
+# it collides on /usr/bin/adb and lacks the rest of the SDK.
+tool android-sdk                arch=aur:android-sdk
+tool android-sdk-platform-tools arch=aur:android-sdk-platform-tools
+tool android-sdk-build-tools    arch=aur:android-sdk-build-tools
+tool android-platform           arch=aur:android-platform

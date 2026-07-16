@@ -1,0 +1,37 @@
+# hyprland — compositor stack: WM + portals + utilities + login manager.
+# Install step: scripts/05-hyprland.sh
+
+# Compositor + session
+tool hyprland                     arch=pacman:hyprland
+tool hyprlock                     arch=pacman:hyprlock               # screen locker
+tool hypridle                     arch=pacman:hypridle               # idle daemon
+tool hyprpicker                   arch=pacman:hyprpicker             # color picker
+tool hyprsunset                   arch=pacman:hyprsunset             # night-light
+tool hyprpolkitagent              arch=pacman:hyprpolkitagent        # native polkit auth agent (Qt/QML)
+tool uwsm                         arch=pacman:uwsm                   # Hyprland session wrapper (systemd-managed)
+tool xdg-desktop-portal-hyprland  arch=pacman:xdg-desktop-portal-hyprland
+tool xdg-desktop-portal-gtk       arch=pacman:xdg-desktop-portal-gtk # Settings + FileChooser; bridges gsettings color-scheme
+
+# Login manager (default Breeze theme — see D023)
+tool sddm         arch=pacman:sddm
+tool qt6-svg      arch=pacman:qt6-svg          # SVG assets used by default SDDM themes
+tool qt5-wayland  arch=pacman:qt5-wayland      # Qt5 Wayland plugin for session apps
+tool qt6-wayland  arch=pacman:qt6-wayland      # Qt6 Wayland plugin
+
+# Wallpaper
+tool awww  arch=pacman:awww                    # successor to swww — smooth transitions, clean IPC (D026)
+
+# Screenshot / screen-share / clipboard
+tool grim      arch=pacman:grim                # screenshot capture
+tool slurp     arch=pacman:slurp               # region select
+tool satty     arch=pacman:satty               # screenshot annotate
+tool cliphist  arch=pacman:cliphist            # clipboard history (wl-clipboard is in base.reg)
+
+# Input / backlight / debug
+tool brightnessctl  arch=pacman:brightnessctl  # backlight control
+tool wev            arch=pacman:wev            # input-events debug
+
+# Screen-share source picker with live previews for xdph's custom_picker_binary.
+# PKGBUILD: https://aur.archlinux.org/packages/hyprland-preview-share-picker-git
+# Upstream: https://github.com/WhySoBad/hyprland-preview-share-picker (MIT) — see D028.
+tool hyprland-preview-share-picker  arch=aur:hyprland-preview-share-picker-git

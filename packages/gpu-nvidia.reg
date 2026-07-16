@@ -1,0 +1,9 @@
+# gpu-nvidia — NVIDIA open kernel module + CUDA. Install step: scripts/03-gpu.sh
+
+tool nvidia-open-dkms     arch=pacman:nvidia-open-dkms
+tool nvidia-utils         arch=pacman:nvidia-utils
+tool nvidia-settings      arch=pacman:nvidia-settings
+tool lib32-nvidia-utils   arch=pacman:lib32-nvidia-utils
+tool libva-nvidia-driver  arch=pacman:libva-nvidia-driver   # VA-API for hardware decode
+tool egl-wayland          arch=pacman:egl-wayland           # EGL on Wayland
+tool cuda                 arch=pacman:cuda                  # CUDA toolkit

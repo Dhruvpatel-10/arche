@@ -1,0 +1,7 @@
+# dms — DankMaterialShell (Quickshell-based desktop shell). Install step: scripts/13-dms.sh
+# Bar + control center + notifications + OSD + launcher layer. See D032.
+# Both dms packages ship in the official `extra` repo — no AUR, no curl-pipe.
+
+tool dms-shell           arch=pacman:dms-shell            # pulls quickshell + dgop + accountsservice + dms-shell-compositor
+tool dms-shell-hyprland  arch=pacman:dms-shell-hyprland
+tool networkmanager      arch=pacman:networkmanager       # runtime network backend dms talks to over D-Bus (not a dms dep)

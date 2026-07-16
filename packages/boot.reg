@@ -1,0 +1,5 @@
+# boot — TPM2 unlock stack: TPM2 PIN enrollment tooling.
+# Install step: scripts/12-boot.sh
+# (tpm2-tss is a dep of systemd itself on Arch — already installed.)
+
+tool tpm2-tools  arch=pacman:tpm2-tools   # tpm2_* CLIs — used by systemd-cryptenroll's backend

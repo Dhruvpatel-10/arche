@@ -59,3 +59,9 @@ read_login_shell() {
 
 # Single-user Mac: the repo lives in the home directory, no shared /opt group.
 arche_root() { echo "$HOME/arche"; }
+
+# Is a package installed? Checks both formula and cask, for the doctor.
+pkg_installed() {
+    brew list --formula --versions "$1" >/dev/null 2>&1 && return 0
+    brew list --cask --versions "$1" >/dev/null 2>&1
+}

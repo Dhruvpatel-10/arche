@@ -1,0 +1,56 @@
+# apps — desktop applications: browsers, editors, media, tools.
+# Install step: scripts/09-apps.sh
+
+# Editor
+tool neovim  arch=pacman:neovim  macos=brew:neovim
+
+# Browsers
+tool vivaldi  arch=pacman:vivaldi
+
+# File management
+tool nautilus   arch=pacman:nautilus     # GNOME file manager
+tool syncthing  arch=pacman:syncthing
+
+# Media
+tool mpv          arch=pacman:mpv  macos=brew:mpv   # NEVER cask — the mpv cask is deprecated/Gatekeeper-blocked
+tool imagemagick  arch=pacman:imagemagick            # CLI image manipulation
+tool papers       arch=pacman:papers                 # GTK4/libadwaita PDF/EPUB/DjVu viewer (Evince successor)
+tool loupe        arch=pacman:loupe                  # GTK4/libadwaita image viewer
+tool kdenlive     arch=pacman:kdenlive               # video editor
+
+# Recording
+tool obs-studio        arch=pacman:obs-studio         # screen recording / streaming
+tool v4l2loopback-dkms arch=pacman:v4l2loopback-dkms  # virtual camera support
+
+# Utilities
+tool fastfetch     arch=pacman:fastfetch     macos=brew:fastfetch
+tool glow          arch=pacman:glow          macos=brew:glow          # markdown viewer
+tool aria2         arch=pacman:aria2         macos=brew:aria2         # download manager
+tool gh            arch=pacman:github-cli    macos=brew:gh            # GitHub CLI (package name differs per platform)
+tool plocate       arch=pacman:plocate                                # locate
+tool tree-sitter   arch=pacman:tree-sitter-cli  macos=brew:tree-sitter  # tree-sitter CLI (package name differs per platform)
+
+# Remote desktop
+tool remmina        arch=pacman:remmina        # RDP/VNC/SPICE client GUI
+tool freerdp        arch=pacman:freerdp        # RDP backend (xfreerdp3) — Remmina's RDP plugin links here
+tool gnome-keyring  arch=pacman:gnome-keyring  # secret-service backend — Remmina stores RDP passwords encrypted
+tool seahorse       arch=pacman:seahorse       # GUI to manage gnome-keyring secrets
+
+# Desktop apps
+tool qbittorrent  arch=pacman:qbittorrent
+tool kdeconnect   arch=pacman:kdeconnect    # phone integration
+tool kio-extras   arch=pacman:kio-extras    # KIO workers — kdeconnectd resolves clipboard URLs through KIO
+tool gvfs-mtp     arch=pacman:gvfs-mtp      # MTP backend for GIO — Android phones in File Transfer mode
+tool gvfs-gphoto2 arch=pacman:gvfs-gphoto2  # PTP backend — phones in Camera/PTP mode and actual cameras
+
+# Bluetooth
+tool bluez        arch=pacman:bluez
+tool bluez-utils  arch=pacman:bluez-utils
+tool bluetui      arch=pacman:bluetui       # TUI for pairing/managing bluetooth (Super+Ctrl+B)
+
+# Docker — rootless deps installed so a manual rootless setup works; else system docker.
+tool docker          arch=pacman:docker
+tool docker-buildx   arch=pacman:docker-buildx
+tool docker-compose  arch=pacman:docker-compose
+tool rootlesskit     arch=pacman:rootlesskit    # fake-root impl for rootless containers
+tool slirp4netns     arch=pacman:slirp4netns    # user-mode networking for rootless containers

@@ -172,3 +172,6 @@ read_login_shell() {
 
 # Where the shared repo lives on this platform.
 arche_root() { echo "/opt/arche"; }
+
+# Is a package installed? Best-effort, used by the doctor command.
+pkg_installed() { pacman -Qi "$1" >/dev/null 2>&1; }
