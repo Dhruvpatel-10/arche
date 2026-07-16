@@ -76,6 +76,13 @@ Scripts used:
   [source](https://github.com/CogentRedTester/mpv-scripts#cycle-profile)\
   Cycles through a list of profiles sent via a script message and prints the profile-desc to the OSD. More details at the top of the file.
 
+* [arche-keys.lua](scripts/arche-keys.lua): local\
+  A curated keyboard-shortcuts cheatsheet. Toggled with `?` (or Esc to close),
+  it draws a themed, centered panel listing the shortcuts worth remembering,
+  grouped into columns, instead of stats.lua's raw dump of every internal
+  binding. Colors come from `script-opts/arche-keys.conf`, rendered by the
+  theme engine.
+
 * [modernz.lua](scripts/modernz.lua): [source](https://github.com/Samillion/ModernZ)\
   A clean, minimal bottom control bar OSC (title, seekbar, one row of
   controls), no window chrome. It is vendored here and skinned with the
@@ -103,12 +110,13 @@ Configuration files for these scripts can be found in the `script-opts` folder. 
 
 ## Keyboard Shortcuts
 
-Press `?` to toggle an on-screen list of every active key binding, defaults
-and everything custom in `input.conf`, with `/` to search it while it is
-open. This is mpv's built-in `stats.lua` (page 4), no extra script needed.
-`?` is bound explicitly in `input.conf` for documentation, though it is
-already mpv's default binding for this. Sized and colored for legibility
-via `script-opts/stats.conf`, rendered by the theme engine.
+Press `?` to toggle a curated cheatsheet of the useful shortcuts, drawn as a
+themed, centered panel grouped into Playback, Seek, Audio, Subtitles, Video
+and Tools. Press `?` again or `Esc` to close it. This is `scripts/arche-keys.lua`,
+bound in `input.conf` via `script-message arche-keys-toggle`, and it replaces
+mpv's built-in `stats.lua` binding-dump (which listed every internal binding in
+a monospace sprawl that overflowed the screen). Colors follow the active theme
+via `script-opts/arche-keys.conf`.
 
 ## Shaders
 
