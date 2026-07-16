@@ -83,6 +83,15 @@ Scripts used:
   binding. Colors come from `script-opts/arche-keys.conf`, rendered by the
   theme engine.
 
+* [arche-seekbar.lua](scripts/arche-seekbar.lua): local\
+  A sleek, minimal seek indicator (Netflix / YouTube style). On a keyboard
+  seek it fades a thin flat progress line in near the bottom, with an
+  accent fill, a round scrubber knob that glides to the new position, and
+  current/total time labels, then fades out. Replaces mpv's dated built-in
+  `osd-bar` (`osd-bar=no`) and only appears on seek, never during steady
+  playback. Colors come from `script-opts/arche-seekbar.conf`, rendered by
+  the theme engine.
+
 * [modernz.lua](scripts/modernz.lua): [source](https://github.com/Samillion/ModernZ)\
   A clean, minimal bottom control bar OSC (title, seekbar, one row of
   controls), no window chrome. It is vendored here and skinned with the
