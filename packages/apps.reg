@@ -1,6 +1,9 @@
 # apps — desktop applications: browsers, editors, media, tools.
 # Install step: scripts/09-apps.sh
 
+# Terminal
+tool ghostty  arch=pacman:ghostty  macos=cask:ghostty   # GUI terminal, both platforms; themed via the engine (no brew formula, cask only)
+
 # Editor
 tool neovim  arch=pacman:neovim  macos=brew:neovim
 

@@ -36,7 +36,7 @@ test_integration() {
 
     section "Integration: Core tools"
 
-    local tools=(git stow just eza bat rg fd fzf zoxide bash atuin starship kitty paru)
+    local tools=(git stow just eza bat rg fd fzf zoxide bash atuin starship ghostty paru)
     for tool in "${tools[@]}"; do
         if command -v "$tool" &>/dev/null; then
             pass "$tool in PATH"
@@ -76,7 +76,7 @@ test_integration() {
     section "Integration: Rendered templates"
 
     local rendered=(
-        "$HOME/.config/kitty/theme.conf"
+        "$HOME/.config/ghostty/theme.conf"
         "$HOME/.config/btop/arche.theme"
         "$HOME/.config/tmux/colors.conf"
         "$HOME/.config/gtk-4.0/gtk.css"
@@ -111,12 +111,12 @@ test_integration() {
         local accent bg fg font_mono
         eval "$(source "$ARCHE/theming/themes/active" && echo "accent=$COLOR_ACCENT bg=$COLOR_BG fg=$COLOR_FG font_mono=\"$FONT_MONO\"")"
 
-        # Spot-check: bg color in kitty/theme.conf
-        if [[ -f "$HOME/.config/kitty/theme.conf" ]]; then
-            if grep -qi "${bg}" "$HOME/.config/kitty/theme.conf" 2>/dev/null; then
-                pass "kitty theme.conf contains bg (${bg})"
+        # Spot-check: bg color in ghostty/theme.conf
+        if [[ -f "$HOME/.config/ghostty/theme.conf" ]]; then
+            if grep -qi "${bg}" "$HOME/.config/ghostty/theme.conf" 2>/dev/null; then
+                pass "ghostty theme.conf contains bg (${bg})"
             else
-                fail "kitty theme.conf missing bg color"
+                fail "ghostty theme.conf missing bg color"
             fi
         fi
 

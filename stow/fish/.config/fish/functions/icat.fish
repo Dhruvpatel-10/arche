@@ -1,4 +1,4 @@
-function icat --description 'Display image(s) inline in kitty terminal'
+function icat --description 'Display image(s) inline in the terminal'
     argparse h/help -- $argv
     or return 1
 
@@ -9,7 +9,9 @@ function icat --description 'Display image(s) inline in kitty terminal'
         set -l m (set_color brblack)
 
         printf "%sicat%s  Render image(s) inline in the terminal\n" $h $d
-        printf "%s\n" $m"Wraps 'kitten icat' — kitty's graphics-protocol image viewer."$d
+        printf "%s\n" $m"Wraps 'chafa', which picks the best image protocol your"$d
+        printf "%s\n" $m"terminal supports (Ghostty's kitty graphics, sixel, iTerm2),"$d
+        printf "%s\n" $m"and falls back to Unicode block art anywhere else."$d
         printf "\n"
         printf "%sUSAGE%s\n" $k $d
         printf "  icat <image> [image...]\n"
@@ -19,13 +21,12 @@ function icat --description 'Display image(s) inline in kitty terminal'
         printf "  icat *.png                     %s# show a batch%s\n" $m $d
         printf "\n"
         printf "%sNOTES%s\n" $k $d
-        printf "  Requires kitty terminal (or any emulator with kitty graphics support).\n"
         printf "  For a pop-up viewer via the desktop's default app, use 'open <image>'.\n"
         return 0
     end
 
-    if not command -q kitten
-        echo "icat: 'kitten' not found (install kitty terminal)"
+    if not command -q chafa
+        echo "icat: 'chafa' not found (install it: brew install chafa / pacman -S chafa)"
         return 1
     end
 
@@ -41,5 +42,6 @@ function icat --description 'Display image(s) inline in kitty terminal'
         end
     end
 
-    kitten icat $argv
+    # chafa auto-detects the terminal's best image format and sizes to the window.
+    chafa $argv
 end

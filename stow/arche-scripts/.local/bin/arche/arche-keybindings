@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # arche-keybindings — show all Hyprland keybindings in a fuzzy picker.
 # Reads live bindings from hyprctl, resolves keycodes, displays in fzf
-# inside a kitty popup window (see CLAUDE.md "Popup Convention").
+# inside a ghostty popup window (see CLAUDE.md "Popup Convention").
 
 set -euo pipefail
 
@@ -123,7 +123,7 @@ main() {
     elif [[ "${1:-}" == "--inner" ]]; then
         echo "$output" | column -t -s $'\t' | fzf --prompt='Keybindings ❯ ' --no-multi --layout=reverse
     else
-        kitty --class popup -e bash -c "$(realpath "$0") --inner"
+        ghostty --class=popup -e bash -c "$(realpath "$0") --inner"
     fi
 }
 

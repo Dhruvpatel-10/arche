@@ -8,4 +8,3 @@ tool bash       macos=brew:bash        # latest stable bash — redesign re-exec
 tool fnm        macos=brew:fnm         # Fast Node Manager (conf.d/fnm.fish) — curl-installed on Linux
 tool uv         macos=brew:uv          # Python package manager (conf.d/uv.fish) — curl-installed on Linux
 tool duti       macos=brew:duti        # set default apps by UTI / file extension
-tool ghostty    macos=cask:ghostty     # terminal emulator — native macOS feel, themed via the engine

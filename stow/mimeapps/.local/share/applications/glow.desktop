@@ -2,7 +2,7 @@
 Type=Application
 Name=Glow
 Comment=Markdown viewer
-Exec=kitty --class popup -e glow-view %f
+Exec=ghostty --class=popup -e glow-view %f
 Icon=text-markdown
 Terminal=false
 Categories=Utility;TextEditor;

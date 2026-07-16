@@ -13,7 +13,7 @@ PROFILE_DESC="Full desktop: NVIDIA, Hyprland, DankMaterialShell, encrypted boot,
 
 # Every config package gets linked. Used by the doctor and clean commands.
 PROFILE_STOW=(
-    fish kitty ghostty tmux nvim btop glow mpv
+    fish ghostty tmux nvim btop glow mpv
     hypr cliphist wireplumber arche-scripts arche-denoise
     hyprland-preview-share-picker vivaldi webapps mimeapps paru
 )

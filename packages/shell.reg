@@ -4,5 +4,7 @@
 tool fish      arch=pacman:fish      macos=brew:fish       # friendly interactive shell, default login shell
 tool atuin     arch=pacman:atuin     macos=brew:atuin      # SQLite-backed fuzzy history + Ctrl-R
 tool starship  arch=pacman:starship  macos=brew:starship   # cross-shell prompt
-tool kitty     arch=pacman:kitty                           # terminal emulator (macOS uses Ghostty — macos.reg)
 tool tmux      arch=pacman:tmux      macos=brew:tmux        # terminal multiplexer
+
+# ghostty (the GUI terminal) lives in apps.reg, not here: it is a desktop app,
+# so the headless server profile (which installs base + shell) must not pull it.

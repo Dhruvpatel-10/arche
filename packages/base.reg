@@ -27,6 +27,7 @@ tool tealdeer       arch=pacman:tealdeer       macos=brew:tealdeer     # tldr â€
 tool gum            arch=pacman:gum            macos=brew:gum          # CLI formatting (prompts, spinners)
 tool lazygit        arch=pacman:lazygit        macos=brew:lazygit      # TUI git client
 tool lazydocker     arch=pacman:lazydocker     macos=brew:lazydocker   # TUI docker client
+tool chafa          arch=pacman:chafa          macos=brew:chafa        # terminal image previewer (icat, fzf previews) â€” works in any terminal
 
 # System
 tool linux-headers  arch=pacman:linux-headers                         # kernel headers (DKMS modules like nvidia-open)

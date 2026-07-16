@@ -55,13 +55,13 @@ every `.reg` before a run starts.
 | `gpu-nvidia.reg` | `steps/03-gpu.sh` | NVIDIA open kernel module, CUDA, VA-API |
 | `audio.reg` | `steps/04-audio.sh` | Full PipeWire stack, TUI mixer |
 | `hyprland.reg` | `steps/05-hyprland.sh` | Hyprland, portals, SDDM, Wayland utils |
-| `shell.reg` | `steps/06-shell.sh` | Fish, Atuin, Starship, Kitty, tmux |
+| `shell.reg` | `steps/06-shell.sh` | Fish, Atuin, Starship, tmux (terminal is Ghostty, in apps.reg) |
 | `dms.reg` | `steps/13-dms.sh` | DankMaterialShell + Quickshell + NetworkManager |
 | `runtimes.reg` | `steps/08-runtimes.sh` | Rust, Go, cmake, clang, JDK17, Android SDK |
 | `apps.reg` | `steps/09-apps.sh` | Neovim, Vivaldi, Nautilus, mpv, Docker, Bluetooth |
 | `appearance.reg` | `steps/11-appearance.sh` | Fonts, icons, nwg-look |
 | `boot.reg` | `steps/12-boot.sh` | TPM2 unlock tooling (no graphical splash) |
-| `macos.reg` | `profiles/macos` | macOS-only tools (coreutils, gettext, bash, fnm, uv, duti, ghostty) |
+| `macos.reg` | `profiles/macos` | macOS-only tools (coreutils, gettext, bash, fnm, uv, duti) |
 
 Steps live under `profiles/linux-hyprland/steps/`. `base.reg` and `shell.reg`
 are shared: the `server` profile also installs them, and the `macos` profile
@@ -108,8 +108,10 @@ side.
 - **Note:** Shell source is package-managed at `/usr/share/quickshell/dms/`,
   not in the repo. Set up by `steps/13-dms.sh`. See D032 (supersedes D029's panel).
 
-### shell.reg — Shell (pacman: 5)
-- fish, atuin, starship, kitty, tmux (fish/atuin/starship/tmux also `macos=brew:`; kitty is Arch-only, macOS uses Ghostty)
+### shell.reg — Shell (pacman: 4)
+- fish, atuin, starship, tmux (all also `macos=brew:`). The GUI terminal is
+  Ghostty (both platforms), declared in `apps.reg` so the headless server
+  profile — which installs `base` + `shell` only — never pulls a GUI terminal.
 - fisher (fish plugin manager) is installed from upstream curl by `steps/06-shell.sh` — not from AUR. See D018.
 
 ### runtimes.reg — Dev Runtimes (pacman: 7, AUR: 4)
@@ -118,7 +120,8 @@ side.
 - **AUR:** android-sdk, android-sdk-platform-tools, android-sdk-build-tools, android-platform — installs to `/opt/android-sdk`. `steps/08-runtimes.sh` adds every human user to the `android-sdk` group and pins default JDK to 17. PATH/`ANDROID_HOME` set by `stow/fish/.config/fish/conf.d/android.fish`.
 - **Note:** fnm (Node) and Bun install via their own scripts in `steps/08-runtimes.sh`, not pacman. On macOS fnm/uv come from `macos.reg` (brew).
 
-### apps.reg — Applications (pacman: ~35)
+### apps.reg — Applications (pacman: ~36)
+- **Terminal:** ghostty (`macos=cask:ghostty` — no brew formula; both platforms, themed via the engine)
 - **Editor:** neovim (also `macos=brew:`)
 - **Browser:** vivaldi
 - **Files:** nautilus, syncthing
@@ -147,7 +150,7 @@ side.
 - **GNU userland (for the theme engine):** coreutils, gettext (envsubst)
 - **Modern bash:** bash — the redesign re-execs bootstrap under it (macOS ships 3.2)
 - **Runtimes:** fnm (Node), uv (Python) — curl-installed on Linux, brew here
-- **Utilities:** duti (set default apps by UTI), ghostty (`macos=cask:ghostty` — no formula)
+- **Utilities:** duti (set default apps by UTI). The terminal, Ghostty, is in `apps.reg`.
 
 ## Totals
 

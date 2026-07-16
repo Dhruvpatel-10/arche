@@ -160,7 +160,7 @@ theme_render() {
     : "${FONT_SIZE_TERMINAL:=$FONT_SIZE_NORMAL}"
 
     # Apply defaults for opacity variables
-    : "${KITTY_OPACITY:=1.0}"
+    : "${TERM_OPACITY:=1.0}"
     : "${BAR_OPACITY:=0.62}"
     : "${TOOLTIP_OPACITY:=0.95}"
 
@@ -243,7 +243,7 @@ theme_render() {
             source "$tmpl_dir/_emit.sh"
         else
             while IFS= read -r -d '' tmpl; do
-                # templates/kitty/theme.conf.tmpl → ~/.config/kitty/theme.conf
+                # templates/ghostty/theme.conf.tmpl → ~/.config/ghostty/theme.conf
                 local rel="${tmpl#"$tmpl_dir"/}"
                 local rel_noext="${rel%.tmpl}"
 
