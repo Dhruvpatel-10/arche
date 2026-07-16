@@ -107,7 +107,8 @@ Press `?` to toggle an on-screen list of every active key binding, defaults
 and everything custom in `input.conf`, with `/` to search it while it is
 open. This is mpv's built-in `stats.lua` (page 4), no extra script needed.
 `?` is bound explicitly in `input.conf` for documentation, though it is
-already mpv's default binding for this.
+already mpv's default binding for this. Sized and colored for legibility
+via `script-opts/stats.conf`, rendered by the theme engine.
 
 ## Shaders
 

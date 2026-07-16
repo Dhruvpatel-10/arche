@@ -197,6 +197,14 @@ theme_render() {
             export "${var}_RGB=${r},${g},${b}"
         fi
     done
+    # Schema-driven _BGR generation — bare "BBGGRR" (byte-swapped, no #) for
+    # ASS-native color options (mpv's built-in stats.lua script-opts, etc.)
+    for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
+        if [[ -n "${!var:-}" ]]; then
+            local hex="${!var#\#}"
+            export "${var}_BGR=${hex:4:2}${hex:2:2}${hex:0:2}"
+        fi
+    done
 
     # Build explicit envsubst variable list — only substitute theme vars, not app vars
     local _envsubst_vars=""
@@ -209,7 +217,7 @@ theme_render() {
         # Also include _NOHASH and _RGBA variants for color vars
     done
     for var in "${SCHEMA_COLORS_REQUIRED[@]}" "${SCHEMA_COLORS_OPTIONAL[@]}"; do
-        _envsubst_vars+=" \${${var}_NOHASH} \${${var}_RGBA} \${${var}_RGB}"
+        _envsubst_vars+=" \${${var}_NOHASH} \${${var}_RGBA} \${${var}_RGB} \${${var}_BGR}"
     done
     # Expand $HOME in templates that need absolute paths (qt5ct/qt6ct color_scheme_path)
     _envsubst_vars+=" \${HOME}"

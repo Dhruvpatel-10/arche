@@ -201,6 +201,7 @@ test_lint() {
             echo "${var}_NOHASH"
             echo "${var}_RGBA"
             echo "${var}_RGB"
+            echo "${var}_BGR"
         done
         # System env vars theme_render explicitly passes through envsubst
         echo "HOME"

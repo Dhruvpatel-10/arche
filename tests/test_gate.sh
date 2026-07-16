@@ -80,6 +80,7 @@ test_gate() {
             echo "${var}_NOHASH"
             echo "${var}_RGBA"
             echo "${var}_RGB"
+            echo "${var}_BGR"
         done
     )
 
