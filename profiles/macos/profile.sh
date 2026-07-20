@@ -12,7 +12,7 @@ PROFILE_DESC="Shared CLI tools, terminal, editor, shell, and theme on macOS."
 
 # Config packages to link, and theme components to render. Used by the install
 # steps and by the doctor and clean commands.
-PROFILE_STOW=(fish nvim ghostty tmux mpv btop glow)
+PROFILE_STOW=(fish nvim ghostty tmux mpv btop glow arche-cli)
 PROFILE_THEME=(ghostty fish starship tmux btop glow mpv)
 
 # ─── Steps (run in this order) ───
