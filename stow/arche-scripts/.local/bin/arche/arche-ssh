@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# arche-ssh — connect to servers by friendly name from a per-user inventory
+# Usage:
+#   arche-ssh                       pick a host interactively (fzf) and connect
+#   arche-ssh <name> [ssh opts]     connect to <name>; extra ssh options pass through
+#   arche-ssh list                  show the inventory as a table
+#   arche-ssh edit                  open the inventory in $EDITOR
+#   arche-ssh names                 print host names (used by fish completion)
+#
+# Inventory: ~/.config/arche/ssh-hosts — one host per line, same line DSL as
+# packages/*.reg:
+#
+#   host <name> addr=<ip-or-hostname> [user=<user>] [key=<path>] [port=<n>]
+#
+# '#' starts a comment; values must not contain spaces. The file stays per-user
+# and out of git (same pattern as fish local.fish) so server IPs and usernames
+# never land in the repo.
+
+set -euo pipefail
+
+HOSTS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/arche/ssh-hosts"
+
+die() { echo "arche-ssh: $*" >&2; exit 1; }
+
+seed_inventory() {
+    mkdir -p "$(dirname "$HOSTS_FILE")"
+    cat > "$HOSTS_FILE" <<'EOF'
+# arche ssh host inventory — read by arche-ssh
+#
+# One host per line:
+#   host <name> addr=<ip-or-hostname> [user=<user>] [key=<path>] [port=<n>]
+#
+# '#' starts a comment. Values must not contain spaces. Example:
+#   host homelab addr=192.168.1.10 user=stark key=~/.ssh/id_ed25519 port=22
+EOF
+    chmod 600 "$HOSTS_FILE"
+    echo "arche-ssh: created $HOSTS_FILE — add hosts with 'arche-ssh edit'" >&2
+}
+
+# Emit one "name<TAB>addr<TAB>user<TAB>key<TAB>port" row per valid host line.
+parse_hosts() {
+    [[ -f "$HOSTS_FILE" ]] || return 0
+    local line name addr user key port field
+    while IFS= read -r line; do
+        line="${line%%#*}"
+        [[ "$line" =~ [^[:space:]] ]] || continue
+        # word-split the line into the DSL tokens
+        # shellcheck disable=SC2086
+        set -- $line
+        if [[ "${1:-}" != host || -z "${2:-}" ]]; then
+            echo "arche-ssh: skipping malformed line: $line" >&2
+            continue
+        fi
+        name="$2"; addr=""; user=""; key=""; port=""
+        shift 2
+        for field in "$@"; do
+            case "$field" in
+                addr=*) addr="${field#addr=}" ;;
+                user=*) user="${field#user=}" ;;
+                key=*)  key="${field#key=}" ;;
+                port=*) port="${field#port=}" ;;
+                *) echo "arche-ssh: unknown field '$field' on host '$name'" >&2 ;;
+            esac
+        done
+        if [[ -z "$addr" ]]; then
+            echo "arche-ssh: host '$name' has no addr= — skipping" >&2
+            continue
+        fi
+        printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$addr" "$user" "$key" "$port"
+    done < "$HOSTS_FILE"
+}
+
+connect() {
+    local name="$1"; shift
+    local row
+    row="$(parse_hosts | awk -F'\t' -v n="$name" '$1 == n { print; exit }')"
+    [[ -n "$row" ]] || die "no host named '$name' in $HOSTS_FILE (see 'arche-ssh list')"
+
+    local addr user key port
+    IFS=$'\t' read -r _ addr user key port <<< "$row"
+
+    local args=()
+    [[ -n "$key" ]]  && args+=(-i "${key/#\~/$HOME}")
+    [[ -n "$port" ]] && args+=(-p "$port")
+
+    local target="$addr"
+    [[ -n "$user" ]] && target="$user@$addr"
+
+    # ${args[@]+…} guard: plain "${args[@]}" on an empty array trips set -u
+    # under bash 3.2 (macOS)
+    exec ssh ${args[@]+"${args[@]}"} "$@" "$target"
+}
+
+pick() {
+    local rows
+    rows="$(parse_hosts)"
+    [[ -n "$rows" ]] || die "inventory is empty — add hosts with 'arche-ssh edit'"
+    command -v fzf >/dev/null 2>&1 || die "fzf not installed — use 'arche-ssh <name>'"
+
+    local sel
+    sel="$(awk -F'\t' '{ t = ($3 != "") ? $3 "@" $2 : $2; printf "%s\t%s\n", $1, t }' \
+            <<< "$rows" \
+          | fzf --prompt='ssh > ' --height=~40% --reverse --delimiter='\t' \
+                --with-nth=1,2 --tabstop=16)" || exit 130
+    connect "${sel%%$'\t'*}"
+}
+
+case "${1:-}" in
+    "")
+        [[ -f "$HOSTS_FILE" ]] || { seed_inventory; exit 0; }
+        pick
+        ;;
+    list|-l|--list)
+        [[ -f "$HOSTS_FILE" ]] || { seed_inventory; exit 0; }
+        parse_hosts | awk -F'\t' '
+            BEGIN { printf "%-16s %-24s %-12s %-28s %s\n", "NAME", "ADDR", "USER", "KEY", "PORT" }
+                  { printf "%-16s %-24s %-12s %-28s %s\n", $1, $2, $3, $4, $5 }'
+        ;;
+    edit|-e|--edit)
+        [[ -f "$HOSTS_FILE" ]] || seed_inventory
+        exec "${EDITOR:-nvim}" "$HOSTS_FILE"
+        ;;
+    names)
+        # completion helper — must stay silent and side-effect free
+        parse_hosts 2>/dev/null | cut -f1
+        ;;
+    help|-h|--help)
+        sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+        ;;
+    *)
+        connect "$@"
+        ;;
+esac

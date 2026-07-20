@@ -21,6 +21,19 @@ test_lint() {
         fi
     done
 
+    # stow/arche-scripts mixes bash scripts with binaries (wayfreeze) —
+    # only lint files with a bash shebang.
+    for f in "$ARCHE"/stow/arche-scripts/.local/bin/arche/*; do
+        [[ -f "$f" ]] || continue
+        head -n1 "$f" 2>/dev/null | grep -q '^#!.*bash' || continue
+        local rel="${f#$ARCHE/}"
+        if bash -n "$f" 2>/dev/null; then
+            pass "bash -n $rel"
+        else
+            fail "bash -n $rel"
+        fi
+    done
+
     # ── stow/fish/ tree — D018 ──
 
     section "Lint: stow/fish/ syntax"
@@ -70,6 +83,17 @@ test_lint() {
                  "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
                  "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
             [[ -f "$f" ]] || continue
+            local rel="${f#$ARCHE/}"
+            if shellcheck -x -s bash "$f" 2>/dev/null; then
+                pass "shellcheck $rel"
+            else
+                fail "shellcheck $rel"
+            fi
+        done
+        # stow/arche-scripts — bash-shebang files only (wayfreeze is a binary)
+        for f in "$ARCHE"/stow/arche-scripts/.local/bin/arche/*; do
+            [[ -f "$f" ]] || continue
+            head -n1 "$f" 2>/dev/null | grep -q '^#!.*bash' || continue
             local rel="${f#$ARCHE/}"
             if shellcheck -x -s bash "$f" 2>/dev/null; then
                 pass "shellcheck $rel"
