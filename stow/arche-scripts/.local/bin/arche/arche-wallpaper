@@ -122,6 +122,11 @@ case "${1:-}" in
         [[ -n "$pick" ]] && set_wallpaper "$pick"
         ;;
     *)
-        [[ -f "$1" ]] && set_wallpaper "$1" || { echo "File not found: $1"; exit 1; }
+        if [[ -f "$1" ]]; then
+            set_wallpaper "$1"
+        else
+            echo "File not found: $1"
+            exit 1
+        fi
         ;;
 esac

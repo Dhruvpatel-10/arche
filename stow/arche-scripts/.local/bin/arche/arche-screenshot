@@ -87,6 +87,7 @@ fi
 # in its own cgroup so the launch scope's teardown can't kill it mid-read —
 # the bug that made large screenshots silently miss the clipboard. wl-copy
 # exits on its own once another client takes the selection; --collect GCs it.
+# shellcheck disable=SC2016  # single quotes intentional — $1 expands in the child bash
 detach bash -c 'exec wl-copy --foreground --type image/png < "$1"' _ "$f"
 
 # Notify + handle Edit action in a detached unit. notify-send -A blocks until
@@ -95,6 +96,7 @@ detach bash -c 'exec wl-copy --foreground --type image/png < "$1"' _ "$f"
 # repeated screenshots don't pile up stale processes. Detached into its own
 # cgroup for the same reason as the copy: a launch-scope teardown must not
 # kill the handler before the user clicks Edit.
+# shellcheck disable=SC2016  # single quotes intentional — $1/$action expand in the child bash
 detach bash -c '
     action=$(notify-send -i "$1" \
         -a "Screenshot" \
