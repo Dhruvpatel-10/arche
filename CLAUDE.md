@@ -95,7 +95,8 @@ Full architecture and decision records in `docs/`.
     ├── mpv/                  # media player
     ├── hypr/                 # Hyprland compositor config (D023 — restored from D021)
     ├── cliphist/             # clipboard history
-    ├── arche-scripts/        # user scripts (wallpaper, popup, powermenu, etc.)
+    ├── arche-cli/            # cross-platform user CLI scripts (arche-ssh) — stowed by every profile
+    ├── arche-scripts/        # Linux/Hyprland user scripts (wallpaper, popup, powermenu, etc.)
     ├── nvim/                 # LazyVim + catppuccin
     ├── btop/                 # system monitor
     ├── tmux/                 # terminal multiplexer

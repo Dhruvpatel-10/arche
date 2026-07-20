@@ -14,7 +14,7 @@ PROFILE_DESC="Full desktop: NVIDIA, Hyprland, DankMaterialShell, encrypted boot,
 # Every config package gets linked. Used by the doctor and clean commands.
 PROFILE_STOW=(
     fish ghostty tmux nvim btop glow mpv
-    hypr cliphist wireplumber arche-scripts arche-denoise
+    hypr cliphist wireplumber arche-cli arche-scripts arche-denoise
     hyprland-preview-share-picker vivaldi webapps mimeapps paru
 )
 # Empty means render every theme component (the engine's default).
