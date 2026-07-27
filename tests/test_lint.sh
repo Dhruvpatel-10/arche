@@ -251,6 +251,28 @@ test_lint() {
         fail "Undefined template variables:$undefined"
     fi
 
+    # ── macOS scripts must not trust an inherited $ARCHE ──
+    #
+    # The shell exports ARCHE=/opt/arche (the shared Linux root, D014) on every
+    # platform, and that path does not exist on macOS. A macos/ script that
+    # writes ${ARCHE:-...} silently picks up the broken value instead of its own
+    # location, and fails with "No such file or directory". Self-locate instead.
+
+    section "Lint: macOS scripts self-locate the repo root"
+
+    local arche_default_users=""
+    for f in "$ARCHE"/macos/*.sh; do
+        [[ -f "$f" ]] || continue
+        if grep -q '\${ARCHE:-' "$f"; then
+            arche_default_users+=" ${f#"$ARCHE"/}"
+        fi
+    done
+    if [[ -z "$arche_default_users" ]]; then
+        pass "No macos/ script defaults to an inherited \$ARCHE"
+    else
+        fail "macos/ scripts must self-locate, not use \${ARCHE:-…}:$arche_default_users"
+    fi
+
     # ── Secrets safety ──
 
     section "Lint: Secrets safety"
