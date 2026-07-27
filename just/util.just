@@ -38,3 +38,13 @@ dns:
 [group: 'utilities']
 sf-pro dmg='':
     bash {{dotfiles}}/helpers/install-sf-pro.sh {{dmg}}
+
+# Route macOS screenshots to the default server (macOS only)
+[group: 'utilities']
+clip-setup:
+    bash {{dotfiles}}/macos/clip-setup.sh
+
+# Show where screenshots go, what is waiting, and the remote target (macOS only)
+[group: 'utilities']
+clip-status:
+    arche-clip status

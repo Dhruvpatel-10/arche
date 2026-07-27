@@ -31,7 +31,7 @@ Reorganized into a shared core + platform profiles + package DSL (D033).
 | Profile          | Status | Notes                                                        |
 |------------------|--------|--------------------------------------------------------------|
 | `linux-hyprland` | Done   | Full Arch + Hyprland desktop (default on Arch); steps 00–13  |
-| `macos`          | Done   | macOS Apple Silicon: CLI, Ghostty, editor, shell, theme      |
+| `macos`          | Done   | macOS Apple Silicon: CLI, Ghostty, editor, shell, theme, screenshot upload (D034) |
 | `server`         | Done   | Headless Arch CLI skeleton (base + shell only)               |
 
 ## Stow Packages
@@ -47,6 +47,7 @@ Reorganized into a shared core + platform profiles + package DSL (D033).
 | `cliphist`                           | Done    | Clipboard history (D023 — restored)             |
 | `hyprland-preview-share-picker`      | Done    | Screen-share source picker — AUR (D028 reverses D027) |
 | `arche-scripts`                      | Done    | User scripts: wallpaper, popup, powermenu, etc. |
+| `arche-cli`                          | Done    | Cross-platform CLI: `arche-ssh`, `arche-send`, `arche-clip` (D034) |
 | `nvim`                               | Done    | LazyVim + catppuccin                            |
 | `gtk`                                | Done    | Fully templated (no stow — all visual)          |
 | `btop`                               | Done    | System monitor config                           |

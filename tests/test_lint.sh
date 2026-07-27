@@ -11,6 +11,7 @@ test_lint() {
     for f in "$ARCHE"/core/*.sh "$ARCHE"/core/adapters/*.sh \
              "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
              "$ARCHE"/theming/theme-lib.sh "$ARCHE"/theming/themes/*.sh \
+             "$ARCHE"/macos/*.sh \
              "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
         [[ -f "$f" ]] || continue
         local rel="${f#$ARCHE/}"
@@ -81,6 +82,7 @@ test_lint() {
     if command -v shellcheck &>/dev/null; then
         for f in "$ARCHE"/core/*.sh "$ARCHE"/core/adapters/*.sh \
                  "$ARCHE"/profiles/*/profile.sh "$ARCHE"/profiles/*/steps/*.sh \
+                 "$ARCHE"/macos/*.sh \
                  "$ARCHE"/bootstrap.sh "$ARCHE"/install.sh; do
             [[ -f "$f" ]] || continue
             local rel="${f#$ARCHE/}"

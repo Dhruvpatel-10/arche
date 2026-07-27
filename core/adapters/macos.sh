@@ -47,6 +47,26 @@ svc_enable() {
     log_warn "Background services are not managed on macOS yet, skipping: ${args:-service}"
 }
 
+# Load (or reload) a per-user launchd agent from a plist we already wrote into
+# ~/Library/LaunchAgents. Idempotent: an existing agent is booted out first, so
+# running this again picks up an edited plist.
+launch_agent_load() {
+    local plist="$1"
+    [[ -f "$plist" ]] || { log_err "No such launchd plist: $plist"; return 1; }
+
+    local label domain
+    label="$(basename "$plist" .plist)"
+    domain="gui/$(id -u)"
+
+    launchctl bootout "$domain/$label" >/dev/null 2>&1 || true
+    if launchctl bootstrap "$domain" "$plist" 2>/dev/null; then
+        log_ok "Loaded background agent $label"
+    else
+        log_err "Could not load background agent $label (try: launchctl bootstrap $domain $plist)"
+        return 1
+    fi
+}
+
 # macOS does not use the /etc symlink deployment model.
 link_system_file() { log_warn "System files are Linux only, skipping on macOS"; }
 link_system_all()  { :; }

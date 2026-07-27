@@ -95,7 +95,7 @@ Full architecture and decision records in `docs/`.
     ├── mpv/                  # media player
     ├── hypr/                 # Hyprland compositor config (D023 — restored from D021)
     ├── cliphist/             # clipboard history
-    ├── arche-cli/            # cross-platform user CLI scripts (arche-ssh) — stowed by every profile
+    ├── arche-cli/            # cross-platform user CLI scripts (arche-ssh, arche-send, arche-clip) — stowed by every profile
     ├── arche-scripts/        # Linux/Hyprland user scripts (wallpaper, popup, powermenu, etc.)
     ├── nvim/                 # LazyVim + catppuccin
     ├── btop/                 # system monitor
@@ -451,7 +451,7 @@ at top level in CLI (no namespace prefix). Run `just` or `just --list` for the g
 | `just/scripts.just` | scripts    | `preflight`, `base`, `security`, `gpu`, `audio`, `hyprland`, `shell`, `runtimes`, `apps`, `stow`, `appearance`, `dms`, `dms-restart`, `boot` |
 | `just/theme.just` | theme        | `theme-apply`, `theme-switch <name>`, `theme-list`                            |
 | `just/test.just`  | test         | `test`, `test-stow`, `gate`, `test-all`                                       |
-| `just/util.just`  | utilities    | `restow`, `relink`, `backup`, `sddm-preview`, `dns`, `sf-pro`                 |
+| `just/util.just`  | utilities    | `restow`, `relink`, `backup`, `sddm-preview`, `dns`, `sf-pro`, `clip-setup`, `clip-status` |
 
 Component targets in `just/scripts.just` map 1:1 to steps: `just <component>` runs the
 matching `profiles/linux-hyprland/steps/NN-<component>.sh` (e.g. `just hyprland` →

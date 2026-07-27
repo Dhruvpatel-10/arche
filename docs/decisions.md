@@ -5,6 +5,79 @@ Newest entries at the top.
 
 ---
 
+## D034 — `arche-send` on the arche-ssh inventory; screenshots upload via launchd
+
+**Date:** 2026-07-27
+**Status:** Accepted
+
+Two related changes: file transfer stopped hardcoding a server, and macOS
+screenshots now land on that server automatically.
+
+**`send` became `arche-send`.** The old `send` was an untracked fish function in
+`~/.config/fish/functions/` — the only one of 27 that was never stowed, so it did
+not survive a fresh install and did not exist on other machines. It also
+hardcoded `dev@<ip>`. It is now `stow/arche-cli/.local/bin/arche/arche-send`
+(bash, so launchd and other scripts can call it), with a three-line fish wrapper
+keeping `send` as the command you type. The host is a friendly name from the
+**arche-ssh inventory** (default `vega-ops`, override with `--host` or
+`$ARCHE_SEND_HOST`), so the user, key, and port live in exactly one per-user
+file and never land in the repo.
+
+`arche-ssh` grew two silent, side-effect-free subcommands to make that reuse
+possible: `target <name>` prints `user@addr`, and `ssh-cmd <name>` prints the ssh
+command with `-i`/`-p` for `rsync -e`. Both go through a shared `resolve`, so
+there is one parser for the inventory.
+
+Four bugs in the old function were fixed on the way:
+
+- `--dry` was not dry — it ran the remote `mkdir` unconditionally.
+- `$dest` was interpolated unquoted into `ssh "mkdir -p $dest"`, so a subdir with
+  a space created two directories and shell metacharacters ran on the server.
+- `--to` with no value silently sent to the base directory (fish returns an empty
+  string with status 0 for an out-of-range index).
+- `--to --delete` set the subdir to `--delete` and swallowed the flag.
+
+Remote paths are now restricted to `[A-Za-z0-9._~/-]` and single-quoted for the
+remote shell, with a literal `~` kept outside the quotes so the server expands
+it. **macOS ships openrsync**, which has no `--protect-args` and no `--mkpath`,
+so unsafe paths are refused rather than mangled, and the explicit `mkdir` stays.
+
+**Screenshots use launchd, not a hotkey daemon.** `com.apple.screencapture
+location` points at `~/.clip/`; a `WatchPaths` launch agent (`dev.arche.clip`)
+fires `arche-clip flush` when a capture lands. The file goes to `~/.clip/` on the
+default server, the **bare remote path** goes on the clipboard as text for Maccy
+(`~/.clip/2026-07-27-141530.png` — no `vega-ops:` prefix, since the arche-ssh
+alias only resolves on this machine and would be noise anywhere else), and the
+local copy is removed by `rsync --remove-source-files` — only after it has
+landed, so a failed send leaves the file staged rather than losing it. The
+desktop notification does name the server, since it is read rather than pasted.
+
+Why not skhd, which was the first proposal: it needs a third-party tap
+(`koekeishiya/formulae`), its upstream is in maintenance mode, and it would need
+both Accessibility and Screen Recording granted to a new binary. The launchd
+route adds **no dependency at all** — `screencapture`, `launchd`, and `pbcopy`
+are in the OS, the system screenshot service already holds Screen Recording, and
+the real Apple region selector is nicer than any reimplementation.
+
+**Trade-offs, accepted:**
+
+- `com.apple.screencapture location` is a single global setting, so *every*
+  screenshot saved to a file goes through the pipeline, not only the two
+  shortcuts. Per-hotkey discrimination is impossible without a hotkey daemon.
+- Binding Cmd+Shift+1/2 stays a **manual step** in System Settings. The
+  programmatic route (`defaults write com.apple.symbolichotkeys`) is fragile,
+  needs a full logout, and can break the screenshot shortcuts outright, so
+  `clip-setup.sh` prints the instructions instead of writing that plist.
+- `launch_agent_load` was added to the macOS adapter as the launchd seam;
+  `svc_enable` stays a no-op, since these are user agents, not services.
+
+**Known limitation, unchanged:** `arche-ssh <host> <command>` still does not
+work — `connect()` puts extra arguments before the target, so a remote command is
+parsed as a hostname. Options pass through fine. `arche-send` sidesteps it by
+using `target` + `ssh-cmd` directly.
+
+---
+
 ## D033 — Shared core + platform profiles + package DSL
 
 **Date:** 2026-07-16

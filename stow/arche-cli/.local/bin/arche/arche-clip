@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# arche-clip — push screenshots to the default server and put the path on the clipboard
+# Usage:
+#   arche-clip flush        send everything waiting in the staging dir (launchd calls this)
+#   arche-clip region       grab a selected area, then send it
+#   arche-clip full         grab the whole screen, then send it
+#   arche-clip status       show the staging dir, the remote, and anything stuck
+#
+# How the hotkeys work: macOS saves screenshots into the staging dir below, a
+# launchd agent notices the new file and runs 'arche-clip flush'. The captures
+# go to ~/.clip/ on the default server, the remote path goes on the clipboard
+# for Maccy to pick up, and the local copy is removed once it has landed.
+#
+# Because the macOS screenshot location is a single global setting, every
+# screenshot saved to a file takes this path — not only the two shortcuts.
+
+set -euo pipefail
+
+STAGING="${ARCHE_CLIP_DIR:-$HOME/.clip}"
+REMOTE_DIR="${ARCHE_CLIP_REMOTE_DIR:-~/.clip}"
+LOCK="$STAGING/.arche-clip.lock"
+LOG="${TMPDIR:-/tmp}/arche-clip.log"
+
+[[ "$(uname -s)" == "Darwin" ]] || {
+    echo "arche-clip: this is macOS only for now (Linux uses arche-screenshot)" >&2
+    exit 1
+}
+
+note() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
+
+# Best-effort desktop notification — never fail the run over it.
+notify() { osascript -e "display notification \"$1\" with title \"arche-clip\"" >/dev/null 2>&1 || true; }
+
+# One flush at a time: mkdir is atomic, so two screenshots in quick succession
+# cannot race each other into a double send.
+take_lock() {
+    mkdir -p "$STAGING"
+    if ! mkdir "$LOCK" 2>/dev/null; then
+        # A crashed run could leave the lock behind; clear it if it is stale.
+        if [[ -n "$(find "$LOCK" -maxdepth 0 -mmin +5 2>/dev/null)" ]]; then
+            note "clearing stale lock"
+            rmdir "$LOCK" 2>/dev/null || true
+            mkdir "$LOCK" 2>/dev/null || return 1
+        else
+            return 1
+        fi
+    fi
+    trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+    return 0
+}
+
+# Is the file still being written? Compare size across a short pause.
+settled() {
+    local f="$1" a b
+    a=$(wc -c < "$f" 2>/dev/null || echo 0)
+    sleep 0.4
+    b=$(wc -c < "$f" 2>/dev/null || echo 0)
+    [[ "$a" == "$b" && "$b" != 0 ]]
+}
+
+flush() {
+    take_lock || { note "another flush holds the lock, leaving this one"; exit 0; }
+
+    shopt -s nullglob
+    local files=("$STAGING"/*.png "$STAGING"/*.jpg "$STAGING"/*.pdf)
+    shopt -u nullglob
+    [[ ${#files[@]} -gt 0 ]] || { note "nothing staged"; return 0; }
+
+    local sent=() f
+    for f in "${files[@]}"; do
+        settled "$f" || { note "still being written, will catch it next time: $f"; continue; }
+        # --move has rsync delete the local file only after it has landed
+        if arche-send --dest "$REMOTE_DIR" --move "$f" >>"$LOG" 2>&1; then
+            sent+=("$(basename "$f")")
+            note "sent $(basename "$f")"
+        else
+            note "FAILED to send $(basename "$f") — leaving it staged"
+            notify "Could not send $(basename "$f") — it is still in ${STAGING/#$HOME/~}"
+        fi
+    done
+
+    [[ ${#sent[@]} -gt 0 ]] || return 0
+
+    # Clipboard gets the bare remote path of the newest capture, as text, so
+    # Maccy stores it and it pastes cleanly. No host prefix: the arche-ssh alias
+    # only resolves on this machine, so it would be noise anywhere else.
+    local newest
+    newest="${sent[${#sent[@]}-1]}"
+    printf '%s/%s' "$REMOTE_DIR" "$newest" | pbcopy
+    note "clipboard: $REMOTE_DIR/$newest"
+    # The notification is read, not pasted, so naming the server is useful here.
+    notify "$newest -> $(arche-send --dest "$REMOTE_DIR" --where)"
+}
+
+capture() {
+    local mode="$1"
+    mkdir -p "$STAGING"
+    local out
+    out="$STAGING/$(date '+%Y-%m-%d-%H%M%S').png"
+    case "$mode" in
+        region) screencapture -i "$out" ;;   # -i = interactive selection
+        full)   screencapture -x "$out" ;;   # -x = no camera sound
+    esac
+    # A cancelled selection (Escape) leaves no file — that is not an error.
+    [[ -f "$out" ]] || { echo "arche-clip: cancelled" >&2; return 0; }
+    flush
+}
+
+case "${1:-flush}" in
+    flush)  flush ;;
+    region) capture region ;;
+    full)   capture full ;;
+    status)
+        echo "staging dir : $STAGING"
+        echo "remote      : $(arche-send --dest "$REMOTE_DIR" --where)"
+        echo "log         : $LOG"
+        shopt -s nullglob
+        pending=("$STAGING"/*.png "$STAGING"/*.jpg "$STAGING"/*.pdf)
+        shopt -u nullglob
+        echo "waiting     : ${#pending[@]} file(s)"
+        macos_loc="$(defaults read com.apple.screencapture location 2>/dev/null || echo '(default: Desktop)')"
+        echo "screenshots : $macos_loc"
+        ;;
+    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) echo "arche-clip: unknown command '$1' (try --help)" >&2; exit 1 ;;
+esac
