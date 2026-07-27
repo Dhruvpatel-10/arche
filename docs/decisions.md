@@ -52,6 +52,15 @@ local copy is removed by `rsync --remove-source-files` — only after it has
 landed, so a failed send leaves the file staged rather than losing it. The
 desktop notification does name the server, since it is read rather than pasted.
 
+**`WatchPaths` gotcha, learned the hard way:** the lock and the log must live
+*outside* the staging directory. launchd treats any change inside a watched
+directory as a wake-up, so a lock kept there is created and removed on every
+run, which re-triggers the agent, which takes the lock again — an endless loop
+firing about once a second. Both now sit in `$TMPDIR`. After a real send the
+`--remove-source-files` delete can wake the agent one extra time, which is
+harmless: that run finds nothing staged, touches nothing in the watched
+directory, and stops.
+
 Why not skhd, which was the first proposal: it needs a third-party tap
 (`koekeishiya/formulae`), its upstream is in maintenance mode, and it would need
 both Accessibility and Screen Recording granted to a new binary. The launchd
