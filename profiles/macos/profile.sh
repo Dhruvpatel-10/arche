@@ -70,6 +70,15 @@ macos_default_player() {
     fi
 }
 
+macos_clip() {
+    if [[ -f "$ARCHE/macos/clip-setup.sh" ]]; then
+        log_info "Setting up screenshots that upload themselves."
+        bash "$ARCHE/macos/clip-setup.sh" || log_warn "Could not set up the screenshot pipeline (not fatal)."
+    else
+        log_warn "Skipping screenshot setup (macos/clip-setup.sh is not present yet)."
+    fi
+}
+
 profile_steps() {
     step check     macos_check          -  "Check this is macOS on Apple Silicon with Homebrew"
     step packages  macos_packages       -  "Install the command-line tools and apps (Homebrew)"
@@ -77,4 +86,5 @@ profile_steps() {
     step shell     macos_shell          -  "Make fish your shell and install its plugins"
     step theme     macos_theme          -  "Render your colors and fonts across all apps"
     step player    macos_default_player -  "Set mpv as the default player for common video files"
+    step clip      macos_clip           -  "Send screenshots to the server and copy their path"
 }
