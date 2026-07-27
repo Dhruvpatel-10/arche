@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# arche-send — copy files and folders to a server from the arche-ssh inventory
+# Usage:
+#   arche-send <path>...                  send into ~/remote-data/ on the default host
+#   arche-send <path>... --to sub/dir     send into ~/remote-data/sub/dir/
+#   arche-send <path>... --dest ~/.clip   send into an exact remote dir instead
+#   arche-send <path>... --host name      use another host from the inventory
+#   arche-send <path>... --delete         mirror: drop remote files missing locally
+#   arche-send <path>... --move           remove each local file once it has landed
+#   arche-send <path>... --dry            preview only; changes nothing, here or there
+#   arche-send --where                    print the remote dir that would be used
+#
+# The host is a friendly name from the arche-ssh inventory
+# (~/.config/arche/ssh-hosts), so the user, key, and port live in one place and
+# never land in the repo. Default host: vega-ops, override with $ARCHE_SEND_HOST.
+#
+# Remote paths are restricted to letters, digits, and . _ - / ~ characters.
+# macOS ships openrsync, which has no --protect-args, so a remote path with
+# spaces or shell metacharacters cannot be passed through safely — it is
+# refused rather than silently mangled.
+
+set -euo pipefail
+
+DEFAULT_HOST="${ARCHE_SEND_HOST:-vega-ops}"
+# The tilde stays literal on purpose: it is the *remote* shell that expands it,
+# so $HOME here would be this machine's home, not the server's.
+# shellcheck disable=SC2088
+DEFAULT_BASE="~/remote-data"
+
+die() { echo "arche-send: $*" >&2; exit 1; }
+
+# Quote a remote path for the remote shell, keeping a leading ~ expandable:
+# ~/.clip/x becomes ~/'.clip/x', so the server expands the home directory but
+# the rest cannot be re-interpreted as shell syntax.
+# shellcheck disable=SC2088  # literal ~ is the point; the remote expands it
+remote_quote() {
+    case "$1" in
+        "~/"*) printf "~/'%s'" "${1#\~/}" ;;
+        *)     printf "'%s'" "$1" ;;
+    esac
+}
+
+# Refuse anything we cannot pass through a remote shell safely.
+check_remote_path() {
+    local what="$1" val="$2"
+    [[ -n "$val" ]] || die "$what cannot be empty"
+    case "$val" in
+        -*)   die "$what looks like an option, not a path: '$val'" ;;
+        *..*) die "$what must not contain '..': '$val'" ;;
+    esac
+    if [[ ! "$val" =~ ^[A-Za-z0-9._~/-]+$ ]]; then
+        die "$what has characters that are not safe to send to a remote shell: '$val'"
+    fi
+}
+
+host="$DEFAULT_HOST"
+base="$DEFAULT_BASE"
+subdir=""
+dest=""
+dry=0
+where_only=0
+paths=()
+extra=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --to)
+            [[ -n "${2:-}" ]] || die "--to needs a subdirectory (e.g. --to reports)"
+            check_remote_path "--to" "$2"
+            subdir="$2"; shift 2 ;;
+        --dest)
+            [[ -n "${2:-}" ]] || die "--dest needs a remote directory (e.g. --dest '~/.clip')"
+            check_remote_path "--dest" "$2"
+            dest="$2"; shift 2 ;;
+        --host)
+            [[ -n "${2:-}" ]] || die "--host needs an inventory name (see 'arche-ssh list')"
+            case "$2" in -*) die "--host looks like an option: '$2'" ;; esac
+            host="$2"; shift 2 ;;
+        --delete) extra+=(--delete-during); shift ;;
+        --move)   extra+=(--remove-source-files); shift ;;
+        --dry)    dry=1; extra+=(--dry-run); shift ;;
+        --where)  where_only=1; shift ;;
+        -h|--help)
+            sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+            exit 0 ;;
+        --) shift; while [[ $# -gt 0 ]]; do paths+=("$1"); shift; done ;;
+        -*) extra+=("$1"); shift ;;
+        *)
+            # strip trailing slashes so a folder is sent WITH its name, not just
+            # its contents; a bare "/" would strip to nothing, so catch that
+            stripped="$1"
+            while [[ "$stripped" == */ ]]; do stripped="${stripped%/}"; done
+            [[ -n "$stripped" ]] || die "refusing to send the whole root directory"
+            paths+=("$stripped"); shift ;;
+    esac
+done
+
+# Where is this going?
+if [[ -n "$dest" ]]; then
+    [[ -z "$subdir" ]] || die "use either --to or --dest, not both"
+    remote_dir="$dest"
+else
+    remote_dir="$base"
+    [[ -n "$subdir" ]] && remote_dir="$base/$subdir"
+fi
+
+target="$(arche-ssh target "$host")"   # dies with a clear message on unknown host
+ssh_cmd="$(arche-ssh ssh-cmd "$host")"
+
+if [[ $where_only -eq 1 ]]; then
+    printf '%s:%s\n' "$host" "$remote_dir"
+    exit 0
+fi
+
+[[ ${#paths[@]} -gt 0 ]] || die "nothing to send — give me a file or folder (--help for usage)"
+
+for p in "${paths[@]}"; do
+    [[ -e "$p" ]] || die "no such file or folder: $p"
+done
+
+qdir="$(remote_quote "$remote_dir")"
+
+if [[ $dry -eq 1 ]]; then
+    # A dry run must not touch the remote either, so the mkdir is skipped and
+    # only announced.
+    echo "would create $host:$remote_dir if missing"
+else
+    # shellcheck disable=SC2086  # ssh_cmd is a deliberately split command
+    $ssh_cmd "$target" "mkdir -p -- $qdir" \
+        || die "could not reach $host or create $remote_dir there"
+fi
+
+echo "-> $host:$remote_dir/"
+# shellcheck disable=SC2086  # ssh_cmd is a deliberately split command
+rsync -avzhP -e "$ssh_cmd" ${extra[@]+"${extra[@]}"} -- \
+    "${paths[@]}" "$target:$qdir/"
