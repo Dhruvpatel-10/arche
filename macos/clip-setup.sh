@@ -14,7 +14,11 @@
 
 set -euo pipefail
 
-ARCHE="${ARCHE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# Work out the repo root from this script's own location, and do NOT honour a
+# pre-existing $ARCHE: the shell exports /opt/arche (the shared Linux root, D014)
+# on every platform, which does not exist on macOS. Same approach as
+# macos/mpv-default.sh.
+ARCHE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ARCHE/core/lib.sh"
 
 STAGING="$HOME/.clip"

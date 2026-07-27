@@ -1,10 +1,18 @@
 # PATH and environment exports
 # conf.d/ files are auto-sourced by fish before config.fish
 
-# arche repo location — shared across all human users on this machine.
-# See docs/decisions.md D014. Per-user ~/arche → /opt/arche symlink is
-# created by helpers/migrate-to-opt.sh or install.sh.
-set -gx ARCHE /opt/arche
+# arche repo location. /opt/arche is the shared root on Linux (D014), reached
+# per-user through the ~/arche symlink. macOS has no shared /opt root, so this
+# config is stowed on both platforms and must find the repo wherever it is
+# rather than hardcoding the Linux path — an ARCHE pointing at a directory that
+# does not exist breaks every script that trusts it.
+for _arche_root in /opt/arche $HOME/arche $HOME/projects/arche
+    if test -d $_arche_root
+        set -gx ARCHE $_arche_root
+        break
+    end
+end
+set -e _arche_root
 
 set -gx BUN_INSTALL $HOME/.bun
 set -gx CUDA_PATH /opt/cuda

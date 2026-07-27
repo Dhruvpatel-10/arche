@@ -80,6 +80,16 @@ the real Apple region selector is nicer than any reimplementation.
 - `launch_agent_load` was added to the macOS adapter as the launchd seam;
   `svc_enable` stays a no-op, since these are user agents, not services.
 
+**`$ARCHE` is not trustworthy on macOS.** `conf.d/path.fish` exported
+`ARCHE=/opt/arche` — the shared Linux root (D014) — on every platform, and that
+path does not exist on a Mac, where the repo lives in the user's home. Any script
+writing `${ARCHE:-…}` therefore picked up a broken value instead of its own
+location and died with `No such file or directory`. Two changes: `path.fish` now
+walks `/opt/arche`, `~/arche`, `~/projects/arche` and exports the first that
+exists (leaving `ARCHE` unset rather than wrong if none do), and `macos/*.sh`
+self-locate unconditionally, the way `macos/mpv-default.sh` already did. A lint
+drift-guard fails the build if a `macos/` script reintroduces `${ARCHE:-…}`.
+
 **Known limitation, unchanged:** `arche-ssh <host> <command>` still does not
 work — `connect()` puts extra arguments before the target, so a remote command is
 parsed as a hostname. Options pass through fine. `arche-send` sidesteps it by
