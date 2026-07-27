@@ -6,6 +6,8 @@
 #   arche-ssh list                  show the inventory as a table
 #   arche-ssh edit                  open the inventory in $EDITOR
 #   arche-ssh names                 print host names (used by fish completion)
+#   arche-ssh target <name>         print user@addr for <name> (for rsync / scp)
+#   arche-ssh ssh-cmd <name>        print the ssh command with key + port (rsync -e)
 #
 # Inventory: ~/.config/arche/ssh-hosts — one host per line, same line DSL as
 # packages/*.reg:
@@ -70,25 +72,37 @@ parse_hosts() {
     done < "$HOSTS_FILE"
 }
 
-connect() {
-    local name="$1"; shift
+# Look up one host and publish its fields as R_* globals. Every consumer below
+# (connect, target, ssh-cmd) goes through this so the inventory is parsed the
+# same way everywhere.
+R_ADDR=""; R_USER=""; R_KEY=""; R_PORT=""
+resolve() {
+    local name="$1"
     local row
     row="$(parse_hosts | awk -F'\t' -v n="$name" '$1 == n { print; exit }')"
     [[ -n "$row" ]] || die "no host named '$name' in $HOSTS_FILE (see 'arche-ssh list')"
+    IFS=$'\t' read -r _ R_ADDR R_USER R_KEY R_PORT <<< "$row"
+    # expand a leading ~ now — ssh takes it, but rsync -e and scp do not
+    [[ -n "$R_KEY" ]] && R_KEY="${R_KEY/#\~/$HOME}"
+    return 0
+}
 
-    local addr user key port
-    IFS=$'\t' read -r _ addr user key port <<< "$row"
+# "user@addr", or bare "addr" when the inventory line has no user=.
+host_target() {
+    if [[ -n "$R_USER" ]]; then printf '%s@%s\n' "$R_USER" "$R_ADDR"; else printf '%s\n' "$R_ADDR"; fi
+}
+
+connect() {
+    local name="$1"; shift
+    resolve "$name"
 
     local args=()
-    [[ -n "$key" ]]  && args+=(-i "${key/#\~/$HOME}")
-    [[ -n "$port" ]] && args+=(-p "$port")
-
-    local target="$addr"
-    [[ -n "$user" ]] && target="$user@$addr"
+    if [[ -n "$R_KEY" ]];  then args+=(-i "$R_KEY"); fi
+    if [[ -n "$R_PORT" ]]; then args+=(-p "$R_PORT"); fi
 
     # ${args[@]+…} guard: plain "${args[@]}" on an empty array trips set -u
     # under bash 3.2 (macOS)
-    exec ssh ${args[@]+"${args[@]}"} "$@" "$target"
+    exec ssh ${args[@]+"${args[@]}"} "$@" "$(host_target)"
 }
 
 pick() {
@@ -124,8 +138,24 @@ case "${1:-}" in
         # completion helper — must stay silent and side-effect free
         parse_hosts 2>/dev/null | cut -f1
         ;;
+    target)
+        # print user@addr so rsync / scp can reuse the inventory
+        [[ -n "${2:-}" ]] || die "usage: arche-ssh target <name>"
+        resolve "$2"
+        host_target
+        ;;
+    ssh-cmd)
+        # print the ssh command with key + port, for use as: rsync -e "$(…)"
+        # (rsync splits -e on whitespace, so a key path with spaces cannot work)
+        [[ -n "${2:-}" ]] || die "usage: arche-ssh ssh-cmd <name>"
+        resolve "$2"
+        printf 'ssh'
+        [[ -n "$R_KEY" ]]  && printf ' -i %s' "$R_KEY"
+        [[ -n "$R_PORT" ]] && printf ' -p %s' "$R_PORT"
+        printf '\n'
+        ;;
     help|-h|--help)
-        sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+        sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
         ;;
     *)
         connect "$@"
